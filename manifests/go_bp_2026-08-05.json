@@ -1,0 +1,74 @@
+{
+  "annotation_stats": {
+    "accepted_rows": 204596,
+    "excluded_evidence": 770,
+    "negated": 1497,
+    "non_bp_or_taxon": 703325,
+    "rows": 910476,
+    "unknown_term_or_symbol": 288
+  },
+  "archive_doi": "10.5281/zenodo.21844811",
+  "collection": "Gene Ontology Biological Process",
+  "derivation": {
+    "ancestor_relations": [
+      "is_a",
+      "part_of"
+    ],
+    "exclude_qualifier": "NOT",
+    "excluded_evidence_codes": [
+      "ND",
+      "RCA"
+    ],
+    "excluded_term_subsets": [
+      "gocheck_do_not_annotate"
+    ],
+    "genes_are_frozen_hvg_symbols": true,
+    "hvg_program_size": [
+      3,
+      500
+    ],
+    "include_evidence_codes": "all_except_excluded",
+    "namespace": "biological_process",
+    "root_excluded": "GO:0008150",
+    "taxon": "taxon:9606"
+  },
+  "headers": {
+    "gaf": {
+      "date-generated": "2026-07-28 19:42",
+      "gaf-version": "2.2",
+      "generated-by": "UniProt",
+      "go-version": "http://purl.obolibrary.org/obo/go/releases/2026-07-26/extensions/go-plus.ofn"
+    },
+    "obo": {
+      "data-version": "releases/2026-07-26",
+      "format-version": "1.2"
+    }
+  },
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "manifest_sha256": "25319d60dd68ef94222bbe297f502527d8c83f617c8fee5e68c88cd929aec3ed",
+  "ontology_version": "2026-07-26",
+  "output": {
+    "gmt_path": "resources/go_bp_2026-08-05_hvg.gmt",
+    "gmt_sha256": "82a6dfb6948e0849d4fff0d82af4e9bc1d60ac0dee7a0d18e7a2c9897b7c6dce",
+    "maximum_program_size": 494,
+    "minimum_program_size": 3,
+    "programs": 4328,
+    "unique_hvg_genes": 2742
+  },
+  "release": "2026-08-05",
+  "sources": {
+    "human_annotations": {
+      "bytes": 12109254,
+      "filename": "HUMAN-uniprot.gaf.gz",
+      "sha256": "a0afba19dfb1f8fa996bc1bdcd61fd0c9bd4cf0d2bf2509d09ac86993c0e70a2",
+      "url": "https://release.geneontology.org/2026-08-05/annotations/gaf/HUMAN-uniprot.gaf.gz"
+    },
+    "ontology": {
+      "bytes": 32227785,
+      "filename": "go-basic.obo",
+      "sha256": "b08d45b268b8c24ccb2513dbbbc7d4df9f6521c099b413f79eb31e06e0fa3bcc",
+      "url": "https://release.geneontology.org/2026-08-05/ontology/go-basic.obo"
+    }
+  }
+}

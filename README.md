@@ -39,10 +39,11 @@ scripts/                 Download and preprocessing entry points
 src/causalcelljepa/      Reusable data and model code
 tests/                   Unit and integration tests
 data/                    Git-ignored source data and pinned resources
+resources/               Versioned derived biological masking collections
 artifacts/               Git-ignored checkpoints, logs, and cached latents
 ```
 
-## Stage 1 status
+## Stage 1 implementation
 
 The sparse cell tokenizer and from-scratch Cell-State JEPA are implemented. The locked
 encoder uses 512 gene/value tokens, 192-dimensional tokens, 32 Perceiver queries, three
@@ -56,16 +57,45 @@ dynamics-training outcomes plus RPE1 controls. This deliberately excludes every 
 outcome and all RPE1 perturbed outcomes. The proposal leaves this representation-stage
 choice somewhat ambiguous; changing it requires explicit human review.
 
+Biological masking uses the official, CC BY 4.0 Gene Ontology archive release
+`2026-08-05` ([archive DOI](https://doi.org/10.5281/zenodo.21844811)). The date-pinned
+[`go-basic.obo`](https://release.geneontology.org/2026-08-05/ontology/go-basic.obo) and
+[`HUMAN-uniprot.gaf.gz`](https://release.geneontology.org/2026-08-05/annotations/gaf/HUMAN-uniprot.gaf.gz)
+sources are checked against fixed byte sizes and SHA-256 digests. The deterministic
+derivation excludes negated, ND/RCA, obsolete, and do-not-annotate assertions; propagates
+only through `is_a` and `part_of`; intersects with the frozen HVGs; and retains programs
+with 3--500 HVGs. This produces 4,328 programs covering 2,742 HVGs. Source metadata,
+derivation rules, and the derived GMT hash are recorded in
+[`manifests/go_bp_2026-08-05.json`](manifests/go_bp_2026-08-05.json).
+
+The deterministic Stage 1 validation split is frozen in
+[`manifests/stage1_v1.json`](manifests/stage1_v1.json): 108,406 admitted training cells
+and 5,623 admitted validation cells. Checkpoints contain online/teacher/predictor weights,
+optimizer and scheduler state, the exact training cursor, all RNG states, effective
+configuration, and source/split/HVG/GMT/code provenance. DataLoader randomness is isolated
+from model randomness, and an interrupted real-data CPU run matched an uninterrupted run
+tensor-for-tensor after resume. The canonical EMA teacher cannot be exported until a full
+configured run completes; early stopping selects the best admitted-cell validation epoch.
+
+CPU validation completed 100 real-data optimizer steps at batch size 32 with finite losses;
+the mean engineering-smoke loss changed from 0.0493 over the first 20 steps to 0.0243 over
+the last 20. This is a numerical stability check, not a biological performance result. The
+observed throughput was about 106 cells/second, projecting roughly nine CPU hours for the
+configured 30-epoch fit including validation. Full Stage 1 pretraining has not been run.
+
 ## Development
 
 ```bash
 uv sync --dev
 uv run python scripts/download.py
 uv run python scripts/prepare.py
+uv run python scripts/resources.py
+uv run python scripts/audit_stage1.py
+uv run python scripts/smoke_stage1.py
 uv run ruff check .
 uv run pytest
 ```
 
-No biological experiment or full model training has been run yet. The next implementation
-unit is pinning the open GO Biological Process masking resource, followed by the Stage 1
-training/checkpoint loop and throughput probe.
+After committing a clean code/provenance checkpoint, run full Stage 1 pretraining with
+`uv run python scripts/pretrain.py`. A CUDA GPU is recommended for that run. No biological
+experiment, full model training, or matched-baseline comparison has been run yet.
