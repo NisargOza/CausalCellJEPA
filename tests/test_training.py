@@ -6,6 +6,7 @@ import torch
 
 from causalcelljepa.model import CellEncoder, CellJEPA
 from causalcelljepa.training import (
+    _configuration_for_resume,
     _data_loader,
     batch_views,
     epoch_order,
@@ -82,6 +83,10 @@ def test_checkpoint_round_trip_provenance_and_teacher_export_guard(tmp_path):
         load_checkpoint(path, model, optimizer, scheduler, {"wrong": "hash"}, "cpu")
     with pytest.raises(ValueError, match="forbidden"):
         export_canonical_teacher(tmp_path / "teacher.pt", model, state, {"stage1": {}}, provenance)
+
+    base = {"stage1": {"training": {"resume_from": None}}}
+    resumed = {"stage1": {"training": {"resume_from": "artifacts/stage1/latest.pt"}}}
+    assert _configuration_for_resume(base) == _configuration_for_resume(resumed)
 
 
 def test_learning_rate_schedule_warms_then_cosines_to_floor():

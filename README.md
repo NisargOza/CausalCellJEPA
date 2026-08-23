@@ -92,10 +92,15 @@ uv run python scripts/prepare.py
 uv run python scripts/resources.py
 uv run python scripts/audit_stage1.py
 uv run python scripts/smoke_stage1.py
+uv run python scripts/smoke_cuda_stage1.py
 uv run ruff check .
 uv run pytest
 ```
 
 After committing a clean code/provenance checkpoint, run full Stage 1 pretraining with
-`uv run python scripts/pretrain.py`. A CUDA GPU is recommended for that run. No biological
+`uv run python scripts/pretrain.py`. A CUDA GPU is required for that run. No biological
 experiment, full model training, or matched-baseline comparison has been run yet.
+
+Full pretraining refuses to fall back to CPU. To resume without modifying the frozen
+configuration, set `CAUSALCELLJEPA_RESUME_FROM=artifacts/stage1/latest.pt`. CUDA runs set the
+deterministic cuBLAS workspace and abort immediately on non-finite losses or gradients.

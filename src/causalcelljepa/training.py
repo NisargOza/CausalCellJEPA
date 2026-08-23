@@ -2,12 +2,14 @@
 
 import json
 import math
+import platform
 import random
 import subprocess
 import time
 from collections import Counter
 from copy import deepcopy
 from hashlib import sha256
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import numpy as np
@@ -85,6 +87,10 @@ def seed_everything(seed, deterministic_algorithms=True):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = deterministic_algorithms
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
     torch.use_deterministic_algorithms(deterministic_algorithms)
 
 
@@ -119,8 +125,14 @@ def batch_views(
             )
         )
     keys = ("gene_ids", "values", "padding_mask")
-    student = {key: torch.cat([masked[key] for masked in masked_rows]).to(device) for key in keys}
-    teacher = {key: batch[key].to(device) for key in keys}
+    non_blocking = device.type == "cuda"
+    student = {
+        key: torch.cat([masked[key] for masked in masked_rows]).to(
+            device, non_blocking=non_blocking
+        )
+        for key in keys
+    }
+    teacher = {key: batch[key].to(device, non_blocking=non_blocking) for key in keys}
     return student, teacher
 
 
@@ -209,6 +221,31 @@ def _runtime_source_hash():
     return digest.hexdigest()
 
 
+def _runtime_environment():
+    packages = {}
+    for distribution in ("anndata", "h5py", "numpy", "PyYAML", "scipy", "torch"):
+        try:
+            packages[distribution] = version(distribution)
+        except PackageNotFoundError:
+            packages[distribution] = None
+    runtime = {
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "packages": packages,
+        "torch_cuda": torch.version.cuda,
+    }
+    if torch.cuda.is_available():
+        properties = torch.cuda.get_device_properties(torch.cuda.current_device())
+        runtime["cuda_device"] = {
+            "name": properties.name,
+            "capability": [properties.major, properties.minor],
+            "total_memory_bytes": properties.total_memory,
+        }
+    else:
+        runtime["cuda_device"] = None
+    return runtime
+
+
 def build_provenance(
     replogle_config_path="configs/replogle.yaml",
     stage1_config_path="configs/stage1.yaml",
@@ -233,6 +270,7 @@ def build_provenance(
         "hvg_sha256": json.loads(Path(replogle_manifest_path).read_text())["genes"]["hvg_sha256"],
         "go_bp_gmt_sha256": go_manifest["output"]["gmt_sha256"],
         "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
         "git": _git_state(),
     }
 
@@ -314,14 +352,29 @@ def _json_log(path, event):
         handle.write(json.dumps(event, sort_keys=True) + "\n")
 
 
-def _data_loader(dataset, indices, batch_size, num_workers, seed):
+def _data_loader(
+    dataset,
+    indices,
+    batch_size,
+    num_workers,
+    seed,
+    pin_memory=False,
+    persistent_workers=False,
+    prefetch_factor=None,
+):
     generator = torch.Generator().manual_seed(seed)
+    options = {}
+    if num_workers:
+        options["persistent_workers"] = persistent_workers
+        options["prefetch_factor"] = prefetch_factor
     return DataLoader(
         Subset(dataset, list(indices)),
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
+        pin_memory=pin_memory,
         generator=generator,
+        **options,
     )
 
 
@@ -429,6 +482,9 @@ def train_stage1(
         training["batch_size"],
         training["num_workers"],
         seed + 1,
+        training["pin_memory"] and device.type == "cuda",
+        training["persistent_workers"],
+        training["prefetch_factor"],
     )
     started = time.perf_counter()
     model.train()
@@ -441,6 +497,9 @@ def train_stage1(
             training["batch_size"],
             training["num_workers"],
             seed + 2 + epoch,
+            training["pin_memory"] and device.type == "cuda",
+            training["persistent_workers"],
+            training["prefetch_factor"],
         )
         for offset, batch in enumerate(loader, start=state["batch_in_epoch"]):
             student, teacher = batch_views(
@@ -463,9 +522,13 @@ def train_stage1(
                 replogle_config["stage1"]["variance_weight"],
                 replogle_config["stage1"]["covariance_weight"],
             )
+            if not all(torch.isfinite(value) for value in losses.values()):
+                raise FloatingPointError(
+                    f"Non-finite Stage 1 loss at optimizer step {state['global_step']}"
+                )
             losses["loss"].backward()
             gradient_norm = torch.nn.utils.clip_grad_norm_(
-                parameters, training["gradient_clip_norm"]
+                parameters, training["gradient_clip_norm"], error_if_nonfinite=True
             )
             optimizer.step()
             ema_start, ema_end = replogle_config["stage1"]["ema_momentum"]
