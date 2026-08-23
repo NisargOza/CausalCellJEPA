@@ -1,0 +1,53 @@
+# First-stage data choices; model defaults remain fixed in RESEARCH_PROPOSAL.md.
+seed: 20260823
+data:
+  source_article: 20029387
+  source_version: 1
+  files:
+    K562:
+      file_id: 35773219
+      filename: K562_essential_raw_singlecell_01.h5ad
+      experiment: K562_essential
+      timepoint_days: 6
+      bytes: 10661879995
+      md5: 4f1122ce1c7f13299a68df6459a266d3
+      sha256: 3e5a63a9e892b21029bb55fca4e12517a49aad7af6c14133ca63d12cf68c6cee
+      shape: [310385, 8563]
+    RPE1:
+      file_id: 35775606
+      filename: rpe1_raw_singlecell_01.h5ad
+      experiment: RPE1_essential
+      timepoint_days: 7
+      bytes: 8700873216
+      md5: null
+      sha256: 9b05ef1f81526216fa008d677e9e0d03dce9a2f7a95499a4fb81e505e9d88ef1
+      shape: [247914, 8749]
+  contexts: [K562, RPE1]
+  min_condition_cells: 64
+  hvg_count: 3000
+  hvg_method: log_normalized_variance
+  library_size: 10000
+split:
+  fractions: [0.70, 0.10, 0.20]
+  iid_test_fraction: 0.20
+  population_size: 32
+stage1:
+  # Strict interpretation: exclude all held-out and RPE1 perturbed outcomes.
+  admission_policy: controls_and_k562_dynamics_train_only
+  max_tokens: 512
+  token_dim: 192
+  latent_queries: 32
+  blocks: 3
+  heads: 6
+  ffn_dim: 768
+  dropout: 0.10
+  cell_dim: 256
+  predictor_hidden: 768
+  teacher_mode: eval
+  random_mask_range: [0.30, 0.60]
+  biological_mask_probability: 0.25
+  minimum_program_genes: 3
+  prediction_loss: normalized_smooth_l1
+  variance_weight: 0.05
+  covariance_weight: 0.005
+  ema_momentum: [0.996, 0.9999]

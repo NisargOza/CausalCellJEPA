@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+data/
+artifacts/
+work/
+RESEARCH_PROPOSAL.md
+REVIEW_LOG.md
+REVIEW.md
+AGENTS.md
