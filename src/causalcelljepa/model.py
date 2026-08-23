@@ -127,13 +127,10 @@ def mask_gene_tokens(
         visible = torch.nonzero(~padding_mask[row], as_tuple=False).flatten()
         selected = None
         if programs and torch.rand((), generator=generator) < biological_probability:
-            for program_index in torch.randperm(len(programs), generator=generator):
-                positions = visible[
-                    torch.isin(gene_ids[row, visible], programs[int(program_index)])
-                ]
-                if positions.numel() >= minimum_program_genes:
-                    selected = positions
-                    break
+            program_index = int(torch.randint(len(programs), (), generator=generator))
+            positions = visible[torch.isin(gene_ids[row, visible], programs[program_index])]
+            if positions.numel() >= minimum_program_genes:
+                selected = positions
         if selected is None:
             ratio = torch.empty(()).uniform_(*mask_range, generator=generator).item()
             count = min(visible.numel() - 1, max(1, round(ratio * visible.numel())))

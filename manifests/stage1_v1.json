@@ -1,0 +1,38 @@
+{
+  "admission_policy": "controls_and_k562_dynamics_train_only",
+  "admitted_cells": 114029,
+  "config_sha256": "65af3d84f4aef2600207d94b7136bd25dc4cf07aea7eaf99953042495f7f3f5e",
+  "hvg_sha256": "e808fc0975b133aee150f008596c5bdb7adcae3859b0921a97f8588e2b0aa9e8",
+  "manifest_sha256": "a7300115ab7638e6c896f54dcc3b4eb7605dbf5771c4bc28a06cb1d9311193a3",
+  "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
+  "seed": 20260823,
+  "splits": {
+    "train": {
+      "cell_ids_sha256": "11180d4474696d3c569e1572f946db9c0c785b92efd6d1406552bbe65325ee09",
+      "cells": 108406,
+      "context_counts": {
+        "K562": 97488,
+        "RPE1": 10918
+      },
+      "role_counts": {
+        "control_inference": 10918,
+        "control_train": 10152,
+        "dynamics_train": 87336
+      }
+    },
+    "validation": {
+      "cell_ids_sha256": "62c8dde091297b2a2312f8eae2d834f06971f6631f27040818dd636a5065cc6c",
+      "cells": 5623,
+      "context_counts": {
+        "K562": 5056,
+        "RPE1": 567
+      },
+      "role_counts": {
+        "control_inference": 567,
+        "control_train": 539,
+        "dynamics_train": 4517
+      }
+    }
+  },
+  "validation_fraction": 0.05
+}
