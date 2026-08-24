@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from scipy import sparse
 
 from causalcelljepa.readout import (
@@ -10,6 +11,7 @@ from causalcelljepa.readout import (
     ridge_solution,
     sufficient_statistics,
 )
+from causalcelljepa.representations import ReconstructionAutoencoder
 
 
 def test_expression_normalization_uses_full_library_before_hvg_selection():
@@ -44,6 +46,13 @@ def test_sufficient_statistics_recover_exact_linear_readout():
     assert regression_mse(validation_stats, solution) < 1e-12
     assert np.allclose(solution[:-1], weights, atol=1e-6)
     assert np.allclose(solution[-1], bias, atol=1e-6)
+
+
+def test_reconstruction_autoencoder_uses_the_matched_bottleneck():
+    model = ReconstructionAutoencoder(7, 5, 3, 0).eval()
+    expression = torch.randn(4, 7)
+    assert model.encode(expression).shape == (4, 3)
+    assert model(expression).shape == expression.shape
 
 
 def test_gene_effect_and_pathway_metrics_are_exact_for_perfect_prediction():
