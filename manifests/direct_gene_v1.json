@@ -1,0 +1,199 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 868595,
+      "path": "artifacts/direct_gene_esm_v1.pt",
+      "sha256": "85ca626235562eb36a53604df45ce06bf4c6e1ce5ea26c4e0e1fb048bf5722a3"
+    },
+    "condition_metrics": {
+      "bytes": 2330865,
+      "records": 1794,
+      "sha256": "f403cc0f909441a1ebaf4bd76969ed8810bd6854314602e036d27906602f2f6e"
+    },
+    "console_sha256": "c402da6c4feb96c871238e10ad116d55e173c444f0cc1a389752325d9db3c7b5",
+    "fit_report": {
+      "bytes": 544,
+      "sha256": "80f4206f5747c1d84271ec5951ec02f0c0682932b1b6a7825ff732adf804e293"
+    },
+    "paired_comparisons": {
+      "bytes": 60992,
+      "condition_comparisons": 88,
+      "pathway_comparisons": 24,
+      "sha256": "0fc823c6560e439714f43aa0e1aa38102d0043dd89a39b058bc9dd98c4828f73"
+    },
+    "pathway_metrics": {
+      "bytes": 847590,
+      "records": 1794,
+      "sha256": "cf95dae84c3311161afd69006ad831737c81e2dc90307ccaa57600c521f9b70f"
+    },
+    "provenance": {
+      "bytes": 5614,
+      "sha256": "968eafff5c1ec92fbc838994417458d6ccf39e739cea8e278c6ecaad95944a99"
+    },
+    "summary": {
+      "bytes": 35597,
+      "condition_summaries": 88,
+      "pathway_summaries": 24,
+      "retrieval_summaries": 4,
+      "sha256": "b68fe9268e97fd60470af5f3e83e1cabdd17c800b5fdd389e472d262ec682dc8"
+    },
+    "truth_report": {
+      "bytes": 560,
+      "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+    }
+  },
+  "fit": {
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets": 698,
+    "fit_targets_with_known_action": 696,
+    "rank": 64,
+    "ridge_candidates": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0,
+      1000000.0
+    ],
+    "ridge_validation_mse": [
+      0.008540598816903965,
+      0.008363049030162266,
+      0.007246663540954164,
+      0.005201522418280291,
+      0.0042990737220813145,
+      0.004057305020331735,
+      0.004046043264406644,
+      0.004108440324972265,
+      0.0041290842773161465
+    ],
+    "selected_ridge": 10000.0,
+    "selection_mse": 0.004046043264406644,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100
+  },
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": -0.129911,
+        "direct_gene_esm": 0.227737
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 4.300444,
+        "direct_gene_esm": 4.144253
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": -0.236243,
+        "direct_gene_esm": 0.269796
+      }
+    },
+    "double_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": -0.133761,
+        "direct_gene_esm": 0.213575
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 3.910857,
+        "direct_gene_esm": 3.731797
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": -0.244825,
+        "direct_gene_esm": 0.267801
+      }
+    },
+    "iid": {
+      "all_effect_pearson": {
+        "causalcelljepa": 0.081431,
+        "direct_gene_esm": 0.192544
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 4.129832,
+        "direct_gene_esm": 3.717001
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": 0.159179,
+        "direct_gene_esm": 0.226962
+      }
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": 0.091855,
+        "direct_gene_esm": 0.235313
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 2.440427,
+        "direct_gene_esm": 2.029525
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": 0.191729,
+        "direct_gene_esm": 0.281877
+      }
+    }
+  },
+  "headline_paired_full_minus_direct": {
+    "double_ood": {
+      "all_effect_pearson": {
+        "bootstrap_95ci": [
+          -0.395365,
+          -0.299824
+        ],
+        "mean": -0.347336
+      },
+      "all_magnitude_absolute_error": {
+        "bootstrap_95ci": [
+          -0.234107,
+          -0.122617
+        ],
+        "mean": -0.17906
+      },
+      "pathway_nes_pearson": {
+        "bootstrap_95ci": [
+          -0.595011,
+          -0.430485
+        ],
+        "mean": -0.512625
+      }
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {
+        "bootstrap_95ci": [
+          -0.162348,
+          -0.124351
+        ],
+        "mean": -0.143458
+      },
+      "all_magnitude_absolute_error": {
+        "bootstrap_95ci": [
+          -0.439725,
+          -0.382634
+        ],
+        "mean": -0.410902
+      }
+    }
+  },
+  "leakage": {
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_role": "perturbation_ood_validation"
+  },
+  "manifest_sha256": "b7259f4aa177cc5910cff212313b9570ee1e7606cdf900669b754f4987d0cf29",
+  "protocol": {
+    "action_representation": "same frozen ESM-2 action cache as CausalCellJEPA",
+    "architecture": "rank-64 gene-effect response space with ridge from standardized ESM-2",
+    "jepa_state_or_decoder_used": false,
+    "statistical_unit": "perturbation-condition"
+  },
+  "result_scope": {
+    "interpretation": "The required direct gene-space ESM baseline outperforms the full latent world model on effect direction, DE recovery, magnitude error, and pathway agreement across all four regimes. Target-gene exclusion does not change the conclusion.",
+    "supports_latent_world_model_advantage": false
+  },
+  "source": {
+    "config_sha256": "cb56807088178adc388ff30d2d53c6539ed46736944a133f2eceea9a99664bf2",
+    "git_commit": "b262bf4d12469e519ddab553e3958893fcfbf64e",
+    "git_dirty": false,
+    "transcriptomics_manifest_sha256": "06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af"
+  }
+}
