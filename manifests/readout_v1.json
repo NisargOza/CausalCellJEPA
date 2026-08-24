@@ -1,0 +1,90 @@
+{
+  "artifacts": {
+    "decoder_checkpoint": {
+      "bytes": 3090399,
+      "path": "artifacts/readout_linear_v1.pt",
+      "sha256": "7a4fd5d723699ee254d612f3e7e073fb204fdcdac69a994392d65ca4e8af4d2b"
+    },
+    "expression_cache": {
+      "bytes": 4091928784,
+      "cells": 340684,
+      "hvg_count": 3000,
+      "path": "artifacts/replogle_expression_readout_v1.h5",
+      "sha256": "3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0"
+    },
+    "expression_console_sha256": "033eaf7e400f5ca3aa8f7aee59e73b8d375f42b05351cdf3900a94da69dc8dcc",
+    "training_console_sha256": "a9e65a95898e82b359e9fc4fe268c2dd1435164e68baac85cbbe0f29db3407ec"
+  },
+  "decoder": {
+    "architecture": "linear",
+    "fit_cells": 114029,
+    "fit_roles": [
+      "control_inference",
+      "control_train",
+      "dynamics_train"
+    ],
+    "gene_mean_validation_mse": 0.215615381566037,
+    "output_clamp_min": 0.0,
+    "ridge_candidates": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0
+    ],
+    "ridge_validation_mse": [
+      0.1981283325798177,
+      0.19839068655982503,
+      0.19913802708319633,
+      0.200309854288563,
+      0.20122260128076588,
+      0.2017837046367308,
+      0.2057606820964378
+    ],
+    "selected_ridge": 0.01,
+    "selected_validation_mse_clipped": 0.197476581687068,
+    "selected_validation_mse_unclipped": 0.1981283325798177,
+    "split_cell_ids_sha256": {
+      "train": "8fd886801e559e422bc258be0fd0ed704a5a214f2177eb91c7dbce2aef5a95de",
+      "validation": "5a7116beafdfc707eea1a9f22a45f592c2cae2102fe6cc7ed214e969a31034e9"
+    },
+    "train_cells": 108328,
+    "unclipped_negative_fraction": 0.0005266327544875168,
+    "validation_cells": 5701,
+    "validation_explained_fraction": 0.08110297539632383,
+    "validation_fraction": 0.05
+  },
+  "expression_cache_audit": {
+    "finite_and_nonnegative_values": 1022052000,
+    "maximum": 8.198038101196289,
+    "minimum": 0.0,
+    "raw_rows_recomputed_exactly": 9,
+    "role_counts_match_latent_cache": true
+  },
+  "format_version": 1,
+  "leakage": {
+    "decoder_selection_uses_only_fit_roles": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "world_model_updated_by_decoder": false
+  },
+  "manifest_sha256": "587568af253810bdc4c9b12236054b3a48c79e021444893dd655f9eaa3abcba2",
+  "protocol": {
+    "decoder_target": "library-size-10000 normalized log1p expression over frozen 3000 HVGs",
+    "full_measured_library_normalized_before_hvg_selection": true,
+    "latent_input": "frozen Stage 1 EMA state normalized by training-visible Stage 2 statistics",
+    "ridge_selection_unit": "permitted cell",
+    "transcriptomic_evaluation_unit": "perturbation-condition"
+  },
+  "source": {
+    "config_sha256": "ae3e35347aa781b3e70b7747d25bac2b32762d3a9e121c8808eac47259231e02",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "git_commit": "fad84e1acc8a0a7d89730ae3202d37f2a54ed390",
+    "git_dirty": false,
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
+    "runtime_source_sha256": "0ff758787691a6f4617a5d1b5227c2d2f084d511d72757a7f40be5c8a6d45bba"
+  }
+}
