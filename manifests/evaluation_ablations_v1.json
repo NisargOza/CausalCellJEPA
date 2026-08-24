@@ -1,0 +1,262 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 34931,
+      "sha256": "04d2fcf74077cf8753b721dbdbb5c40c1a691acf0b69156aa9484831ce06c0d5"
+    },
+    "condition_metrics": {
+      "bytes": 22986078,
+      "records": 43056,
+      "sha256": "5c835da0750cd330242841e132c0b3ffcee7a6da558b09e4c476e868ed2e18e5"
+    },
+    "console_sha256": "bc0eaacb0797c40620dc2900651bdecd1bdb26a80dc03dfb89880160f6a97039",
+    "paired_comparisons": {
+      "bytes": 187887,
+      "comparisons": 280,
+      "sha256": "4114043975d0d6bed431576b91899e3f38b993eb18fcd5fe5080be559c682479"
+    },
+    "provenance": {
+      "bytes": 11426,
+      "sha256": "69d761fade4f8792855aa5eab6495b02ee8db1817ae0cd1fc639a908f99f4254"
+    },
+    "summary": {
+      "bytes": 100516,
+      "condition_summaries": 312,
+      "retrieval_summaries": 32,
+      "sha256": "06a0739dfc1b7316d5c03b7820967038289f70fa38516ee8957f6397da4ba6c0"
+    }
+  },
+  "format_version": 1,
+  "headline_latent_means": {
+    "context_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.058641,
+        "magnitude_absolute_error": 0.057936,
+        "sinkhorn": 0.140224
+      },
+      "mean_context": {
+        "effect_pearson": 0.038098,
+        "magnitude_absolute_error": 0.066358,
+        "sinkhorn": 0.145874
+      },
+      "no_direction_loss": {
+        "effect_pearson": 0.138023,
+        "magnitude_absolute_error": 0.283294,
+        "sinkhorn": 0.223973
+      },
+      "no_global_context": {
+        "effect_pearson": 0.273767,
+        "magnitude_absolute_error": 0.23032,
+        "sinkhorn": 0.181154
+      }
+    },
+    "double_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.071465,
+        "magnitude_absolute_error": 0.059115,
+        "sinkhorn": 0.137104
+      },
+      "mean_context": {
+        "effect_pearson": 0.06655,
+        "magnitude_absolute_error": 0.067494,
+        "sinkhorn": 0.142018
+      },
+      "no_direction_loss": {
+        "effect_pearson": 0.163012,
+        "magnitude_absolute_error": 0.285118,
+        "sinkhorn": 0.222262
+      },
+      "no_global_context": {
+        "effect_pearson": 0.276472,
+        "magnitude_absolute_error": 0.230263,
+        "sinkhorn": 0.17975
+      }
+    },
+    "iid": {
+      "causalcelljepa": {
+        "effect_pearson": 0.596648,
+        "magnitude_absolute_error": 0.068962,
+        "sinkhorn": 0.369471
+      },
+      "mean_context": {
+        "effect_pearson": 0.61807,
+        "magnitude_absolute_error": 0.065384,
+        "sinkhorn": 0.367442
+      },
+      "no_direction_loss": {
+        "effect_pearson": 0.616241,
+        "magnitude_absolute_error": 0.087044,
+        "sinkhorn": 0.265179
+      },
+      "no_global_context": {
+        "effect_pearson": 0.64322,
+        "magnitude_absolute_error": 0.057832,
+        "sinkhorn": 0.290453
+      }
+    },
+    "perturbation_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.598526,
+        "magnitude_absolute_error": 0.066743,
+        "sinkhorn": 0.369154
+      },
+      "mean_context": {
+        "effect_pearson": 0.619739,
+        "magnitude_absolute_error": 0.063261,
+        "sinkhorn": 0.367142
+      },
+      "no_direction_loss": {
+        "effect_pearson": 0.572609,
+        "magnitude_absolute_error": 0.088204,
+        "sinkhorn": 0.267714
+      },
+      "no_global_context": {
+        "effect_pearson": 0.603526,
+        "magnitude_absolute_error": 0.061303,
+        "sinkhorn": 0.292634
+      }
+    }
+  },
+  "headline_paired_improvements_over_full": {
+    "mean_context": {
+      "context_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            -0.03855,
+            -0.002736
+          ],
+          "mean": -0.020543
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            -0.006612,
+            -0.004675
+          ],
+          "mean": -0.00565
+        }
+      },
+      "perturbation_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            0.018407,
+            0.024
+          ],
+          "mean": 0.021213
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            0.001823,
+            0.002204
+          ],
+          "mean": 0.002012
+        }
+      }
+    },
+    "no_direction_loss": {
+      "context_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            0.055921,
+            0.103677
+          ],
+          "mean": 0.079382
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            -0.0858,
+            -0.081647
+          ],
+          "mean": -0.083748
+        }
+      },
+      "perturbation_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            -0.039123,
+            -0.012675
+          ],
+          "mean": -0.025917
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            0.09964,
+            0.103311
+          ],
+          "mean": 0.10144
+        }
+      }
+    },
+    "no_global_context": {
+      "context_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            0.194561,
+            0.235866
+          ],
+          "mean": 0.215126
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            -0.042783,
+            -0.038998
+          ],
+          "mean": -0.04093
+        }
+      },
+      "double_ood": {
+        "effect_pearson": {
+          "bootstrap_95ci": [
+            0.17074,
+            0.240183
+          ],
+          "mean": 0.205007
+        },
+        "sinkhorn": {
+          "bootstrap_95ci": [
+            -0.046001,
+            -0.039094
+          ],
+          "mean": -0.042646
+        }
+      }
+    }
+  },
+  "manifest_sha256": "556622258a55293b1aacac72fc9fabb22715894228f524f652bd0028f577c3d5",
+  "mechanism_findings": {
+    "context_structure": "Mean context slightly improves K562 metrics, while set-structured context is more robust after transfer to RPE1.",
+    "direction_loss": "Direction supervision improves perturbation-OOD direction but is associated with worse cross-context direction; it is useful but context-specialized.",
+    "global_context": "Removing pooled context improves transferred effect direction but worsens transferred distribution and magnitude calibration.",
+    "overall": "The full model is best calibrated after context transfer, whereas no-global-context has the strongest transferred effect direction; the architecture exposes a direction-calibration tradeoff rather than a dominant mechanism."
+  },
+  "protocol": {
+    "ablation_models": [
+      "no_global_context",
+      "mean_context",
+      "no_direction_loss"
+    ],
+    "bootstrap_resamples": 10000,
+    "new_condition_records": 43056,
+    "paired_comparisons": 280,
+    "population_repeats": 8,
+    "population_size": 32,
+    "prior_condition_records_reproduced_exactly": 71760,
+    "statistical_unit": "perturbation-condition"
+  },
+  "result_scope": {
+    "interpretation": "The targeted ablations identify a direction-calibration tradeoff. Set-structured global context preserves transferred population calibration and magnitude, while removing pooled context sharply improves transferred effect direction. Direction supervision improves perturbation-OOD direction but does not solve context transfer.",
+    "latent_only": true,
+    "single_dominant_ablation": false,
+    "supports_uniform_mechanism_benefit": false,
+    "transcriptomic_superiority_claim": false
+  },
+  "source": {
+    "ablation_manifest_sha256": "e10eb72a60484f209f7d9830cf78041b104230c3a99368b9fdb687da67087a18",
+    "analysis_git_commit": "69364b0cbde6e74d3609add019b3e4d647a297cd",
+    "base_evaluation_manifest_sha256": "7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6",
+    "config_sha256": "4fd6a6fea85261c1e2d343bf0758a0985de0c9a1b631265f47419dc11c9a9323",
+    "evaluation_git_commit": "a332e1c518724a215b9aec19a8cbcc5bc9c297af",
+    "evaluation_wall_seconds": 206.35,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false
+  }
+}
