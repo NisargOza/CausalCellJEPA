@@ -1,5 +1,6 @@
 import gzip
 
+from causalcelljepa.actions import map_targets, protein_symbols
 from causalcelljepa.resources import (
     derive_hvg_programs,
     load_gmt_gene_indices,
@@ -7,6 +8,40 @@ from causalcelljepa.resources import (
     parse_human_bp_annotations,
     write_gmt,
 )
+
+
+def test_action_mapping_rejects_stale_and_ambiguous_identifiers():
+    proteins = {
+        "P1": {"Gene Names (primary)": "GENEA", "Gene Names (synonym)": "OLD_A"},
+        "P2": {"Gene Names (primary)": "UNRELATED", "Gene Names (synonym)": ""},
+        "P3": {"Gene Names (primary)": "GENEB", "Gene Names (synonym)": ""},
+        "P4": {"Gene Names (primary)": "CURRENT_C", "Gene Names (synonym)": "GENEC"},
+        "P5": {"Gene Names (primary)": "GENED; GENED", "Gene Names (synonym)": ""},
+        "P6": {"Gene Names (primary)": "GENED", "Gene Names (synonym)": ""},
+    }
+    target_ids = {"GENEA": "E1", "GENEB": "E2", "GENEC": "E3", "GENED": "E4"}
+    rows = [
+        {"From": "E1", "Entry": "P1"},
+        {"From": "E2", "Entry": "P2"},
+        {"From": "E4", "Entry": "P5"},
+        {"From": "E4", "Entry": "P6"},
+    ]
+    mapped, unknown = map_targets(target_ids, proteins, rows)
+    assert protein_symbols("A; B C") == {"A", "B", "C"}
+    assert {target: row["accession"] for target, row in mapped.items()} == {
+        "GENEA": "P1",
+        "GENEB": "P3",
+        "GENEC": "P4",
+    }
+    assert mapped["GENEB"]["method"] == "primary_symbol_fallback"
+    assert mapped["GENEC"]["method"] == "synonym_symbol_fallback"
+    assert unknown == {
+        "GENED": {
+            "gene_id": "E4",
+            "candidate_accessions": ["P5", "P6"],
+            "reason": "no_unique_reviewed_canonical_protein",
+        }
+    }
 
 
 def test_go_parsing_propagation_and_gmt_are_deterministic(tmp_path):

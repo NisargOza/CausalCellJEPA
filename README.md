@@ -81,11 +81,29 @@ bytes. The downloaded canonical teacher is frozen and matches the best-checkpoin
 tensors exactly. These are engineering/training facts; downstream biological performance
 has not yet been evaluated.
 
-The next phase embeds exactly 340,684 cells carrying non-excluded frozen roles, including
-sealed outcomes only after encoder freezing. `scripts/cache_latents.py` streams the fixed
-256-dimensional states plus cell, context, target, batch, raw-row, and role metadata into a
-provenance-rich HDF5 cache. It refuses CPU fallback; a small CPU integration check precedes
-the short full-cache GPU job.
+The frozen teacher subsequently embedded exactly 340,684 cells carrying non-excluded roles,
+including sealed outcomes only after encoder freezing. The 412 MiB cache completed on an
+RTX A6000 in 99.3 seconds; every value was finite, all role/split constraints were re-audited,
+and the downloaded SHA-256 matched the remote artifact. `scripts/cache_latents.py` streams
+the fixed 256-dimensional states plus cell, context, target, batch, raw-row, and role metadata
+into this provenance-rich HDF5 cache and refuses CPU fallback.
+
+## Stage 2 action resources
+
+The primary frozen ESM-2 `esm2_t6_8M_UR50D` action prior is pinned in
+[`configs/action.yaml`](configs/action.yaml). `scripts/action_resources.py` keeps acquisition
+separate from model execution, verifies the official checkpoint and UniProt release `2026_02`,
+and freezes all target mappings in [`manifests/action_v1.json`](manifests/action_v1.json).
+Conservative Ensembl/name agreement maps 995 of 997 targets to reviewed canonical proteins.
+`ALG1L` has no unique reviewed mapping and `SEM1` is ambiguous, so both remain explicit
+training-split unknown actions; no validation or sealed-test target is unresolved.
+
+`scripts/actions.py` mean-pools frozen layer-6 residue representations on CPU. Canonical
+proteins longer than the official 1,022-residue extraction cap are processed in non-overlapping
+chunks and combined with a residue-count-weighted mean, retaining the full sequence while
+bounding attention memory. A nine-protein real-data gate—including the 4,388-residue VPS13D
+sequence—was finite and bitwise reproducible. The 320-dimensional cache is ready to be built
+from a clean commit before the learned 256-dimensional action projection is implemented.
 
 ## Development
 
@@ -98,12 +116,15 @@ uv run python scripts/audit_stage1.py
 uv run python scripts/smoke_stage1.py
 uv run python scripts/smoke_cuda_stage1.py
 uv run python scripts/cache_latents.py
+uv run python scripts/action_resources.py
+uv run python scripts/actions.py
 uv run ruff check .
 uv run pytest
 ```
 
-Full neural jobs require CUDA. No Stage 2 dynamics experiment, biological evaluation, or
-matched-baseline comparison has been run yet.
+Stage 1 pretraining, cell-latent caching, Stage 2 dynamics, and major neural baselines require
+CUDA; action embedding is intentionally kept on CPU. No Stage 2 dynamics experiment,
+biological evaluation, or matched-baseline comparison has been run yet.
 
 Full pretraining refuses to fall back to CPU. To resume without modifying the frozen
 configuration, set `CAUSALCELLJEPA_RESUME_FROM=artifacts/stage1/latest.pt`. CUDA runs set the

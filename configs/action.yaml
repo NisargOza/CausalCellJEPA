@@ -1,0 +1,39 @@
+# Frozen ESM-2 and reviewed human-proteome inputs for the primary CRISPRi action prior.
+# Long proteins are chunked so canonical residues are retained rather than silently truncated.
+seed: 20260823
+resources:
+  esm2:
+    model_name: esm2_t6_8M_UR50D
+    model_url: https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t6_8M_UR50D.pt
+    model_path: data/resources/esm2/esm2_t6_8M_UR50D.pt
+    model_bytes: 30099493
+    model_sha256: 46f002a9870c9bdecd0ea887acb1f9a38a6b561e8f8bf8a6990b679b9d31b928
+    regression_url: https://dl.fbaipublicfiles.com/fair-esm/regression/esm2_t6_8M_UR50D-contact-regression.pt
+    regression_path: data/resources/esm2/esm2_t6_8M_UR50D-contact-regression.pt
+    regression_bytes: 1511
+    regression_sha256: 8f7a4557d57713b97ba0e484303007efb7230d25299c0ac47a0a1b12a87bbb9d
+  uniprot:
+    release: '2026_02'
+    release_date: 10-June-2026
+    query: (proteome:UP000005640) AND (reviewed:true)
+    proteome_path: data/resources/uniprot/2026_02/human_reviewed_canonical.tsv.gz
+    proteome_bytes: 6984737
+    proteome_sha256: af80ae563ed64406f0d0b06cbda35385b27640c971b79c4ac63fdfc9fd6ecb80
+    proteome_entries: 20416
+    id_mapping_path: data/resources/uniprot/2026_02/replogle_target_idmapping.tsv
+    id_mapping_bytes: 41360
+    id_mapping_sha256: 2afc859ae0dd20956f3d650900b6a57bde119f96c49f5b5ba65129d4ec3f6579
+    id_mapping_rows: 994
+action:
+  manifest_path: manifests/action_v1.json
+  output_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  expected_targets: 997
+  expected_known: 995
+  input_dim: 320
+  projection_dim: 256
+  representation_layer: 6
+  sequence_chunk_residues: 1022
+  token_budget: 4096
+  pooling: residue_count_weighted_chunk_mean
+  mechanism: CRISPRi
+  unknown_policy: shared_learned_action
