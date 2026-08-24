@@ -1,7 +1,8 @@
 # Leakage-safe normalized-expression caching and latent-to-transcriptome readout.
 # The decoder is separate from—and never backpropagates into—the frozen world model.
 import json
-from collections import Counter
+from collections import Counter, defaultdict
+from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
 
@@ -10,7 +11,12 @@ import h5py
 import numpy as np
 import torch
 import yaml
+from scipy import sparse
+from scipy.stats import rankdata, t, wilcoxon
+from torch.utils.data import DataLoader
 
+from causalcelljepa.dynamics import LatentPopulationDataset, build_dynamics_model
+from causalcelljepa.evaluation import fit_linear_baseline
 from causalcelljepa.resources import file_sha256
 from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
 
@@ -263,3 +269,551 @@ def decode_normalized_latents(latents, checkpoint):
     return (latents @ checkpoint["weights"] + checkpoint["bias"]).clamp_min(
         checkpoint["output_clamp_min"]
     )
+
+
+def _bh_adjust(p_values):
+    order = np.argsort(p_values)
+    ranked = p_values[order] * len(p_values) / np.arange(1, len(p_values) + 1)
+    adjusted = np.minimum.accumulate(ranked[::-1])[::-1].clip(max=1)
+    result = np.empty_like(adjusted)
+    result[order] = adjusted
+    return result
+
+
+def expression_truth(config, regimes=None, maximum_conditions=None):
+    """Compute batch-matched true effects and batch-level DE calls once per condition."""
+    inputs, metric_config = config["inputs"], config["metrics"]
+    regimes = regimes or config["regimes"]
+    truth, report = {}, {}
+    with h5py.File(inputs["latent_cache_path"], "r") as latent, h5py.File(
+        inputs["expression_cache_path"], "r"
+    ) as expression_cache:
+        roles = latent["role"].asstr()[:]
+        targets = latent["target"].asstr()[:]
+        batches = latent["source_batch"].asstr()[:]
+        contexts = latent["context"].asstr()[:]
+        expression = expression_cache["expression"]
+        for regime, specification in regimes.items():
+            control_indices = np.flatnonzero(roles == specification["control_role"])
+            assert set(contexts[control_indices]) == {specification["context"]}
+            control_means = {
+                batch: expression[np.sort(control_indices[batches[control_indices] == batch])].mean(
+                    0, dtype=np.float64
+                )
+                for batch in sorted(set(batches[control_indices]))
+            }
+            outcome_indices = np.flatnonzero(roles == specification["outcome_role"])
+            assert set(contexts[outcome_indices]) == {specification["context"]}
+            condition_targets = sorted(set(targets[outcome_indices]))
+            condition_targets = condition_targets[: maximum_conditions or len(condition_targets)]
+            report[regime] = {
+                "context": specification["context"],
+                "outcome_role": specification["outcome_role"],
+                "targets": len(condition_targets),
+                "conditions_with_no_degs": 0,
+            }
+            for target in condition_targets:
+                indices = np.sort(outcome_indices[targets[outcome_indices] == target])
+                observed = expression[indices].astype(np.float64)
+                target_batches = batches[indices]
+                batch_effects, matched_control = [], np.zeros(observed.shape[1])
+                for batch in sorted(set(target_batches)):
+                    selected = target_batches == batch
+                    batch_effects.append(observed[selected].mean(0) - control_means[batch])
+                    matched_control += selected.sum() * control_means[batch]
+                batch_effects = np.stack(batch_effects)
+                effect = observed.mean(0) - matched_control / len(indices)
+                if len(batch_effects) > 1:
+                    batch_mean = batch_effects.mean(0)
+                    standard_error = batch_effects.std(0, ddof=1) / np.sqrt(len(batch_effects))
+                    statistic = np.divide(
+                        np.abs(batch_mean),
+                        standard_error,
+                        out=np.where(batch_mean == 0, 0.0, np.inf),
+                        where=standard_error > 0,
+                    )
+                    q_value = _bh_adjust(2 * t.sf(statistic, len(batch_effects) - 1))
+                else:
+                    q_value = np.ones(observed.shape[1])
+                deg = (q_value <= metric_config["deg_batch_fdr"]) & (
+                    np.abs(effect) >= metric_config["deg_min_abs_effect"]
+                )
+                report[regime]["conditions_with_no_degs"] += int(not deg.any())
+                truth[regime, target] = {
+                    "effect": effect.astype(np.float32),
+                    "deg": deg,
+                    "q_value": q_value.astype(np.float32),
+                    "batches": len(batch_effects),
+                    "cells": len(indices),
+                }
+    return truth, report
+
+
+def _correlation(predicted, observed, rank=False):
+    if np.std(predicted) <= 1e-12 or np.std(observed) <= 1e-12:
+        return None
+    if rank:
+        predicted, observed = rankdata(predicted), rankdata(observed)
+    predicted, observed = predicted - predicted.mean(), observed - observed.mean()
+    return float(predicted @ observed / (np.linalg.norm(predicted) * np.linalg.norm(observed)))
+
+
+def _binary_ranking_metrics(scores, labels):
+    positives, negatives = int(labels.sum()), int((~labels).sum())
+    if not positives or not negatives:
+        return None, None
+    ranks = rankdata(scores)
+    auroc = (ranks[labels].sum() - positives * (positives + 1) / 2) / (
+        positives * negatives
+    )
+    order = np.argsort(-scores, kind="stable")
+    sorted_scores, sorted_labels = scores[order], labels[order]
+    cumulative = np.cumsum(sorted_labels)
+    group_ends = np.r_[np.flatnonzero(sorted_scores[1:] != sorted_scores[:-1]), len(scores) - 1]
+    true_positives = cumulative[group_ends]
+    precision = true_positives / (group_ends + 1)
+    average_precision = np.sum(np.diff(np.r_[0, true_positives]) * precision) / positives
+    return float(average_precision), float(auroc)
+
+
+def gene_effect_metrics(predicted, observed, target_index, deg, top_genes=(20, 50, 100)):
+    """Evaluate one perturbation-condition, explicitly labeling outcome-selected scopes."""
+    result = {}
+    scopes = {"all": np.arange(len(observed))}
+    excluded = np.arange(len(observed)) if target_index is None else np.delete(
+        np.arange(len(observed)), target_index
+    )
+    scopes["target_excluded"] = excluded
+    for scope, indices in scopes.items():
+        predicted_scope, observed_scope = predicted[indices], observed[indices]
+        predicted_magnitude, observed_magnitude = (
+            np.linalg.norm(predicted_scope),
+            np.linalg.norm(observed_scope),
+        )
+        result[f"{scope}_effect_pearson"] = _correlation(predicted_scope, observed_scope)
+        result[f"{scope}_effect_spearman"] = _correlation(
+            predicted_scope, observed_scope, rank=True
+        )
+        result[f"{scope}_direction_cosine"] = (
+            float(predicted_scope @ observed_scope / (predicted_magnitude * observed_magnitude))
+            if predicted_magnitude > 1e-12 and observed_magnitude > 1e-12
+            else None
+        )
+        result[f"{scope}_magnitude_ratio"] = float(
+            predicted_magnitude / max(observed_magnitude, 1e-12)
+        )
+        result[f"{scope}_magnitude_absolute_error"] = float(
+            abs(predicted_magnitude - observed_magnitude)
+        )
+    ranked_true = np.argsort(-np.abs(observed), kind="stable")
+    ranked_predicted = np.argsort(-np.abs(predicted), kind="stable")
+    for top in top_genes:
+        indices = ranked_true[:top]
+        result[f"retrospective_top{top}_effect_pearson"] = _correlation(
+            predicted[indices], observed[indices]
+        )
+        result[f"retrospective_top{top}_effect_spearman"] = _correlation(
+            predicted[indices], observed[indices], rank=True
+        )
+        result[f"retrospective_top{top}_overlap"] = float(
+            len(set(indices) & set(ranked_predicted[:top])) / top
+        )
+    auprc, auroc = _binary_ranking_metrics(np.abs(predicted), deg)
+    result["deg_auprc"], result["deg_auroc"] = auprc, auroc
+    result["deg_sign_accuracy"] = (
+        float(np.mean(np.sign(predicted[deg]) == np.sign(observed[deg]))) if deg.any() else None
+    )
+    return result
+
+
+def _load_pathway_matrix(path, hvg_genes):
+    gene_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    rows, columns, labels = [], [], []
+    with Path(path).open() as handle:
+        for row, line in enumerate(handle):
+            fields = line.rstrip("\n").split("\t")
+            indices = sorted({gene_index[gene] for gene in fields[2:] if gene in gene_index})
+            labels.append(fields[0])
+            rows.extend([row] * len(indices))
+            columns.extend(indices)
+    matrix = sparse.csr_matrix(
+        (np.ones(len(rows), dtype=np.float32), (rows, columns)),
+        shape=(len(labels), len(hvg_genes)),
+    )
+    return matrix, labels
+
+
+def pathway_scores(effect, matrix):
+    """Return an analytic size-normalized signed rank-enrichment score."""
+    ranks = rankdata(effect).astype(np.float32)
+    if ranks.std() == 0:
+        return np.zeros(matrix.shape[0], dtype=np.float32)
+    ranks = (ranks - ranks.mean()) / ranks.std()
+    sizes = np.asarray(matrix.sum(1)).ravel()
+    denominator = np.sqrt(sizes * (len(effect) - sizes) / (len(effect) - 1))
+    return np.asarray(matrix @ ranks).ravel() / denominator
+
+
+def pathway_agreement(predicted, observed, matrix, top_k=(10, 25, 50)):
+    predicted_score, observed_score = pathway_scores(predicted, matrix), pathway_scores(
+        observed, matrix
+    )
+    result = {
+        "pathway_nes_pearson": _correlation(predicted_score, observed_score),
+        "pathway_rank_spearman": _correlation(predicted_score, observed_score, rank=True),
+        "pathway_nes_rmse": float(np.sqrt(np.mean(np.square(predicted_score - observed_score)))),
+    }
+    predicted_order, observed_order = (
+        np.argsort(-np.abs(predicted_score)),
+        np.argsort(-np.abs(observed_score)),
+    )
+    for top in top_k:
+        if np.std(predicted) <= 1e-12:
+            result[f"pathway_top{top}_jaccard"] = None
+        else:
+            intersection = len(set(predicted_order[:top]) & set(observed_order[:top]))
+            result[f"pathway_top{top}_jaccard"] = float(
+                intersection / (2 * top - intersection)
+            )
+    return result
+
+
+_TRANSCRIPTOMIC_METADATA = {
+    "regime",
+    "context",
+    "outcome_role",
+    "target",
+    "repeat",
+    "model",
+    "truth_batches",
+    "truth_cells",
+    "true_deg_count",
+    "target_in_hvg",
+}
+
+
+def _condition_summary(records, resamples, seed):
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in set(record) - _TRANSCRIPTOMIC_METADATA:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    grouped = defaultdict(list)
+    for (regime, model, target, metric), values in target_values.items():
+        grouped[regime, model, metric].append(float(np.mean(values)))
+    summary = []
+    for key, values in sorted(grouped.items()):
+        values = np.asarray(values)
+        generator = np.random.default_rng(
+            int.from_bytes(sha256("\0".join(key).encode()).digest()[:8], "little") + seed
+        )
+        bootstrap = values[
+            generator.integers(0, len(values), (resamples, len(values)))
+        ].mean(1)
+        summary.append(
+            {
+                "regime": key[0],
+                "model": key[1],
+                "metric": key[2],
+                "targets": len(values),
+                "mean": float(values.mean()),
+                "median": float(np.median(values)),
+                "mean_bootstrap_95ci": [
+                    float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                ],
+            }
+        )
+    return summary
+
+
+def _paired_comparisons(records, resamples, seed):
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in set(record) - _TRANSCRIPTOMIC_METADATA:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    averaged = {key: float(np.mean(values)) for key, values in target_values.items()}
+    comparisons = []
+    for regime in sorted({record["regime"] for record in records}):
+        metrics = sorted({key[3] for key in averaged if key[:2] == (regime, "causalcelljepa")})
+        for baseline in ("no_change", "mean_effect", "linear_esm", "pseudo_paired"):
+            for metric in metrics:
+                targets = sorted(
+                    key[2]
+                    for key in averaged
+                    if key[:2] == (regime, "causalcelljepa")
+                    and key[3] == metric
+                    and (regime, baseline, key[2], metric) in averaged
+                )
+                if not targets:
+                    continue
+                model = np.asarray([averaged[regime, "causalcelljepa", x, metric] for x in targets])
+                reference = np.asarray([averaged[regime, baseline, x, metric] for x in targets])
+                if metric.endswith("magnitude_ratio"):
+                    improvement, direction = np.abs(reference - 1) - np.abs(model - 1), "closer_to_one_is_better"
+                elif metric.endswith(("absolute_error", "rmse")):
+                    improvement, direction = reference - model, "lower_is_better"
+                else:
+                    improvement, direction = model - reference, "higher_is_better"
+                generator = np.random.default_rng(
+                    (int.from_bytes(sha256(f"{regime}\0{baseline}\0{metric}".encode()).digest()[:8], "little") + seed)
+                    % (1 << 64)
+                )
+                bootstrap = improvement[
+                    generator.integers(0, len(improvement), (resamples, len(improvement)))
+                ].mean(1)
+                p_value = 1.0 if np.all(improvement == 0) else float(
+                    wilcoxon(improvement, alternative="two-sided", method="approx").pvalue
+                )
+                comparisons.append(
+                    {
+                        "regime": regime,
+                        "baseline": baseline,
+                        "metric": metric,
+                        "direction": direction,
+                        "targets": len(targets),
+                        "causalcelljepa_mean": float(model.mean()),
+                        "baseline_mean": float(reference.mean()),
+                        "mean_improvement": float(improvement.mean()),
+                        "mean_improvement_bootstrap_95ci": [
+                            float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                        ],
+                        "wilcoxon_two_sided_p": p_value,
+                    }
+                )
+    q_values = _bh_adjust(np.asarray([item["wilcoxon_two_sided_p"] for item in comparisons]))
+    for comparison, q_value in zip(comparisons, q_values):
+        comparison["benjamini_hochberg_q"] = float(q_value)
+    return comparisons
+
+
+@torch.no_grad()
+def run_transcriptomic_evaluation(
+    config, regimes=None, repeats=None, maximum_conditions=None, output_directory=None
+):
+    """Decode all frozen models and evaluate gene effects without fitting on outcomes."""
+    inputs = config["inputs"]
+    for kind in (
+        "latent_cache",
+        "expression_cache",
+        "action_cache",
+        "checkpoint",
+        "pseudo_paired_checkpoint",
+        "readout_checkpoint",
+        "go_gmt",
+    ):
+        assert file_sha256(inputs[f"{kind}_path"]) == inputs[f"{kind}_sha256"]
+    for kind in ("readout", "go"):
+        manifest = json.loads(Path(inputs[f"{kind}_manifest_path"]).read_text())
+        declared = manifest.pop("manifest_sha256")
+        assert declared == inputs[f"{kind}_manifest_sha256"] == sha256(
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    primary = torch.load(inputs["checkpoint_path"], map_location="cpu", weights_only=False)
+    pseudo = torch.load(
+        inputs["pseudo_paired_checkpoint_path"], map_location="cpu", weights_only=False
+    )
+    readout = torch.load(inputs["readout_checkpoint_path"], map_location="cpu", weights_only=False)
+    model = build_dynamics_model(primary["configuration"]).eval()
+    model.load_state_dict(primary["model"])
+    pseudo_model = build_dynamics_model(pseudo["configuration"]).eval()
+    pseudo_model.load_state_dict(pseudo["model"])
+    assert pseudo["configuration"]["objective"] == "pseudo_paired_mse"
+    linear_effect, mean_effect, baseline_report = fit_linear_baseline(config)
+    replogle = json.loads(Path(inputs["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    pathway_matrix, pathway_labels = _load_pathway_matrix(inputs["go_gmt_path"], hvg_genes)
+    assert len(pathway_labels) == 4328
+    regimes = regimes or config["regimes"]
+    repeats = repeats or config["sampling"]["repeats"]
+    truth, truth_report = expression_truth(config, regimes, maximum_conditions)
+    output = Path(output_directory or config["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    records, signatures = [], defaultdict(lambda: [0, None])
+    for regime, specification in regimes.items():
+        dataset = LatentPopulationDataset(
+            inputs["latent_cache_path"],
+            inputs["action_cache_path"],
+            inputs["dynamics_manifest_path"],
+            regime,
+            config["sampling"]["population_size"],
+            config["seed"],
+            specification["outcome_role"],
+            specification["control_role"],
+            specification["context"],
+        )
+        indices = range(min(len(dataset), maximum_conditions or len(dataset)))
+        for repeat in range(repeats):
+            dataset.set_epoch(repeat)
+            loader = DataLoader(
+                dataset,
+                batch_size=config["sampling"]["batch_size"],
+                sampler=list(indices),
+                num_workers=config["sampling"]["num_workers"],
+            )
+            for batch in loader:
+                control = batch["control"]
+                predictions = {
+                    "causalcelljepa": model(control, batch["action"], batch["action_known"]),
+                    "pseudo_paired": pseudo_model(
+                        control, batch["action"], batch["action_known"]
+                    ),
+                    "no_change": control,
+                    "mean_effect": control + torch.from_numpy(mean_effect)[None, None],
+                    "linear_esm": control
+                    + torch.from_numpy(np.stack([linear_effect[x] for x in batch["target"]]))[
+                        :, None
+                    ],
+                }
+                control_expression = decode_normalized_latents(control.mean(1), readout)
+                for baseline, predicted in predictions.items():
+                    predicted_effect = (
+                        decode_normalized_latents(predicted.mean(1), readout) - control_expression
+                    ).numpy()
+                    for index, target in enumerate(batch["target"]):
+                        observed = truth[regime, target]
+                        metrics = gene_effect_metrics(
+                            predicted_effect[index],
+                            observed["effect"],
+                            hvg_index.get(target),
+                            observed["deg"],
+                            config["metrics"]["retrospective_top_genes"],
+                        )
+                        record = {
+                            "regime": regime,
+                            "context": specification["context"],
+                            "outcome_role": specification["outcome_role"],
+                            "target": target,
+                            "repeat": repeat,
+                            "model": baseline,
+                            "truth_batches": observed["batches"],
+                            "truth_cells": observed["cells"],
+                            "true_deg_count": int(observed["deg"].sum()),
+                            "target_in_hvg": target in hvg_index,
+                            **metrics,
+                        }
+                        records.append(record)
+                        key = (regime, baseline, target)
+                        signatures[key][0] += 1
+                        signatures[key][1] = (
+                            predicted_effect[index]
+                            if signatures[key][1] is None
+                            else signatures[key][1] + predicted_effect[index]
+                        )
+    pathway_records, retrieval = [], []
+    for regime in regimes:
+        targets = sorted(target for key, target in truth if key == regime)
+        true_signatures = np.stack([truth[regime, target]["effect"] for target in targets])
+        normalized_truth = true_signatures / np.linalg.norm(
+            true_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        for baseline in sorted({record["model"] for record in records}):
+            predicted_signatures = np.stack(
+                [
+                    signatures[regime, baseline, target][1]
+                    / signatures[regime, baseline, target][0]
+                    for target in targets
+                ]
+            )
+            normalized_prediction = predicted_signatures / np.linalg.norm(
+                predicted_signatures, axis=1, keepdims=True
+            ).clip(1e-12)
+            similarity = normalized_prediction @ normalized_truth.T
+            ranks = np.asarray(
+                [
+                    1
+                    + np.count_nonzero(row > row[index])
+                    + 0.5 * (np.count_nonzero(row == row[index]) - 1)
+                    for index, row in enumerate(similarity)
+                ]
+            )
+            retrieval.append(
+                {
+                    "regime": regime,
+                    "model": baseline,
+                    "targets": len(targets),
+                    "top_1": float(np.mean(ranks <= 1)),
+                    "top_5": float(np.mean(ranks <= 5)),
+                    "mean_reciprocal_rank": float(np.mean(1 / ranks)),
+                    "median_rank": float(np.median(ranks)),
+                }
+            )
+            for index, target in enumerate(targets):
+                pathway_records.append(
+                    {
+                        "regime": regime,
+                        "context": regimes[regime]["context"],
+                        "outcome_role": regimes[regime]["outcome_role"],
+                        "target": target,
+                        "repeat": 0,
+                        "model": baseline,
+                        "truth_batches": truth[regime, target]["batches"],
+                        "truth_cells": truth[regime, target]["cells"],
+                        "true_deg_count": int(truth[regime, target]["deg"].sum()),
+                        "target_in_hvg": target in hvg_index,
+                        **pathway_agreement(
+                            predicted_signatures[index],
+                            true_signatures[index],
+                            pathway_matrix,
+                            config["metrics"]["pathway_top_k"],
+                        ),
+                    }
+                )
+    resamples = config["metrics"]["bootstrap_resamples"]
+    summary = {
+        "condition_metrics": _condition_summary(records, resamples, config["seed"]),
+        "pathway_metrics": _condition_summary(pathway_records, resamples, config["seed"]),
+        "retrieval": retrieval,
+    }
+    paired = {
+        "condition_comparisons": _paired_comparisons(records, resamples, config["seed"]),
+        "pathway_comparisons": _paired_comparisons(
+            pathway_records, resamples, config["seed"]
+        ),
+    }
+    provenance = {
+        "config": deepcopy(config),
+        "executed_regimes": regimes,
+        "executed_repeats": repeats,
+        "maximum_conditions_per_regime": maximum_conditions,
+        "checkpoint_provenance": primary["provenance"],
+        "pseudo_paired_checkpoint_provenance": pseudo["provenance"],
+        "readout_provenance": readout["provenance"],
+        "file_sha256": {
+            kind: inputs[f"{kind}_sha256"]
+            for kind in (
+                "latent_cache",
+                "expression_cache",
+                "action_cache",
+                "checkpoint",
+                "pseudo_paired_checkpoint",
+                "readout_checkpoint",
+                "go_gmt",
+            )
+        },
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    for filename, payload in (
+        ("summary.json", summary),
+        ("paired_comparisons.json", paired),
+        ("truth_report.json", truth_report),
+        ("baseline_report.json", baseline_report),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (
+        ("condition_metrics.jsonl", records),
+        ("pathway_metrics.jsonl", pathway_records),
+    ):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, paired, truth_report, provenance

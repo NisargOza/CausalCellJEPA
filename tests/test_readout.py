@@ -1,8 +1,11 @@
 import numpy as np
+from scipy import sparse
 
 from causalcelljepa.readout import (
     decoder_split,
+    gene_effect_metrics,
     normalized_hvg_expression,
+    pathway_agreement,
     regression_mse,
     ridge_solution,
     sufficient_statistics,
@@ -41,3 +44,24 @@ def test_sufficient_statistics_recover_exact_linear_readout():
     assert regression_mse(validation_stats, solution) < 1e-12
     assert np.allclose(solution[:-1], weights, atol=1e-6)
     assert np.allclose(solution[-1], bias, atol=1e-6)
+
+
+def test_gene_effect_and_pathway_metrics_are_exact_for_perfect_prediction():
+    observed = np.asarray([-5.0, 4.0, -3.0, 2.0, 1.0, 0.5], dtype=np.float32)
+    deg = np.asarray([True, True, True, False, False, False])
+    metrics = gene_effect_metrics(observed, observed, 0, deg, (2, 3))
+    assert np.isclose(metrics["all_effect_pearson"], 1.0)
+    assert np.isclose(metrics["all_effect_spearman"], 1.0)
+    assert np.isclose(metrics["target_excluded_effect_pearson"], 1.0)
+    assert metrics["all_magnitude_absolute_error"] == 0
+    assert metrics["deg_auprc"] == metrics["deg_auroc"] == metrics["deg_sign_accuracy"] == 1.0
+    assert metrics["retrospective_top2_overlap"] == metrics["retrospective_top3_overlap"] == 1.0
+
+    matrix = sparse.csr_matrix(
+        np.asarray([[1, 0, 1, 0, 0, 0], [0, 1, 0, 1, 0, 0], [0, 0, 0, 0, 1, 1]])
+    )
+    pathways = pathway_agreement(observed, observed, matrix, (1, 2))
+    assert np.isclose(pathways["pathway_nes_pearson"], 1.0)
+    assert np.isclose(pathways["pathway_rank_spearman"], 1.0)
+    assert pathways["pathway_nes_rmse"] == 0
+    assert pathways["pathway_top1_jaccard"] == pathways["pathway_top2_jaccard"] == 1.0

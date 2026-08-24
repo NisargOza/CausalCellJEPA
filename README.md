@@ -146,9 +146,17 @@ This metric-dependent, partly negative result is frozen in
 frozen latents to the same 3,000 normalized log-expression HVGs. The decoder cannot update the
 dynamics model. Its fit and ridge-selection cells are restricted to `control_train`,
 `control_inference`, and `dynamics_train`; sealed and RPE1 perturbed outcomes are excluded. A
-4,096-cell real-data CPU smoke created the aligned expression cache and fit a 1,024-cell decoder
-with finite weights and lower validation MSE than the gene-mean baseline. The full CPU cache and
-readout fit are next.
+4,096-cell real-data CPU smoke preceded the full CPU pass. The resulting 340,684-by-3,000
+expression cache was independently scanned and raw-row audited. Ridge selection on 5,701
+permitted validation cells improved MSE from `0.21562` to `0.19813`; the decoder then refit on
+all 114,029 permitted cells. Cache/checkpoint hashes and leakage checks are frozen in
+[`manifests/readout_v1.json`](manifests/readout_v1.json).
+
+[`configs/transcriptomics.yaml`](configs/transcriptomics.yaml) fixes decoded effect metrics,
+target-gene-excluded and retrospective top-DE scopes, batch-level DE calls, perturbation
+retrieval, and GO pathway agreement. A four-target K562 validation smoke exercised all five
+models and paired statistics without reading sealed or RPE1 perturbed test roles. The full
+four-regime transcriptomic evaluation remains next.
 
 ## Development
 
@@ -174,6 +182,8 @@ uv run python scripts/analyze_evaluation.py
 uv run python scripts/smoke_readout.py
 uv run python scripts/cache_expression.py
 uv run python scripts/train_readout.py
+uv run python scripts/smoke_transcriptomics.py
+uv run python scripts/evaluate_transcriptomics.py
 uv run ruff check .
 uv run pytest
 ```
