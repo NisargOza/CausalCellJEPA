@@ -358,6 +358,52 @@ def dynamics_ablation_configs(path="configs/ablations.yaml"):
     return configs, specification
 
 
+def learned_target_id_config(path="configs/learned_target_id.yaml"):
+    """Materialize the categorical-action comparator from its pinned cache manifest."""
+    path = Path(path)
+    specification = yaml.safe_load(path.read_text())
+    base_path = Path(specification["base_config_path"])
+    assert file_sha256(base_path) == specification["base_config_sha256"]
+    base = yaml.safe_load(base_path.read_text())
+    cache_manifest_path = Path(specification["cache_manifest_path"])
+    cache_manifest = json.loads(cache_manifest_path.read_text())
+    declared = cache_manifest.pop("manifest_sha256")
+    assert declared == sha256(
+        json.dumps(cache_manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    artifact = cache_manifest["artifact"]
+    assert artifact["path"] == specification["action_cache_path"]
+    assert Path(artifact["path"]).stat().st_size == artifact["bytes"]
+    assert file_sha256(artifact["path"]) == artifact["sha256"]
+    assert cache_manifest["source"]["config_sha256"] == file_sha256(path)
+    assert (
+        cache_manifest["source"]["specification_manifest_sha256"]
+        == specification["specification_manifest_sha256"]
+    )
+    config = deepcopy(base)
+    config["inputs"].update(
+        {
+            "action_cache_path": artifact["path"],
+            "action_cache_bytes": artifact["bytes"],
+            "action_cache_sha256": artifact["sha256"],
+            "action_manifest_path": str(cache_manifest_path),
+            "action_manifest_sha256": declared,
+        }
+    )
+    config["model"]["action_input_dim"] = artifact["input_dim"]
+    config["training"]["output_directory"] = specification["output_directory"]
+    config["training"]["resume_from"] = None
+    config["ablation"] = {
+        "name": "learned_target_id",
+        "hypothesis": "structured ESM-2 actions enable unseen-target transfer",
+        "base_config_path": str(base_path),
+        "base_config_sha256": specification["base_config_sha256"],
+        "specification_manifest_sha256": specification["specification_manifest_sha256"],
+        "cache_manifest_sha256": declared,
+    }
+    return config, specification, {**cache_manifest, "manifest_sha256": declared}
+
+
 def dynamics_provenance(config, config_path="configs/dynamics.yaml"):
     """Bind checkpoints to exact caches, manifests, configuration, code, and runtime."""
     inputs = config["inputs"]

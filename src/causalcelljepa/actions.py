@@ -6,6 +6,22 @@ from collections import defaultdict
 import torch
 
 
+def learned_target_id_payload(targets, training_targets):
+    """Encode training identities one-hot and collapse every unseen target to unknown."""
+    targets, training_targets = list(targets), sorted(training_targets)
+    assert len(targets) == len(set(targets))
+    assert len(training_targets) == len(set(training_targets))
+    assert set(training_targets) <= set(targets)
+    target_index = {target: index for index, target in enumerate(targets)}
+    known = torch.zeros(len(targets), dtype=torch.bool)
+    embedding = torch.zeros(len(targets), len(training_targets))
+    for identity, target in enumerate(training_targets):
+        row = target_index[target]
+        known[row] = True
+        embedding[row, identity] = 1.0
+    return known, embedding
+
+
 def protein_symbols(value):
     """Parse UniProt's whitespace/semicolon-delimited gene-name fields."""
     return frozenset(filter(None, re.split(r"[;\s]+", value.strip())))
