@@ -11,6 +11,11 @@ inputs:
   checkpoint_path: artifacts/dynamics_selected_0810656.pt
   checkpoint_bytes: 70615403
   checkpoint_sha256: d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4
+  pseudo_paired_checkpoint_path: artifacts/pseudo_paired_selected_4efbe79.pt
+  pseudo_paired_checkpoint_bytes: 70616043
+  pseudo_paired_checkpoint_sha256: 4a3fce2d0698092ca2c12238ae9b6bd716d7de02dfca593790c5ee6814f5318b
+  pseudo_paired_manifest_path: manifests/pseudo_paired_v1.json
+  pseudo_paired_manifest_sha256: 2fb214f97de56c3a75fe76a99c816802ce5248d10ecd05d38e72a158f304e5b4
 regimes:
   iid:
     context: K562
@@ -40,4 +45,4 @@ metrics:
 baselines:
   linear_rank: 64
   ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
-output_directory: artifacts/evaluation
+output_directory: artifacts/evaluation_with_pseudo

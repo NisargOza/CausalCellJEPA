@@ -21,5 +21,5 @@ summary, baseline, _ = run_evaluation(
     max_conditions=4,
     output_directory="artifacts/evaluation_cpu_smoke",
 )
-assert len(summary["retrieval"]) == 4 and baseline["selection_targets"] == 100
-print({"validation_conditions": 4, "models": 4, "metrics": len(summary["condition_metrics"])})
+assert len(summary["retrieval"]) == 5 and baseline["selection_targets"] == 100
+print({"validation_conditions": 4, "models": 5, "metrics": len(summary["condition_metrics"])})

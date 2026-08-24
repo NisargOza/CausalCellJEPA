@@ -177,7 +177,7 @@ def paired_condition_comparisons(records, bootstrap_resamples, seed):
     comparisons = []
     regimes = sorted({record["regime"] for record in records})
     for regime in regimes:
-        for baseline in ("no_change", "mean_effect", "linear_esm"):
+        for baseline in ("no_change", "mean_effect", "linear_esm", "pseudo_paired"):
             for metric in metric_names:
                 targets = sorted(
                     {
@@ -250,7 +250,7 @@ def paired_condition_comparisons(records, bootstrap_resamples, seed):
 def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, output_directory=None):
     """Run deterministic population evaluation and summarize at the target-condition level."""
     inputs = config["inputs"]
-    for kind in ("latent_cache", "action_cache", "checkpoint"):
+    for kind in ("latent_cache", "action_cache", "checkpoint", "pseudo_paired_checkpoint"):
         assert file_sha256(inputs[f"{kind}_path"]) == inputs[f"{kind}_sha256"]
     selection = json.loads(Path(inputs["selection_manifest_path"]).read_text())
     declared = selection.pop("manifest_sha256")
@@ -263,6 +263,21 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
     ]
     model = build_dynamics_model(checkpoint["configuration"]).eval()
     model.load_state_dict(checkpoint["model"])
+    pseudo_manifest = json.loads(Path(inputs["pseudo_paired_manifest_path"]).read_text())
+    pseudo_declared = pseudo_manifest.pop("manifest_sha256")
+    assert pseudo_declared == inputs["pseudo_paired_manifest_sha256"] == sha256(
+        json.dumps(pseudo_manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert (
+        pseudo_manifest["artifacts"]["best_checkpoint"]["sha256"]
+        == inputs["pseudo_paired_checkpoint_sha256"]
+    )
+    pseudo_checkpoint = torch.load(
+        inputs["pseudo_paired_checkpoint_path"], map_location="cpu", weights_only=False
+    )
+    assert pseudo_checkpoint["configuration"]["objective"] == "pseudo_paired_mse"
+    pseudo_model = build_dynamics_model(pseudo_checkpoint["configuration"]).eval()
+    pseudo_model.load_state_dict(pseudo_checkpoint["model"])
     linear_effect, mean_effect, baseline_report = fit_linear_baseline(config)
     dynamics_manifest = json.loads(Path(inputs["dynamics_manifest_path"]).read_text())
     median_distance = dynamics_manifest["normalization"]["median_training_latent_distance"]
@@ -297,6 +312,9 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
                 control, observed = batch["control"], batch["perturbed"]
                 predictions = {
                     "causalcelljepa": model(control, batch["action"], batch["action_known"]),
+                    "pseudo_paired": pseudo_model(
+                        control, batch["action"], batch["action_known"]
+                    ),
                     "no_change": control,
                     "mean_effect": control + torch.from_numpy(mean_effect)[None, None],
                     "linear_esm": control
@@ -376,7 +394,7 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
         targets = sorted({key[2] for key in signatures if key[0] == regime})
         truth = np.stack([signatures[regime, "true", target][1] / signatures[regime, "true", target][0] for target in targets])
         truth /= np.linalg.norm(truth, axis=1, keepdims=True).clip(1e-12)
-        for baseline in ("causalcelljepa", "no_change", "mean_effect", "linear_esm"):
+        for baseline in sorted({record["model"] for record in records}):
             predicted = np.stack([signatures[regime, baseline, target][1] / signatures[regime, baseline, target][0] for target in targets])
             predicted /= np.linalg.norm(predicted, axis=1, keepdims=True).clip(1e-12)
             similarity = predicted @ truth.T
@@ -403,8 +421,13 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
         "executed_repeats": repeats,
         "maximum_conditions_per_regime": max_conditions,
         "checkpoint_provenance": checkpoint["provenance"],
-        "file_sha256": {kind: inputs[f"{kind}_sha256"] for kind in ("latent_cache", "action_cache", "checkpoint")},
+        "pseudo_paired_checkpoint_provenance": pseudo_checkpoint["provenance"],
+        "file_sha256": {
+            kind: inputs[f"{kind}_sha256"]
+            for kind in ("latent_cache", "action_cache", "checkpoint", "pseudo_paired_checkpoint")
+        },
         "selection_manifest_sha256": declared,
+        "pseudo_paired_manifest_sha256": pseudo_declared,
         "runtime_source_sha256": _runtime_source_hash(),
         "runtime_environment": _runtime_environment(),
         "git": _git_state(),
