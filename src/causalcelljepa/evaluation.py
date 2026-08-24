@@ -225,12 +225,12 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
                     value = true_effect[index].numpy()
                     signatures[key][1] = (
                         value if signatures[key][1] is None else signatures[key][1] + value
-                    )
+                )
                 for baseline, predicted in predictions.items():
+                    predicted_effect = (predicted.mean(1) - control.mean(1)).detach()
                     metrics = population_metrics(
                         predicted, observed, control, median_distance, config["metrics"]
                     )
-                    predicted_effect = predicted.mean(1) - control.mean(1)
                     for index, target in enumerate(batch["target"]):
                         record = {
                             "regime": regime,
@@ -241,7 +241,7 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
                             "model": baseline,
                         }
                         for name, values in metrics.items():
-                            value = float(values[index])
+                            value = float(values[index].detach())
                             record[name] = value if np.isfinite(value) else None
                         records.append(record)
                         key = (regime, baseline, target)
