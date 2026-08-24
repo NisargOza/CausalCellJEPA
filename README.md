@@ -156,7 +156,8 @@ all 114,029 permitted cells. Cache/checkpoint hashes and leakage checks are froz
 target-gene-excluded and retrospective top-DE scopes, batch-level DE calls, perturbation
 retrieval, and GO pathway agreement. A four-target K562 validation smoke exercised all five
 models and paired statistics without reading sealed or RPE1 perturbed test roles. The full
-four-regime transcriptomic evaluation remains next.
+four-regime transcriptomic evaluation is followed by a diagnostic decoder-ceiling audit that
+decodes observed outcome latents; that audit is explicitly not a predictive baseline.
 
 ## Development
 
@@ -184,6 +185,7 @@ uv run python scripts/cache_expression.py
 uv run python scripts/train_readout.py
 uv run python scripts/smoke_transcriptomics.py
 uv run python scripts/evaluate_transcriptomics.py
+uv run python scripts/audit_readout.py
 uv run ruff check .
 uv run pytest
 ```

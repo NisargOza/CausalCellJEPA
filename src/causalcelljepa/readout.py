@@ -817,3 +817,121 @@ def run_transcriptomic_evaluation(
             for value in values:
                 handle.write(json.dumps(value, sort_keys=True) + "\n")
     return summary, paired, truth_report, provenance
+
+
+@torch.no_grad()
+def run_readout_oracle(config, regimes=None, maximum_conditions=None, output_directory=None):
+    """Audit the decoder ceiling using observed outcome latents, never as a predictor."""
+    inputs = config["inputs"]
+    for kind in ("latent_cache", "expression_cache", "readout_checkpoint", "go_gmt"):
+        assert file_sha256(inputs[f"{kind}_path"]) == inputs[f"{kind}_sha256"]
+    readout = torch.load(inputs["readout_checkpoint_path"], map_location="cpu", weights_only=False)
+    replogle = json.loads(Path(inputs["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    pathway_matrix, pathway_labels = _load_pathway_matrix(inputs["go_gmt_path"], hvg_genes)
+    assert len(pathway_labels) == 4328
+    regimes = regimes or config["regimes"]
+    truth, truth_report = expression_truth(config, regimes, maximum_conditions)
+    records, pathway_records = [], []
+    with h5py.File(inputs["latent_cache_path"], "r") as latent:
+        roles = latent["role"].asstr()[:]
+        targets = latent["target"].asstr()[:]
+        batches = latent["source_batch"].asstr()[:]
+        contexts = latent["context"].asstr()[:]
+        mean, scale = readout["latent_mean"].numpy(), readout["latent_scale"].numpy()
+        for regime, specification in regimes.items():
+            control_indices = np.flatnonzero(roles == specification["control_role"])
+            assert set(contexts[control_indices]) == {specification["context"]}
+            control_means = {
+                batch: (latent["latent"][np.sort(control_indices[batches[control_indices] == batch])].mean(0) - mean)
+                / scale
+                for batch in sorted(set(batches[control_indices]))
+            }
+            outcome_indices = np.flatnonzero(roles == specification["outcome_role"])
+            condition_targets = sorted(set(targets[outcome_indices]))
+            condition_targets = condition_targets[: maximum_conditions or len(condition_targets)]
+            for target in condition_targets:
+                indices = np.sort(outcome_indices[targets[outcome_indices] == target])
+                target_batches = batches[indices]
+                observed_latent = (latent["latent"][indices].mean(0) - mean) / scale
+                matched_control = sum(
+                    np.count_nonzero(target_batches == batch) * control_means[batch]
+                    for batch in set(target_batches)
+                ).astype(np.float32) / len(indices)
+                decoded_effect = (
+                    decode_normalized_latents(torch.from_numpy(observed_latent[None]), readout)
+                    - decode_normalized_latents(torch.from_numpy(matched_control[None]), readout)
+                )[0].numpy()
+                observed = truth[regime, target]
+                metadata = {
+                    "regime": regime,
+                    "context": specification["context"],
+                    "outcome_role": specification["outcome_role"],
+                    "target": target,
+                    "repeat": 0,
+                    "model": "observed_latent_readout",
+                    "truth_batches": observed["batches"],
+                    "truth_cells": observed["cells"],
+                    "true_deg_count": int(observed["deg"].sum()),
+                    "target_in_hvg": target in hvg_index,
+                }
+                records.append(
+                    {
+                        **metadata,
+                        **gene_effect_metrics(
+                            decoded_effect,
+                            observed["effect"],
+                            hvg_index.get(target),
+                            observed["deg"],
+                            config["metrics"]["retrospective_top_genes"],
+                        ),
+                    }
+                )
+                pathway_records.append(
+                    {
+                        **metadata,
+                        **pathway_agreement(
+                            decoded_effect,
+                            observed["effect"],
+                            pathway_matrix,
+                            config["metrics"]["pathway_top_k"],
+                        ),
+                    }
+                )
+    summary = {
+        "condition_metrics": _condition_summary(
+            records, config["metrics"]["bootstrap_resamples"], config["seed"]
+        ),
+        "pathway_metrics": _condition_summary(
+            pathway_records, config["metrics"]["bootstrap_resamples"], config["seed"]
+        ),
+    }
+    provenance = {
+        "diagnostic_only": True,
+        "observed_outcomes_used_as_model_inputs": True,
+        "valid_predictive_baseline": False,
+        "executed_regimes": regimes,
+        "maximum_conditions_per_regime": maximum_conditions,
+        "readout_provenance": readout["provenance"],
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    output = Path(output_directory or "artifacts/readout_oracle")
+    assert not output.exists()
+    output.mkdir(parents=True)
+    for filename, payload in (
+        ("summary.json", summary),
+        ("truth_report.json", truth_report),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (
+        ("condition_metrics.jsonl", records),
+        ("pathway_metrics.jsonl", pathway_records),
+    ):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, truth_report, provenance
