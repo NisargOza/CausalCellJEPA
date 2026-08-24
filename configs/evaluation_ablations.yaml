@@ -1,0 +1,50 @@
+# Evaluate frozen mechanism ablations under the already sealed four-regime protocol.
+base_evaluation_config_path: configs/evaluation.yaml
+base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+inputs:
+  ablation_manifest_path: manifests/dynamics_ablations_v1.json
+  ablation_manifest_sha256: e10eb72a60484f209f7d9830cf78041b104230c3a99368b9fdb687da67087a18
+  base_evaluation_manifest_path: manifests/evaluation_pseudo_v1.json
+  base_evaluation_manifest_sha256: 7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6
+  base_condition_metrics_path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+  base_condition_metrics_bytes: 37262909
+  base_condition_metrics_records: 71760
+  base_condition_metrics_sha256: d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50
+  base_summary_path: artifacts/evaluation_with_pseudo/summary.json
+  base_summary_bytes: 61457
+  base_summary_sha256: 677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b
+  base_provenance_path: artifacts/evaluation_with_pseudo/provenance.json
+  base_provenance_bytes: 6831
+  base_provenance_sha256: a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72
+models:
+  - no_global_context
+  - mean_context
+  - no_direction_loss
+comparisons:
+  - candidate: no_global_context
+    reference: causalcelljepa
+    hypothesis: pooled global context improves over per-cell control states alone
+  - candidate: mean_context
+    reference: causalcelljepa
+    hypothesis: set-structured context improves over a control population mean
+  - candidate: mean_context
+    reference: no_global_context
+    hypothesis: a control population mean improves over no pooled global context
+  - candidate: no_direction_loss
+    reference: causalcelljepa
+    hypothesis: explicit direction supervision improves held-out effect direction
+  - candidate: no_global_context
+    reference: pseudo_paired
+    hypothesis: distributional training without global context improves over pseudo pairing
+  - candidate: mean_context
+    reference: pseudo_paired
+    hypothesis: distributional training with mean context improves over pseudo pairing
+  - candidate: no_direction_loss
+    reference: pseudo_paired
+    hypothesis: distributional training without direction loss improves over pseudo pairing
+output_directory: artifacts/evaluation_ablations
+cpu_smoke:
+  regimes: [iid]
+  repeats: 1
+  maximum_conditions_per_regime: 2
+  output_directory: artifacts/evaluation_ablations_cpu_smoke

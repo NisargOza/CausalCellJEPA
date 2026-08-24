@@ -11,7 +11,11 @@ from causalcelljepa.dynamics import (
     dynamics_loss,
     dynamics_objective,
 )
-from causalcelljepa.evaluation import paired_condition_comparisons, population_metrics
+from causalcelljepa.evaluation import (
+    paired_condition_comparisons,
+    paired_model_comparisons,
+    population_metrics,
+)
 
 
 def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_path):
@@ -218,3 +222,42 @@ def test_paired_comparisons_orient_improvement_and_adjust_multiplicity():
         comparison["wilcoxon_two_sided_p"] <= comparison["benjamini_hochberg_q"] <= 1
         for comparison in comparisons
     )
+
+
+def test_arbitrary_model_comparisons_use_matched_targets_and_metric_orientation():
+    records = []
+    for target in range(12):
+        for model, pearson, sinkhorn, ratio in (
+            ("ablation", 0.8, 0.2, 0.9),
+            ("reference", 0.4, 0.5, 0.5),
+        ):
+            records.append(
+                {
+                    "regime": "double_ood",
+                    "context": "RPE1",
+                    "outcome_role": "double_ood_test",
+                    "target": str(target),
+                    "repeat": 0,
+                    "model": model,
+                    "effect_pearson": pearson,
+                    "sinkhorn": sinkhorn,
+                    "magnitude_ratio": ratio,
+                }
+            )
+    comparisons = paired_model_comparisons(
+        records,
+        [
+            {
+                "candidate": "ablation",
+                "reference": "reference",
+                "hypothesis": "synthetic orientation check",
+            }
+        ],
+        100,
+        3,
+    )
+    assert len(comparisons) == 3
+    assert all(comparison["targets"] == 12 for comparison in comparisons)
+    assert all(comparison["mean_improvement"] > 0 for comparison in comparisons)
+    assert {comparison["candidate"] for comparison in comparisons} == {"ablation"}
+    assert {comparison["reference"] for comparison in comparisons} == {"reference"}

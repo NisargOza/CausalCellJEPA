@@ -246,6 +246,189 @@ def paired_condition_comparisons(records, bootstrap_resamples, seed):
     return comparisons
 
 
+def paired_model_comparisons(records, model_pairs, bootstrap_resamples, seed):
+    """Compare arbitrary learned models on matched perturbation-condition units."""
+    excluded = {"regime", "context", "outcome_role", "target", "repeat", "model"}
+    metric_names = sorted(set(records[0]) - excluded)
+    higher = {"effect_pearson", "effect_spearman", "direction_cosine"}
+    closer = {"magnitude_ratio"}
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in metric_names:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    averaged = {key: float(np.mean(values)) for key, values in target_values.items()}
+    comparisons = []
+    regimes = sorted({record["regime"] for record in records})
+    for regime in regimes:
+        for pair in model_pairs:
+            candidate, reference = pair["candidate"], pair["reference"]
+            for metric in metric_names:
+                targets = sorted(
+                    {
+                        key[2]
+                        for key in averaged
+                        if key[0] == regime
+                        and key[1] == candidate
+                        and key[3] == metric
+                        and (regime, reference, key[2], metric) in averaged
+                    }
+                )
+                if not targets:
+                    continue
+                candidate_values = np.asarray(
+                    [averaged[regime, candidate, target, metric] for target in targets]
+                )
+                reference_values = np.asarray(
+                    [averaged[regime, reference, target, metric] for target in targets]
+                )
+                if metric in higher:
+                    improvement = candidate_values - reference_values
+                    direction = "higher_is_better"
+                elif metric in closer:
+                    improvement = np.abs(reference_values - 1) - np.abs(candidate_values - 1)
+                    direction = "closer_to_one_is_better"
+                else:
+                    improvement = reference_values - candidate_values
+                    direction = "lower_is_better"
+                key = f"{regime}\0{candidate}\0{reference}\0{metric}"
+                generator = np.random.default_rng(
+                    (int.from_bytes(sha256(key.encode()).digest()[:8], "little") + seed)
+                    % (1 << 64)
+                )
+                bootstrap = improvement[
+                    generator.integers(
+                        0, len(improvement), (bootstrap_resamples, len(improvement))
+                    )
+                ].mean(1)
+                p_value = (
+                    1.0
+                    if np.all(improvement == 0)
+                    else float(
+                        wilcoxon(improvement, alternative="two-sided", method="approx").pvalue
+                    )
+                )
+                comparisons.append(
+                    {
+                        "regime": regime,
+                        "candidate": candidate,
+                        "reference": reference,
+                        "hypothesis": pair["hypothesis"],
+                        "metric": metric,
+                        "direction": direction,
+                        "targets": len(targets),
+                        "candidate_mean": float(candidate_values.mean()),
+                        "reference_mean": float(reference_values.mean()),
+                        "mean_improvement": float(improvement.mean()),
+                        "median_improvement": float(np.median(improvement)),
+                        "mean_improvement_bootstrap_95ci": [
+                            float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                        ],
+                        "wilcoxon_two_sided_p": p_value,
+                    }
+                )
+    if not comparisons:
+        return comparisons
+    p_values = np.asarray([comparison["wilcoxon_two_sided_p"] for comparison in comparisons])
+    order = np.argsort(p_values)
+    ranked = p_values[order] * len(p_values) / np.arange(1, len(p_values) + 1)
+    adjusted = np.minimum.accumulate(ranked[::-1])[::-1].clip(max=1)
+    q_values = np.empty_like(adjusted)
+    q_values[order] = adjusted
+    for comparison, q_value in zip(comparisons, q_values):
+        comparison["benjamini_hochberg_q"] = float(q_value)
+    return comparisons
+
+
+def _condition_metric_summaries(records, bootstrap_resamples, seed):
+    excluded = {"regime", "context", "outcome_role", "target", "repeat", "model"}
+    metric_names = sorted(set(records[0]) - excluded)
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in metric_names:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    grouped = defaultdict(list)
+    for (regime, model, _target, metric), values in target_values.items():
+        grouped[regime, model, metric].append(float(np.mean(values)))
+    summaries = []
+    for key, values in sorted(grouped.items()):
+        regime, model, metric = key
+        values = np.asarray(values)
+        generator = np.random.default_rng(
+            int.from_bytes(sha256("\0".join(key).encode()).digest()[:8], "little") + seed
+        )
+        bootstrap = values[
+            generator.integers(0, len(values), (bootstrap_resamples, len(values)))
+        ].mean(1)
+        summaries.append(
+            {
+                "regime": regime,
+                "model": model,
+                "metric": metric,
+                "targets": len(values),
+                "mean": float(values.mean()),
+                "median": float(np.median(values)),
+                "mean_bootstrap_95ci": [
+                    float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                ],
+            }
+        )
+    return summaries
+
+
+def _retrieval_summaries(signatures, regimes, models):
+    summaries = []
+    for regime in regimes:
+        targets = sorted(key[2] for key in signatures if key[:2] == (regime, "true"))
+        truth = np.stack(
+            [signatures[regime, "true", target][1] / signatures[regime, "true", target][0]
+             for target in targets]
+        )
+        truth /= np.linalg.norm(truth, axis=1, keepdims=True).clip(1e-12)
+        for model in models:
+            predicted = np.stack(
+                [signatures[regime, model, target][1] / signatures[regime, model, target][0]
+                 for target in targets]
+            )
+            predicted /= np.linalg.norm(predicted, axis=1, keepdims=True).clip(1e-12)
+            similarity = predicted @ truth.T
+            ranks = np.asarray(
+                [
+                    1
+                    + np.count_nonzero(row > row[index])
+                    + 0.5 * (np.count_nonzero(row == row[index]) - 1)
+                    for index, row in enumerate(similarity)
+                ]
+            )
+            summaries.append(
+                {
+                    "regime": regime,
+                    "model": model,
+                    "targets": len(targets),
+                    "top_1": float(np.mean(ranks <= 1)),
+                    "top_5": float(np.mean(ranks <= 5)),
+                    "mean_reciprocal_rank": float(np.mean(1 / ranks)),
+                    "median_rank": float(np.median(ranks)),
+                }
+            )
+    return summaries
+
+
+def _self_hashed_manifest(path, expected_sha256):
+    payload = json.loads(Path(path).read_text())
+    declared = payload.pop("manifest_sha256")
+    computed = sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert declared == expected_sha256 == computed
+    return payload, declared
+
+
 @torch.no_grad()
 def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, output_directory=None):
     """Run deterministic population evaluation and summarize at the target-condition level."""
@@ -436,3 +619,200 @@ def run_evaluation(config, regimes=None, repeats=None, max_conditions=None, outp
     (output / "baseline_report.json").write_text(json.dumps(baseline_report, indent=2, sort_keys=True) + "\n")
     (output / "provenance.json").write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n")
     return summary, baseline_report, provenance
+
+
+@torch.no_grad()
+def run_ablation_evaluation(
+    config,
+    base_config,
+    regimes=None,
+    repeats=None,
+    max_conditions=None,
+    output_directory=None,
+):
+    """Evaluate frozen mechanism ablations under the already locked four-regime protocol."""
+    inputs = config["inputs"]
+    assert file_sha256(config["base_evaluation_config_path"]) == config[
+        "base_evaluation_config_sha256"
+    ]
+    base_manifest, base_manifest_sha256 = _self_hashed_manifest(
+        inputs["base_evaluation_manifest_path"],
+        inputs["base_evaluation_manifest_sha256"],
+    )
+    ablation_manifest, ablation_manifest_sha256 = _self_hashed_manifest(
+        inputs["ablation_manifest_path"], inputs["ablation_manifest_sha256"]
+    )
+    for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
+        path = Path(inputs[f"{kind}_path"])
+        assert path.stat().st_size == inputs[f"{kind}_bytes"]
+        assert file_sha256(path) == inputs[f"{kind}_sha256"]
+    assert (
+        base_manifest["artifacts"]["condition_metrics"]["sha256"]
+        == inputs["base_condition_metrics_sha256"]
+    )
+    assert (
+        base_manifest["artifacts"]["condition_metrics"]["records"]
+        == inputs["base_condition_metrics_records"]
+    )
+    assert base_manifest["artifacts"]["summary"]["sha256"] == inputs["base_summary_sha256"]
+    assert (
+        base_manifest["artifacts"]["provenance"]["sha256"]
+        == inputs["base_provenance_sha256"]
+    )
+    base_provenance = json.loads(Path(inputs["base_provenance_path"]).read_text())
+    assert base_provenance["config"] == base_config
+    assert base_provenance["git"]["dirty"] is False
+
+    models, checkpoint_provenance = {}, {}
+    for name in config["models"]:
+        entry = ablation_manifest["experiments"][name]
+        artifact = entry["best_checkpoint"]
+        checkpoint_path = Path(artifact["path"])
+        assert checkpoint_path.stat().st_size == artifact["bytes"]
+        assert file_sha256(checkpoint_path) == artifact["sha256"]
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        assert checkpoint["configuration"]["ablation"]["name"] == name
+        assert checkpoint["configuration"]["model"]["context_mode"] == entry["mechanism"][
+            "context_mode"
+        ]
+        assert (
+            float(checkpoint["configuration"]["loss"]["weights"]["direction"])
+            == entry["mechanism"]["direction_weight"]
+        )
+        assert checkpoint["provenance"]["git"]["dirty"] is False
+        model = build_dynamics_model(checkpoint["configuration"]).eval()
+        model.load_state_dict(checkpoint["model"])
+        models[name] = model
+        checkpoint_provenance[name] = checkpoint["provenance"]
+
+    dynamics_manifest = json.loads(Path(base_config["inputs"]["dynamics_manifest_path"]).read_text())
+    median_distance = dynamics_manifest["normalization"]["median_training_latent_distance"]
+    regimes = regimes or base_config["regimes"]
+    repeats = repeats or base_config["sampling"]["repeats"]
+    output = Path(output_directory or config["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    records, signatures = [], defaultdict(lambda: [0, None])
+    for regime, specification in regimes.items():
+        dataset = LatentPopulationDataset(
+            base_config["inputs"]["latent_cache_path"],
+            base_config["inputs"]["action_cache_path"],
+            base_config["inputs"]["dynamics_manifest_path"],
+            regime,
+            base_config["sampling"]["population_size"],
+            base_config["seed"],
+            specification["outcome_role"],
+            specification["control_role"],
+            specification["context"],
+        )
+        indices = range(min(len(dataset), max_conditions or len(dataset)))
+        for repeat in range(repeats):
+            dataset.set_epoch(repeat)
+            loader = DataLoader(
+                dataset,
+                batch_size=base_config["sampling"]["batch_size"],
+                sampler=list(indices),
+                num_workers=base_config["sampling"]["num_workers"],
+            )
+            for batch in loader:
+                control, observed = batch["control"], batch["perturbed"]
+                predictions = {
+                    name: model(control, batch["action"], batch["action_known"])
+                    for name, model in models.items()
+                }
+                assert all(predicted.dtype == observed.dtype for predicted in predictions.values())
+                true_effect = observed.mean(1) - control.mean(1)
+                for index, target in enumerate(batch["target"]):
+                    key = (regime, "true", target)
+                    signatures[key][0] += 1
+                    value = true_effect[index].numpy()
+                    signatures[key][1] = (
+                        value if signatures[key][1] is None else signatures[key][1] + value
+                    )
+                for name, predicted in predictions.items():
+                    predicted_effect = (predicted.mean(1) - control.mean(1)).detach()
+                    metrics = population_metrics(
+                        predicted,
+                        observed,
+                        control,
+                        median_distance,
+                        base_config["metrics"],
+                    )
+                    for index, target in enumerate(batch["target"]):
+                        record = {
+                            "regime": regime,
+                            "context": specification["context"],
+                            "outcome_role": specification["outcome_role"],
+                            "target": target,
+                            "repeat": repeat,
+                            "model": name,
+                        }
+                        for metric, values in metrics.items():
+                            value = float(values[index].detach())
+                            record[metric] = value if np.isfinite(value) else None
+                        records.append(record)
+                        key = (regime, name, target)
+                        signatures[key][0] += 1
+                        value = predicted_effect[index].numpy()
+                        signatures[key][1] = (
+                            value if signatures[key][1] is None else signatures[key][1] + value
+                        )
+
+    metrics_path = output / "condition_metrics.jsonl"
+    with metrics_path.open("w") as handle:
+        for record in records:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+    base_records = [
+        json.loads(line)
+        for line in Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
+    ]
+    assert len(base_records) == inputs["base_condition_metrics_records"]
+    base_summary = json.loads(Path(inputs["base_summary_path"]).read_text())
+    summary = {
+        "condition_metrics": sorted(
+            base_summary["condition_metrics"]
+            + _condition_metric_summaries(
+                records,
+                base_config["metrics"]["bootstrap_resamples"],
+                base_config["seed"],
+            ),
+            key=lambda item: (item["regime"], item["model"], item["metric"]),
+        ),
+        "retrieval": sorted(
+            base_summary["retrieval"] + _retrieval_summaries(signatures, regimes, models),
+            key=lambda item: (item["regime"], item["model"]),
+        ),
+    }
+    comparisons = paired_model_comparisons(
+        base_records + records,
+        config["comparisons"],
+        base_config["metrics"]["bootstrap_resamples"],
+        base_config["seed"],
+    )
+    provenance = {
+        "config": deepcopy(config),
+        "base_evaluation_config": deepcopy(base_config),
+        "executed_regimes": regimes,
+        "executed_repeats": repeats,
+        "maximum_conditions_per_regime": max_conditions,
+        "checkpoint_provenance": checkpoint_provenance,
+        "file_sha256": {
+            "ablation_condition_metrics": file_sha256(metrics_path),
+            "base_condition_metrics": inputs["base_condition_metrics_sha256"],
+            "base_summary": inputs["base_summary_sha256"],
+            "base_provenance": inputs["base_provenance_sha256"],
+        },
+        "ablation_manifest_sha256": ablation_manifest_sha256,
+        "base_evaluation_manifest_sha256": base_manifest_sha256,
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    (output / "paired_comparisons.json").write_text(
+        json.dumps(comparisons, indent=2, sort_keys=True) + "\n"
+    )
+    (output / "provenance.json").write_text(
+        json.dumps(provenance, indent=2, sort_keys=True) + "\n"
+    )
+    return summary, comparisons, provenance
