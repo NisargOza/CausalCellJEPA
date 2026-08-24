@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from causalcelljepa.dynamics import LatentPopulationDataset, PopulationDynamics, dynamics_loss
-from causalcelljepa.evaluation import population_metrics
+from causalcelljepa.evaluation import paired_condition_comparisons, population_metrics
 
 
 def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_path):
@@ -140,3 +140,33 @@ def test_population_evaluation_metrics_are_exact_for_identical_populations():
     assert torch.allclose(metrics["effect_pearson"], torch.ones(2), atol=1e-6)
     assert torch.allclose(metrics["effect_spearman"], torch.ones(2), atol=1e-6)
     assert torch.allclose(metrics["magnitude_ratio"], torch.ones(2), atol=1e-6)
+
+
+def test_paired_comparisons_orient_improvement_and_adjust_multiplicity():
+    records = []
+    for target in range(12):
+        for model, pearson, sinkhorn, ratio in (
+            ("causalcelljepa", 0.8, 0.2, 0.9),
+            ("linear_esm", 0.4, 0.5, 0.5),
+        ):
+            records.append(
+                {
+                    "regime": "double_ood",
+                    "context": "RPE1",
+                    "outcome_role": "double_ood_test",
+                    "target": str(target),
+                    "repeat": 0,
+                    "model": model,
+                    "effect_pearson": pearson,
+                    "sinkhorn": sinkhorn,
+                    "magnitude_ratio": ratio,
+                }
+            )
+    comparisons = paired_condition_comparisons(records, 100, 3)
+    assert len(comparisons) == 3
+    assert all(comparison["targets"] == 12 for comparison in comparisons)
+    assert all(comparison["mean_improvement"] > 0 for comparison in comparisons)
+    assert all(
+        comparison["wilcoxon_two_sided_p"] <= comparison["benjamini_hochberg_q"] <= 1
+        for comparison in comparisons
+    )

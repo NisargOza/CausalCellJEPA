@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 import torch
 from geomloss import SamplesLoss
+from scipy.stats import wilcoxon
 from torch.utils.data import DataLoader
 
 from causalcelljepa.dynamics import LatentPopulationDataset, build_dynamics_model
@@ -157,6 +158,92 @@ def population_metrics(predicted, observed, control, median_distance, config):
             predicted_covariance - observed_covariance, ord="fro"
         ),
     }
+
+
+def paired_condition_comparisons(records, bootstrap_resamples, seed):
+    """Compare models on matched targets with paired bootstrap CIs and Wilcoxon tests."""
+    excluded = {"regime", "context", "outcome_role", "target", "repeat", "model"}
+    metric_names = sorted(set(records[0]) - excluded)
+    higher = {"effect_pearson", "effect_spearman", "direction_cosine"}
+    closer = {"magnitude_ratio"}
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in metric_names:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    averaged = {key: float(np.mean(values)) for key, values in target_values.items()}
+    comparisons = []
+    regimes = sorted({record["regime"] for record in records})
+    for regime in regimes:
+        for baseline in ("no_change", "mean_effect", "linear_esm"):
+            for metric in metric_names:
+                targets = sorted(
+                    {
+                        key[2]
+                        for key in averaged
+                        if key[0] == regime
+                        and key[1] == "causalcelljepa"
+                        and key[3] == metric
+                        and (regime, baseline, key[2], metric) in averaged
+                    }
+                )
+                if not targets:
+                    continue
+                model = np.asarray(
+                    [averaged[regime, "causalcelljepa", target, metric] for target in targets]
+                )
+                reference = np.asarray(
+                    [averaged[regime, baseline, target, metric] for target in targets]
+                )
+                if metric in higher:
+                    improvement, direction = model - reference, "higher_is_better"
+                elif metric in closer:
+                    improvement, direction = (
+                        np.abs(reference - 1) - np.abs(model - 1),
+                        "closer_to_one_is_better",
+                    )
+                else:
+                    improvement, direction = reference - model, "lower_is_better"
+                generator = np.random.default_rng(
+                    (int.from_bytes(sha256(f"{regime}\0{baseline}\0{metric}".encode()).digest()[:8], "little") + seed)
+                    % (1 << 64)
+                )
+                bootstrap = improvement[
+                    generator.integers(0, len(improvement), (bootstrap_resamples, len(improvement)))
+                ].mean(1)
+                p_value = (
+                    1.0
+                    if np.all(improvement == 0)
+                    else float(wilcoxon(improvement, alternative="two-sided", method="approx").pvalue)
+                )
+                comparisons.append(
+                    {
+                        "regime": regime,
+                        "baseline": baseline,
+                        "metric": metric,
+                        "direction": direction,
+                        "targets": len(targets),
+                        "causalcelljepa_mean": float(model.mean()),
+                        "baseline_mean": float(reference.mean()),
+                        "mean_improvement": float(improvement.mean()),
+                        "median_improvement": float(np.median(improvement)),
+                        "mean_improvement_bootstrap_95ci": [
+                            float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                        ],
+                        "wilcoxon_two_sided_p": p_value,
+                    }
+                )
+    p_values = np.asarray([comparison["wilcoxon_two_sided_p"] for comparison in comparisons])
+    order = np.argsort(p_values)
+    ranked = p_values[order] * len(p_values) / np.arange(1, len(p_values) + 1)
+    adjusted = np.minimum.accumulate(ranked[::-1])[::-1].clip(max=1)
+    q_values = np.empty_like(adjusted)
+    q_values[order] = adjusted
+    for comparison, q_value in zip(comparisons, q_values):
+        comparison["benjamini_hochberg_q"] = float(q_value)
+    return comparisons
 
 
 @torch.no_grad()
