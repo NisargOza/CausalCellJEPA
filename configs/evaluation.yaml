@@ -1,0 +1,43 @@
+# Evaluate the frozen selected dynamics checkpoint; model selection remains K562-only.
+seed: 20260823
+inputs:
+  latent_cache_path: artifacts/replogle_latents_f1e5dce.h5
+  latent_cache_sha256: af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6
+  action_cache_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  action_cache_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+  dynamics_manifest_path: manifests/dynamics_v1.json
+  selection_manifest_path: manifests/dynamics_selection_v1.json
+  selection_manifest_sha256: 3648cfc5a507bbaa9833ee4826c826846afbd93372ca5c4f22980fc5d46b8733
+  checkpoint_path: artifacts/dynamics_selected_0810656.pt
+  checkpoint_bytes: 70615403
+  checkpoint_sha256: d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4
+regimes:
+  iid:
+    context: K562
+    outcome_role: iid_test
+    control_role: control_train
+  perturbation_ood:
+    context: K562
+    outcome_role: perturbation_ood_test
+    control_role: control_train
+  context_ood:
+    context: RPE1
+    outcome_role: context_ood_test
+    control_role: control_inference
+  double_ood:
+    context: RPE1
+    outcome_role: double_ood_test
+    control_role: control_inference
+sampling:
+  population_size: 32
+  repeats: 8
+  batch_size: 16
+  num_workers: 0
+metrics:
+  reference_sinkhorn_blur_ratio: 0.10
+  mmd_bandwidth_ratio: 1.0
+  bootstrap_resamples: 10000
+baselines:
+  linear_rank: 64
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+output_directory: artifacts/evaluation

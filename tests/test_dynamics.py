@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from causalcelljepa.dynamics import LatentPopulationDataset, PopulationDynamics, dynamics_loss
+from causalcelljepa.evaluation import population_metrics
 
 
 def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_path):
@@ -61,6 +62,18 @@ def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_
     sample = dataset[0]
     assert sample["control"].shape == sample["perturbed"].shape == (2, 4)
     assert sample["action"].shape == (3,) and bool(sample["action_known"])
+    explicit = LatentPopulationDataset(
+        cache_path,
+        action_path,
+        manifest_path,
+        "custom_evaluation",
+        2,
+        7,
+        "perturbation_ood_validation",
+        "control_train",
+        "K562",
+    )
+    assert explicit.condition_targets == ["T2"]
 
 
 def test_dynamics_is_set_equivariant_and_distribution_loss_has_finite_gradients():
@@ -109,3 +122,21 @@ def test_dynamics_is_set_equivariant_and_distribution_loss_has_finite_gradients(
     assert all(torch.isfinite(value) for value in losses.values())
     losses["loss"].backward()
     assert all(parameter.grad is None or torch.isfinite(parameter.grad).all() for parameter in train_model.parameters())
+
+
+def test_population_evaluation_metrics_are_exact_for_identical_populations():
+    torch.manual_seed(9)
+    control = torch.randn(2, 4, 8)
+    observed = control + torch.randn(2, 1, 8)
+    metrics = population_metrics(
+        observed,
+        observed,
+        control,
+        1.0,
+        {"reference_sinkhorn_blur_ratio": 0.1, "mmd_bandwidth_ratio": 1.0},
+    )
+    for name in ("sinkhorn", "mmd", "energy_distance", "centroid_shift_error", "covariance_shift_error"):
+        assert torch.allclose(metrics[name], torch.zeros(2), atol=1e-6)
+    assert torch.allclose(metrics["effect_pearson"], torch.ones(2), atol=1e-6)
+    assert torch.allclose(metrics["effect_spearman"], torch.ones(2), atol=1e-6)
+    assert torch.allclose(metrics["magnitude_ratio"], torch.ones(2), atol=1e-6)

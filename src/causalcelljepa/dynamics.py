@@ -36,8 +36,19 @@ from causalcelljepa.training import (
 class LatentPopulationDataset(Dataset):
     """Sample independent outcome/control sets with identical batch multiplicities."""
 
-    def __init__(self, cache_path, action_path, manifest_path, mode, population_size=32, seed=0):
-        self.cache_path, self.mode = Path(cache_path), mode
+    def __init__(
+        self,
+        cache_path,
+        action_path,
+        manifest_path,
+        mode,
+        population_size=32,
+        seed=0,
+        outcome_role=None,
+        control_role=None,
+        context="K562",
+    ):
+        self.cache_path, self.mode, self.context = Path(cache_path), mode, context
         self.population_size, self.seed, self.epoch = population_size, seed, 0
         self.manifest = json.loads(Path(manifest_path).read_text())
         with h5py.File(self.cache_path, "r") as cache:
@@ -45,12 +56,16 @@ class LatentPopulationDataset(Dataset):
             self.targets = cache["target"].asstr()[:]
             self.batches = cache["source_batch"].asstr()[:]
             contexts = cache["context"].asstr()[:]
-        outcome_role = self.manifest["conditions"][mode]["role"]
+        expected_targets = None
+        if outcome_role is None:
+            outcome_role = self.manifest["conditions"][mode]["role"]
+            expected_targets = self.manifest["conditions"][mode]["targets"]
+        control_role = control_role or self.manifest["conditions"]["controls"]["role"]
         outcome_indices = np.flatnonzero(roles == outcome_role)
-        control_indices = np.flatnonzero(roles == self.manifest["conditions"]["controls"]["role"])
-        assert set(contexts[outcome_indices]) == set(contexts[control_indices]) == {"K562"}
+        control_indices = np.flatnonzero(roles == control_role)
+        assert set(contexts[outcome_indices]) == set(contexts[control_indices]) == {context}
         self.condition_targets = sorted(set(self.targets[outcome_indices]))
-        assert len(self.condition_targets) == self.manifest["conditions"][mode]["targets"]
+        assert expected_targets is None or len(self.condition_targets) == expected_targets
         self.outcomes = {
             target: outcome_indices[self.targets[outcome_indices] == target]
             for target in self.condition_targets
