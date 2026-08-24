@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "leakage": {
+    "heldout_target_identity_used_for_fit": false,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "validation_target_identity_used_for_fit": false
+  },
+  "manifest_sha256": "cf08e2e4f978253462ecf56b85250ef066c78e42ad8c324e22b05abb219f4527",
+  "policy": {
+    "fit_outcome_role": "dynamics_train",
+    "known_action_encoding": "one_hot_training_target_id_with_trainable_projection",
+    "known_target_count": 698,
+    "known_targets_sha256": "d1dab0a7c3f251499b3c578ad9249da00277710985652623eb7a494b7a9f1e3f",
+    "unknown_action_encoding": "single_learned_shared_vector",
+    "validation_target_count": 100,
+    "validation_targets_sha256": "adc33ed12cb9310529f1ac630fa4a681afd7f1b97522ca9b3eef7201b76526f4",
+    "vocabulary_dimension": 698
+  },
+  "protocol": {
+    "comparison": "frozen ESM-2 action representation versus learned categorical target identity",
+    "model_action_dimension": 256,
+    "statistical_unit": "perturbation-condition",
+    "unseen_target_behavior": "all non-training targets collapse to the same unknown action"
+  },
+  "source": {
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "target_universe_count": 997,
+    "target_universe_sha256": "216d8895d0f4d34f8324473c08e4ffac5700102a4fc5f02b3d02717563a7a415",
+    "target_universe_source_action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d"
+  }
+}

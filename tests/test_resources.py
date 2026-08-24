@@ -1,6 +1,6 @@
 import gzip
 
-from causalcelljepa.actions import map_targets, protein_symbols
+from causalcelljepa.actions import learned_target_id_payload, map_targets, protein_symbols
 from causalcelljepa.resources import (
     derive_hvg_programs,
     load_gmt_gene_indices,
@@ -42,6 +42,19 @@ def test_action_mapping_rejects_stale_and_ambiguous_identifiers():
             "reason": "no_unique_reviewed_canonical_protein",
         }
     }
+
+
+def test_learned_target_ids_encode_only_training_vocabulary():
+    known, embedding = learned_target_id_payload(
+        ["heldout", "train_b", "train_a", "test"], ["train_b", "train_a"]
+    )
+    assert known.tolist() == [False, True, True, False]
+    assert embedding.tolist() == [
+        [0.0, 0.0],
+        [0.0, 1.0],
+        [1.0, 0.0],
+        [0.0, 0.0],
+    ]
 
 
 def test_go_parsing_propagation_and_gmt_are_deterministic(tmp_path):

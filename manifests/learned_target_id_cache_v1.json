@@ -1,0 +1,28 @@
+{
+  "artifact": {
+    "bytes": 2802477,
+    "input_dim": 698,
+    "known_training_targets": 698,
+    "path": "artifacts/replogle_actions_learned_target_id_v1.pt",
+    "sha256": "495d1741dc46d3a4f3bf594da4833a6111a0a8d648532662efbbe3343c028e2d",
+    "target_count": 997,
+    "unknown_targets": 299
+  },
+  "format_version": 1,
+  "manifest_sha256": "4fd12f70643101bc8de586712206f88a8b5a7afabc294c3830b7bca336d70f2a",
+  "policy": {
+    "heldout_target_identity_used_for_fit": false,
+    "known_action_encoding": "one_hot_training_target_id_with_trainable_projection",
+    "source_esm_embedding_values_used": false,
+    "unknown_action_encoding": "single_learned_shared_vector",
+    "validation_target_identity_used_for_fit": false
+  },
+  "source": {
+    "config_sha256": "eaa43ba3c89138f95fe9c8ba87a5bcaf2210941b9efc6ec2ee0bc17e492ef6a1",
+    "generation_git_commit": "2ea0518092bdc8a916f9c1fd8d93d91755b8833f",
+    "generation_git_dirty": false,
+    "runtime_source_sha256": "d88489c90edf23b7c5d499adb4b69e31e6000c94f22a7eb886433fd279068e0d",
+    "source_action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "specification_manifest_sha256": "cf08e2e4f978253462ecf56b85250ef066c78e42ad8c324e22b05abb219f4527"
+  }
+}
