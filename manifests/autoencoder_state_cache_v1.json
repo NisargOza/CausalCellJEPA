@@ -1,0 +1,58 @@
+{
+  "artifact": {
+    "bytes": 431816016,
+    "cell_dim": 256,
+    "cells": 340684,
+    "path": "artifacts/replogle_autoencoder_state_v1.h5",
+    "sha256": "ff58ec4dcb6d921d0d5953bb4eab1ffd2b21da50db238eceafe37ee3e74d676b"
+  },
+  "format_version": 1,
+  "manifest_sha256": "fbe24a32555b588518e774dfea454ec3d2f9e128d327062c91daa1d0f1540600",
+  "policy": {
+    "admitted_cell_ids_sha256": "8512ecafb3b293a47e98c6eb634d4e78bf4149d5f39dcf934e74c68f290b43b4",
+    "admitted_cells": 114029,
+    "fit_roles": [
+      "control_train",
+      "control_inference",
+      "dynamics_train"
+    ],
+    "heldout_perturbation_outcomes_used_for_fit": false,
+    "rpe1_perturbed_outcomes_used_for_fit": false,
+    "sealed_test_outcomes_used_for_fit": false,
+    "stage1_selection_cells": 5623
+  },
+  "source": {
+    "config_sha256": "560b072c8ce3fa352dc68a2196922fc49154bf6164578c26e41f6b0daeda7a56",
+    "dynamics_manifest_sha256": "ae8ae5bc42fad26a485a9da9c4a4edcc4338a8fda986174cc8df6274bba2c54f",
+    "expression_cache_sha256": "3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0",
+    "generation_git_commit": "0322f07573cf1d531ce9d3dd6b405862a26fb7c8",
+    "generation_git_dirty": false,
+    "metadata_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "runtime_source_sha256": "d0d6163c3fdcf18e920f2e0ee1ef8e06a25101f15b9c10c2523b12492f1aab52",
+    "specification_manifest_sha256": "0d64a8d204469cd24d9703c9ea5e484a93bc164eae33b090a28bc2518012bbee",
+    "stage1_split_manifest_sha256": "e57247d910bdf5d120b09f423ec0f35f5c5f6b81ca797ed2223e01ce3fc8b733"
+  },
+  "training": {
+    "best_checkpoint": {
+      "bytes": 80110845,
+      "path": "artifacts/autoencoder_state/best.pt",
+      "sha256": "d246d47110e5f4a3ee0f07cf124dd4f769d1e616a79010fcd6c1191ef19866e3"
+    },
+    "best_validation_epoch": 29,
+    "best_validation_loss": 0.1636694277650454,
+    "completed_epochs": 30,
+    "completion_reason": "configured_epochs",
+    "global_steps": 12720,
+    "latest_checkpoint": {
+      "bytes": 80111437,
+      "path": "artifacts/autoencoder_state/latest.pt",
+      "sha256": "40aa457f7ffc33370c2c67c1a9bb997d61f30b17cbb71365de279b9b3f69acd2"
+    },
+    "training_log": {
+      "bytes": 2286198,
+      "path": "artifacts/autoencoder_state/training.jsonl",
+      "records": 12750,
+      "sha256": "49c1c51829aaf246a67e76299c65f92256dbbdd354d9833e9d4bd96b2add730f"
+    }
+  }
+}
