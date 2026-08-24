@@ -92,3 +92,8 @@ cuda_smoke:
   checkpoint_step: 16
   validation_batches: 2
   output_directory: artifacts/dynamics_cuda_smoke
+pseudo_paired:
+  objective: pseudo_paired_mse
+  output_directory: artifacts/pseudo_paired
+  cpu_smoke_output_directory: artifacts/pseudo_paired_cpu_smoke
+  cuda_smoke_output_directory: artifacts/pseudo_paired_cuda_smoke

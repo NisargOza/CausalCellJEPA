@@ -5,7 +5,12 @@ import h5py
 import numpy as np
 import torch
 
-from causalcelljepa.dynamics import LatentPopulationDataset, PopulationDynamics, dynamics_loss
+from causalcelljepa.dynamics import (
+    LatentPopulationDataset,
+    PopulationDynamics,
+    dynamics_loss,
+    dynamics_objective,
+)
 from causalcelljepa.evaluation import paired_condition_comparisons, population_metrics
 
 
@@ -140,6 +145,20 @@ def test_population_evaluation_metrics_are_exact_for_identical_populations():
     assert torch.allclose(metrics["effect_pearson"], torch.ones(2), atol=1e-6)
     assert torch.allclose(metrics["effect_spearman"], torch.ones(2), atol=1e-6)
     assert torch.allclose(metrics["magnitude_ratio"], torch.ones(2), atol=1e-6)
+
+
+def test_pseudo_paired_objective_is_pointwise_and_pairing_dependent():
+    predicted = torch.tensor([[[0.0], [1.0], [3.0]]], requires_grad=True)
+    observed = torch.tensor([[[0.0], [2.0], [4.0]]])
+    config = {"objective": "pseudo_paired_mse"}
+    direct = dynamics_objective(predicted, observed, predicted.detach(), config, {})
+    permuted = dynamics_objective(
+        predicted, observed[:, torch.tensor([2, 0, 1])], predicted.detach(), config, {}
+    )
+    assert torch.equal(direct["loss"], direct["pointwise_mse"])
+    assert not torch.equal(direct["loss"], permuted["loss"])
+    direct["loss"].backward()
+    assert torch.isfinite(predicted.grad).all()
 
 
 def test_paired_comparisons_orient_improvement_and_adjust_multiplicity():

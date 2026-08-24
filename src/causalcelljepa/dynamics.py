@@ -289,6 +289,23 @@ def dynamics_loss(predicted, observed, control, config, median_distance, null_th
     }
 
 
+def dynamics_objective(predicted, observed, control, config, statistics):
+    """Switch only the training criterion for the locked pseudo-paired comparator."""
+    objective = config.get("objective", "unpaired_distribution")
+    if objective == "pseudo_paired_mse":
+        pointwise = F.mse_loss(predicted, observed)
+        return {"loss": pointwise, "pointwise_mse": pointwise}
+    assert objective == "unpaired_distribution"
+    return dynamics_loss(
+        predicted,
+        observed,
+        control,
+        config["loss"],
+        statistics["normalization"]["median_training_latent_distance"],
+        statistics["direction"]["null_effect_threshold"],
+    )
+
+
 def build_dynamics_model(config):
     """Build the fixed primary model without optional context IDs or stochastic noise."""
     model = config["model"]
@@ -367,13 +384,8 @@ def validate_dynamics(model, dataset, config, device, max_batches=None):
             break
         batch = _device_batch(raw_batch, device)
         predicted = model(batch["control"], batch["action"], batch["action_known"])
-        losses = dynamics_loss(
-            predicted,
-            batch["perturbed"],
-            batch["control"],
-            config["loss"],
-            statistics["normalization"]["median_training_latent_distance"],
-            statistics["direction"]["null_effect_threshold"],
+        losses = dynamics_objective(
+            predicted, batch["perturbed"], batch["control"], config, statistics
         )
         size = len(raw_batch["target"])
         conditions += size
@@ -458,13 +470,8 @@ def train_dynamics(config, device, max_steps=None, validation_batches=None):
             batch = _device_batch(raw_batch, device)
             optimizer.zero_grad(set_to_none=True)
             predicted = model(batch["control"], batch["action"], batch["action_known"])
-            losses = dynamics_loss(
-                predicted,
-                batch["perturbed"],
-                batch["control"],
-                config["loss"],
-                statistics["normalization"]["median_training_latent_distance"],
-                statistics["direction"]["null_effect_threshold"],
+            losses = dynamics_objective(
+                predicted, batch["perturbed"], batch["control"], config, statistics
             )
             if not all(torch.isfinite(value) for value in losses.values()):
                 raise FloatingPointError(
