@@ -102,8 +102,34 @@ training-split unknown actions; no validation or sealed-test target is unresolve
 proteins longer than the official 1,022-residue extraction cap are processed in non-overlapping
 chunks and combined with a residue-count-weighted mean, retaining the full sequence while
 bounding attention memory. A nine-protein real-data gate—including the 4,388-residue VPS13D
-sequence—was finite and bitwise reproducible. The 320-dimensional cache is ready to be built
-from a clean commit before the learned 256-dimensional action projection is implemented.
+sequence—was finite and bitwise reproducible. The full 994-unique-protein CPU pass finished in
+148 seconds and produced a finite 997-by-320 cache with clean commit provenance. Twelve
+stratified targets recomputed within `1.68e-8`; its SHA-256 is
+`b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d`.
+
+## Stage 2 dynamics readiness
+
+[`configs/dynamics.yaml`](configs/dynamics.yaml) records the locked set sizes, architecture,
+loss coefficients, and the engineering-only optimizer/regularization choices. Training-visible
+K562 controls and dynamics outcomes alone fit latent normalization, median-distance scaling,
+and the near-null direction threshold in
+[`manifests/dynamics_v1.json`](manifests/dynamics_v1.json). Validation, sealed-test, and RPE1
+perturbed outcomes are excluded from every fitted statistic.
+
+The condition-level sampler draws an independent 32-cell outcome set and a 32-cell control set
+with identical gem-group multiplicities; it never constructs control/outcome pairs and never
+passes batch or cell-line IDs to the model. The 5.87M-parameter primary model implements a
+two-block permutation-invariant context encoder, frozen-ESM action projection, explicit
+context/action/product/difference interaction, and three conditioned residual transition
+blocks. Its delta head starts exactly at the no-change baseline. The unpaired objective is the
+proposal's debiased Sinkhorn divergence plus `0.25` Gaussian MMD, `0.50` direction, and `0.10`
+magnitude terms.
+
+All 698 training and 100 K562 perturbation-OOD validation conditions passed batch-matching and
+admission audits. A real-cache CPU checkpoint/resume gate matched uninterrupted training
+tensor-for-tensor and log-for-log. A complete 44-step CPU epoch exercised all conditions,
+validation, and best/latest checkpoint paths with finite values. These are engineering gates,
+not biological performance results; the bounded CUDA smoke and full dynamics run remain next.
 
 ## Development
 
@@ -118,6 +144,10 @@ uv run python scripts/smoke_cuda_stage1.py
 uv run python scripts/cache_latents.py
 uv run python scripts/action_resources.py
 uv run python scripts/actions.py
+uv run python scripts/prepare_dynamics.py
+uv run python scripts/smoke_dynamics.py
+uv run python scripts/smoke_cuda_dynamics.py
+uv run python scripts/train_dynamics.py
 uv run ruff check .
 uv run pytest
 ```
