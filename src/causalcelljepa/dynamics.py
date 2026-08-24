@@ -519,6 +519,13 @@ def state_ablation_config(path):
         state_manifest["source"]["specification_manifest_sha256"]
         == specification["specification_manifest_sha256"]
     )
+    dynamics_manifest = json.loads(Path(specification["dynamics_manifest_path"]).read_text())
+    dynamics_sha256 = dynamics_manifest.pop("manifest_sha256")
+    assert dynamics_sha256 == state_manifest["source"]["dynamics_manifest_sha256"] == sha256(
+        json.dumps(dynamics_manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert dynamics_manifest["config_sha256"] == file_sha256(path)
+    assert dynamics_manifest["inputs"]["latent_cache_sha256"] == artifact["sha256"]
     config = yaml.safe_load(base_path.read_text())
     config["inputs"].update(
         {
