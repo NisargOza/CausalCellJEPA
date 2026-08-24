@@ -159,6 +159,16 @@ models and paired statistics without reading sealed or RPE1 perturbed test roles
 four-regime transcriptomic evaluation is followed by a diagnostic decoder-ceiling audit that
 decodes observed outcome latents; that audit is explicitly not a predictive baseline.
 
+## Mechanism ablations
+
+[`configs/ablations.yaml`](configs/ablations.yaml) fixes the first three required matched Stage 2
+ablations: removing the pooled global context, replacing the Set Transformer summary with a
+control mean, and removing effect-direction loss. Each preserves the same frozen state/action
+caches, training/validation target roles, transition capacity, selected Sinkhorn blur, optimizer,
+and schedule. All three passed exact two-step CPU checkpoint/resume replay and a complete finite
+698-train/100-validation-condition CPU epoch. Bounded CUDA replay is the remaining gate before
+the three full jobs share one paid GPU instance.
+
 ## Development
 
 ```bash
@@ -186,6 +196,9 @@ uv run python scripts/train_readout.py
 uv run python scripts/smoke_transcriptomics.py
 uv run python scripts/evaluate_transcriptomics.py
 uv run python scripts/audit_readout.py
+uv run python scripts/smoke_ablations.py
+uv run python scripts/smoke_cuda_ablations.py
+uv run python scripts/train_ablations.py
 uv run ruff check .
 uv run pytest
 ```

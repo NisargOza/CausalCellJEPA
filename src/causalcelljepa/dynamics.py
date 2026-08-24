@@ -12,6 +12,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import torch
+import yaml
 from geomloss import SamplesLoss
 from torch import nn
 from torch.nn import functional as F
@@ -183,8 +184,11 @@ class PopulationDynamics(nn.Module):
         heads=8,
         ffn_dim=1024,
         dropout=0.1,
+        context_mode="set_transformer",
     ):
         super().__init__()
+        assert context_mode in {"set_transformer", "mean", "none"}
+        self.context_mode = context_mode
         context_layer = nn.TransformerEncoderLayer(
             cell_dim,
             heads,
@@ -222,10 +226,15 @@ class PopulationDynamics(nn.Module):
         nn.init.zeros_(self.delta[-1].bias)
 
     def forward(self, control, action_embedding, action_known):
-        encoded = self.context_blocks(control)
-        query = self.pool_query.unsqueeze(0).expand(control.shape[0], -1, -1)
-        context, _ = self.pool(query, encoded, encoded, need_weights=False)
-        context = self.context_output(context.squeeze(1))
+        if self.context_mode == "set_transformer":
+            encoded = self.context_blocks(control)
+            query = self.pool_query.unsqueeze(0).expand(control.shape[0], -1, -1)
+            context, _ = self.pool(query, encoded, encoded, need_weights=False)
+            context = self.context_output(context.squeeze(1))
+        elif self.context_mode == "mean":
+            context = self.context_output(control.mean(1))
+        else:
+            context = torch.zeros_like(control[:, 0])
         projected = self.action_projection(action_embedding)
         action = torch.where(
             action_known.unsqueeze(1), projected, self.unknown_action.unsqueeze(0)
@@ -321,7 +330,32 @@ def build_dynamics_model(config):
         model["heads"],
         model["ffn_dim"],
         model["dropout"],
+        model.get("context_mode", "set_transformer"),
     )
+
+
+def dynamics_ablation_configs(path="configs/ablations.yaml"):
+    """Materialize the fixed matched-capacity dynamics ablations from one pinned base."""
+    path = Path(path)
+    specification = yaml.safe_load(path.read_text())
+    base_path = Path(specification["base_config_path"])
+    assert file_sha256(base_path) == specification["base_config_sha256"]
+    base = yaml.safe_load(base_path.read_text())
+    configs = {}
+    for name, changes in specification["experiments"].items():
+        config = deepcopy(base)
+        config["model"]["context_mode"] = changes["context_mode"]
+        config["loss"]["weights"]["direction"] = changes["direction_weight"]
+        config["training"]["output_directory"] = changes["output_directory"]
+        config["training"]["resume_from"] = None
+        config["ablation"] = {
+            "name": name,
+            "hypothesis": changes["hypothesis"],
+            "base_config_path": str(base_path),
+            "base_config_sha256": specification["base_config_sha256"],
+        }
+        configs[name] = config
+    return configs, specification
 
 
 def dynamics_provenance(config, config_path="configs/dynamics.yaml"):
@@ -395,7 +429,13 @@ def validate_dynamics(model, dataset, config, device, max_batches=None):
     return {name: value / conditions for name, value in totals.items()}
 
 
-def train_dynamics(config, device, max_steps=None, validation_batches=None):
+def train_dynamics(
+    config,
+    device,
+    max_steps=None,
+    validation_batches=None,
+    config_path="configs/dynamics.yaml",
+):
     """Train or exactly resume condition-weighted Stage 2 dynamics."""
     training, data = config["training"], config["data"]
     assert training["optimizer"] == "AdamW"
@@ -425,7 +465,7 @@ def train_dynamics(config, device, max_steps=None, validation_batches=None):
             training["minimum_learning_rate_fraction"],
         ),
     )
-    provenance = dynamics_provenance(config)
+    provenance = dynamics_provenance(config, config_path)
     configuration = deepcopy(config)
     output = Path(training["output_directory"])
     output.mkdir(parents=True, exist_ok=True)

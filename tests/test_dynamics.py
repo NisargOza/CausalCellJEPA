@@ -129,6 +129,35 @@ def test_dynamics_is_set_equivariant_and_distribution_loss_has_finite_gradients(
     assert all(parameter.grad is None or torch.isfinite(parameter.grad).all() for parameter in train_model.parameters())
 
 
+def test_context_ablation_modes_remove_or_simplify_the_global_summary():
+    torch.manual_seed(12)
+    control, action, known = torch.randn(2, 4, 8), torch.randn(2, 5), torch.ones(2, dtype=torch.bool)
+    interactions = {}
+    for mode in ("set_transformer", "mean", "none"):
+        model = PopulationDynamics(
+            cell_dim=8,
+            action_input_dim=5,
+            action_dim=8,
+            context_blocks=1,
+            transition_blocks=1,
+            heads=2,
+            ffn_dim=16,
+            dropout=0.0,
+            context_mode=mode,
+        ).eval()
+        model.interaction[0].register_forward_pre_hook(
+            lambda _module, inputs, mode=mode: (
+                interactions.__setitem__(mode, inputs[0].detach()),
+                None,
+            )[1]
+        )
+        model(control, action, known)
+    assert torch.count_nonzero(interactions["none"][:, :8]) == 0
+    assert torch.count_nonzero(interactions["none"][:, 16:24]) == 0
+    assert torch.count_nonzero(interactions["mean"][:, :8]) > 0
+    assert torch.count_nonzero(interactions["set_transformer"][:, :8]) > 0
+
+
 def test_population_evaluation_metrics_are_exact_for_identical_populations():
     torch.manual_seed(9)
     control = torch.randn(2, 4, 8)
