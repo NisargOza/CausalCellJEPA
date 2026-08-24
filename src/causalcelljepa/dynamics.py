@@ -412,6 +412,16 @@ def train_dynamics(config, device, max_steps=None, validation_batches=None):
         current = deepcopy(configuration)
         current["training"]["resume_from"] = None
         assert saved_configuration == current
+        if state["complete"]:
+            model.load_state_dict(torch.load(best, map_location=device, weights_only=False)["model"])
+            return model, state, {
+                "train_conditions": len(datasets["train"]),
+                "validation_conditions": len(datasets["validation"]),
+                "elapsed_seconds": 0.0,
+                "checkpoint": str(latest),
+                "best_checkpoint": str(best),
+                "already_complete": True,
+            }
     statistics = datasets["train"].manifest
     started = time.perf_counter()
     model.train()

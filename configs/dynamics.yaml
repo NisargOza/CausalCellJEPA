@@ -53,6 +53,10 @@ loss:
     mmd: 0.25
     direction: 0.50
     magnitude: 0.10
+blur_selection:
+  validation_metric: sinkhorn
+  reference_blur_ratio: 0.10
+  output_directory: artifacts/dynamics_blur_selection
 training:
   batch_size: 16
   epochs: 200
