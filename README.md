@@ -7,8 +7,8 @@ specification is [`RESEARCH_PROPOSAL.md`](RESEARCH_PROPOSAL.md).
 
 ## Current milestone
 
-The project currently implements the data/split foundation that every later experiment
-depends on:
+The minimum latent-space Replogle experiment is complete and transcriptomic readout is
+underway. Its leakage-resistant data/split foundation includes:
 
 - 10,000-count normalization followed by `log1p`;
 - HVG fitting on an explicit training-visible mask;
@@ -78,8 +78,7 @@ tensor-for-tensor after resume. Stage 1 then completed on one NVIDIA RTX A6000 a
 commit `f1e5dce`: early stopping selected epoch 0 after 20,328 optimizer steps, all 20,334
 train/validation records were finite, and the 35.4-minute run peaked at 311,888,896 CUDA
 bytes. The downloaded canonical teacher is frozen and matches the best-checkpoint EMA
-tensors exactly. These are engineering/training facts; downstream biological performance
-has not yet been evaluated.
+tensors exactly.
 
 The frozen teacher subsequently embedded exactly 340,684 cells carrying non-excluded roles,
 including sealed outcomes only after encoder freezing. The 412 MiB cache completed on an
@@ -107,7 +106,7 @@ sequence—was finite and bitwise reproducible. The full 994-unique-protein CPU 
 stratified targets recomputed within `1.68e-8`; its SHA-256 is
 `b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d`.
 
-## Stage 2 dynamics readiness
+## Stage 2 dynamics and latent evaluation
 
 [`configs/dynamics.yaml`](configs/dynamics.yaml) records the locked set sizes, architecture,
 loss coefficients, and the engineering-only optimizer/regularization choices. Training-visible
@@ -126,10 +125,30 @@ proposal's debiased Sinkhorn divergence plus `0.25` Gaussian MMD, `0.50` directi
 magnitude terms.
 
 All 698 training and 100 K562 perturbation-OOD validation conditions passed batch-matching and
-admission audits. A real-cache CPU checkpoint/resume gate matched uninterrupted training
-tensor-for-tensor and log-for-log. A complete 44-step CPU epoch exercised all conditions,
-validation, and best/latest checkpoint paths with finite values. These are engineering gates,
-not biological performance results; the bounded CUDA smoke and full dynamics run remain next.
+admission audits. CPU and bounded CUDA gates preceded the full RTX A6000 run. Validation-only
+selection chose Sinkhorn blur ratio `0.20`; the frozen selected checkpoint is recorded in
+[`manifests/dynamics_selection_v1.json`](manifests/dynamics_selection_v1.json). A capacity-
+matched pseudo-paired pointwise-MSE comparator was independently smoke-tested, trained, and
+frozen in [`manifests/pseudo_paired_v1.json`](manifests/pseudo_paired_v1.json).
+
+The sealed four-regime evaluation uses eight independently sampled populations per target and
+treats perturbation-condition as the statistical unit. All 57,408 original records reproduced
+exactly after adding the pseudo-paired model, yielding 71,760 five-model records. The full model
+strongly improves population calibration and latent distribution distances over pseudo-pairing
+in every regime, while pseudo-pairing has higher latent effect-direction correlations in every
+regime. Cross-context effect direction remains weak and does not beat the linear ESM baseline.
+This metric-dependent, partly negative result is frozen in
+[`manifests/evaluation_pseudo_v1.json`](manifests/evaluation_pseudo_v1.json).
+
+## Transcriptomic readout
+
+[`configs/readout.yaml`](configs/readout.yaml) defines a separate linear decoder from normalized
+frozen latents to the same 3,000 normalized log-expression HVGs. The decoder cannot update the
+dynamics model. Its fit and ridge-selection cells are restricted to `control_train`,
+`control_inference`, and `dynamics_train`; sealed and RPE1 perturbed outcomes are excluded. A
+4,096-cell real-data CPU smoke created the aligned expression cache and fit a 1,024-cell decoder
+with finite weights and lower validation MSE than the gene-mean baseline. The full CPU cache and
+readout fit are next.
 
 ## Development
 
@@ -148,13 +167,20 @@ uv run python scripts/prepare_dynamics.py
 uv run python scripts/smoke_dynamics.py
 uv run python scripts/smoke_cuda_dynamics.py
 uv run python scripts/train_dynamics.py
+uv run python scripts/smoke_pseudo_paired.py
+uv run python scripts/train_pseudo_paired.py
+uv run python scripts/evaluate_dynamics.py
+uv run python scripts/analyze_evaluation.py
+uv run python scripts/smoke_readout.py
+uv run python scripts/cache_expression.py
+uv run python scripts/train_readout.py
 uv run ruff check .
 uv run pytest
 ```
 
 Stage 1 pretraining, cell-latent caching, Stage 2 dynamics, and major neural baselines require
-CUDA; action embedding is intentionally kept on CPU. No Stage 2 dynamics experiment,
-biological evaluation, or matched-baseline comparison has been run yet.
+CUDA. Action embedding, transcriptomic cache construction, linear readout fitting, and most
+metric calculations intentionally remain on CPU.
 
 Full pretraining refuses to fall back to CPU. To resume without modifying the frozen
 configuration, set `CAUSALCELLJEPA_RESUME_FROM=artifacts/stage1/latest.pt`. CUDA runs set the

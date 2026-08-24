@@ -1,0 +1,27 @@
+# Fit a separate transcriptomic decoder without updating the frozen dynamics model.
+# Decoder fitting uses only cells admitted to representation learning.
+seed: 20260823
+inputs:
+  replogle_config_path: configs/replogle.yaml
+  replogle_manifest_path: manifests/replogle_v1.json
+  replogle_manifest_sha256: 6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488
+  dynamics_manifest_path: manifests/dynamics_v1.json
+  dynamics_manifest_sha256: 15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743
+  latent_cache_path: artifacts/replogle_latents_f1e5dce.h5
+  latent_cache_bytes: 431844688
+  latent_cache_sha256: af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6
+  raw_directory: data/raw
+expression_cache:
+  output_path: artifacts/replogle_expression_readout_v1.h5
+  expected_cells: 340684
+  hvg_count: 3000
+  block_size: 1024
+  dtype: float32
+decoder:
+  output_path: artifacts/readout_linear_v1.pt
+  architecture: linear
+  fit_roles: [control_train, control_inference, dynamics_train]
+  validation_fraction: 0.05
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+  block_size: 2048
+  output_clamp_min: 0.0
