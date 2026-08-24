@@ -43,7 +43,7 @@ loss:
   sinkhorn_p: 2
   sinkhorn_ground_cost: half_squared_euclidean
   sinkhorn_debias: true
-  sinkhorn_blur_ratio: 0.10
+  sinkhorn_blur_ratio: 0.20
   sinkhorn_blur_candidates: [0.05, 0.10, 0.20]
   mmd_kernel: gaussian
   mmd_estimator: biased_nonnegative
@@ -57,6 +57,12 @@ blur_selection:
   validation_metric: sinkhorn
   reference_blur_ratio: 0.10
   output_directory: artifacts/dynamics_blur_selection
+selected_checkpoint:
+  path: artifacts/dynamics_selected_0810656.pt
+  bytes: 70615403
+  sha256: d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4
+  manifest_path: manifests/dynamics_selection_v1.json
+  manifest_sha256: 3648cfc5a507bbaa9833ee4826c826846afbd93372ca5c4f22980fc5d46b8733
 training:
   batch_size: 16
   epochs: 200

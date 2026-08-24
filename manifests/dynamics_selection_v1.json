@@ -1,0 +1,62 @@
+{
+  "candidate_results": [
+    {
+      "best_checkpoint_sha256": "7a20102d4798ade0f8646211fcddeba473d9d2b6dd777607f54120c214a26c57",
+      "best_training_validation_epoch": 28,
+      "best_training_validation_loss": 0.5682116532325745,
+      "blur_ratio": 0.05,
+      "epochs": 44,
+      "fixed_reference_sinkhorn": 0.37136738777160644,
+      "steps": 1936
+    },
+    {
+      "best_checkpoint_sha256": "10d6e86b20fce13386254b74219026d5538700d114991b4c01abcd82166d6b68",
+      "best_training_validation_epoch": 28,
+      "best_training_validation_loss": 0.5655806732177734,
+      "blur_ratio": 0.1,
+      "epochs": 44,
+      "fixed_reference_sinkhorn": 0.3714692878723145,
+      "steps": 1936
+    },
+    {
+      "best_checkpoint_sha256": "d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4",
+      "best_training_validation_epoch": 28,
+      "best_training_validation_loss": 0.5210753750801086,
+      "blur_ratio": 0.2,
+      "epochs": 44,
+      "fixed_reference_sinkhorn": 0.3701279067993164,
+      "steps": 1936
+    }
+  ],
+  "format_version": 1,
+  "manifest_sha256": "3648cfc5a507bbaa9833ee4826c826846afbd93372ca5c4f22980fc5d46b8733",
+  "protocol": {
+    "candidate_blur_ratios": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "context": "K562",
+    "outcome_roles_read": [
+      "dynamics_train",
+      "perturbation_ood_validation"
+    ],
+    "reference_blur_ratio": 0.1,
+    "selection_conditions": 100,
+    "selection_rule": "minimum fixed-reference Sinkhorn on K562 perturbation-OOD validation"
+  },
+  "selected": {
+    "blur_ratio": 0.2,
+    "checkpoint_bytes": 70615403,
+    "checkpoint_path": "artifacts/dynamics_selected_0810656.pt",
+    "checkpoint_sha256": "d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4"
+  },
+  "source": {
+    "config_sha256": "8f9d187e322cc7de9c7ed031fc39315cbc6695d391e0ad8d4f04a4d47aa20e83",
+    "git_commit": "08106562176ddd3a8670f2131339af9145f0c547",
+    "git_dirty": false,
+    "runtime_source_sha256": "db14809c7bf73656b09c8b536bfeabaf0490a6d331932141b26fb458c5a4f766",
+    "selection_report_bytes": 8406,
+    "selection_report_sha256": "4cf3a1b8dc783a8cdb7a8b2ba52bd6946b54d41bae4d942ddb0c6f9f438a1ab0"
+  }
+}
