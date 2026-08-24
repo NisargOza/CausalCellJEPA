@@ -97,3 +97,8 @@ pseudo_paired:
   output_directory: artifacts/pseudo_paired
   cpu_smoke_output_directory: artifacts/pseudo_paired_cpu_smoke
   cuda_smoke_output_directory: artifacts/pseudo_paired_cuda_smoke
+  selected_checkpoint_path: artifacts/pseudo_paired_selected_4efbe79.pt
+  selected_checkpoint_bytes: 70616043
+  selected_checkpoint_sha256: 4a3fce2d0698092ca2c12238ae9b6bd716d7de02dfca593790c5ee6814f5318b
+  manifest_path: manifests/pseudo_paired_v1.json
+  manifest_sha256: 2fb214f97de56c3a75fe76a99c816802ce5248d10ecd05d38e72a158f304e5b4
