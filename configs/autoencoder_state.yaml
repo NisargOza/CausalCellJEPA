@@ -2,8 +2,8 @@
 name: autoencoder_state
 hypothesis: test whether JEPA latent prediction improves OOD dynamics over reconstruction pretraining
 seed: 20260823
-base_dynamics_config_path: configs/dynamics.yaml
-base_dynamics_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
 specification_manifest_path: manifests/autoencoder_state_v1.json
 specification_manifest_sha256: 0d64a8d204469cd24d9703c9ea5e484a93bc164eae33b090a28bc2518012bbee
 stage1_split_manifest_path: manifests/stage1_v1.json
@@ -46,8 +46,7 @@ cache:
   batch_size: 1024
   chunk_cells: 1024
   dtype: float32
-dynamics:
-  output_directory: artifacts/ablations/autoencoder_state
+output_directory: artifacts/ablations/autoencoder_state
 cpu_smoke:
   batch_size: 4
   steps: 2
