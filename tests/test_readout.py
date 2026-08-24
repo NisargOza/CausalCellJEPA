@@ -10,6 +10,7 @@ from causalcelljepa.readout import (
     ridge_solution,
     sufficient_statistics,
 )
+from causalcelljepa.representations import fit_pca_state, project_pca_state
 
 
 def test_expression_normalization_uses_full_library_before_hvg_selection():
@@ -44,6 +45,19 @@ def test_sufficient_statistics_recover_exact_linear_readout():
     assert regression_mse(validation_stats, solution) < 1e-12
     assert np.allclose(solution[:-1], weights, atol=1e-6)
     assert np.allclose(solution[-1], bias, atol=1e-6)
+
+
+def test_pca_state_is_deterministic_centered_and_canonically_oriented():
+    expression = np.random.default_rng(8).normal(size=(24, 7)).astype(np.float32)
+    first = fit_pca_state(expression, 3, 1, 2, 19)
+    second = fit_pca_state(expression, 3, 1, 2, 19)
+    assert all(np.array_equal(a, b) for a, b in zip(first, second))
+    mean, components, _ = first
+    projected = project_pca_state(expression, mean, components)
+    assert np.allclose(components @ components.T, np.eye(3), atol=1e-5)
+    assert np.allclose(projected.mean(0), 0, atol=1e-6)
+    anchors = np.abs(components).argmax(1)
+    assert (components[np.arange(3), anchors] > 0).all()
 
 
 def test_gene_effect_and_pathway_metrics_are_exact_for_perfect_prediction():

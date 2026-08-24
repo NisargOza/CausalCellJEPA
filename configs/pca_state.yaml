@@ -1,0 +1,44 @@
+# Required JEPA-versus-PCA state-space ablation with the locked Stage 2 model.
+name: pca_state
+hypothesis: test whether the frozen JEPA state improves OOD dynamics over PCA
+seed: 20260823
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+specification_manifest_path: manifests/pca_state_v1.json
+specification_manifest_sha256: 0a1b03bfcbf3dbb36234ec5c80f3e0d9d5300999aa394c840f1a9666bc88a4df
+cache_manifest_path: manifests/pca_state_cache_v1.json
+dynamics_manifest_path: manifests/dynamics_pca_v1.json
+inputs:
+  expression_cache_path: artifacts/replogle_expression_readout_v1.h5
+  expression_cache_bytes: 4091928784
+  expression_cache_sha256: 3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0
+  metadata_cache_path: artifacts/replogle_latents_f1e5dce.h5
+  metadata_cache_bytes: 431844688
+  metadata_cache_sha256: af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6
+  output_path: artifacts/replogle_pca_state_v1.h5
+fit:
+  roles: [control_train, control_inference, dynamics_train]
+  cells: 114029
+  cell_ids_sha256: 8512ecafb3b293a47e98c6eb634d4e78bf4149d5f39dcf934e74c68f290b43b4
+  dimensions: 256
+  oversampling: 32
+  power_iterations: 2
+  block_size: 1024
+  dtype: float32
+output_directory: artifacts/ablations/pca_state
+cpu_smoke:
+  fit_cells: 768
+  transform_cells: 1024
+  batch_size: 2
+  epoch_batch_size: 16
+  checkpoint_step: 1
+  steps: 2
+  output_directory: artifacts/pca_state_cpu_smoke
+  uninterrupted_output_directory: artifacts/pca_state_cpu_smoke_uninterrupted
+  epoch_output_directory: artifacts/pca_state_cpu_epoch
+cuda_smoke:
+  batch_size: 16
+  checkpoint_step: 16
+  steps: 64
+  validation_batches: 2
+  output_directory: artifacts/pca_state_cuda_smoke
