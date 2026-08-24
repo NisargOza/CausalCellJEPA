@@ -1,0 +1,15 @@
+# Frozen-state caching precedes every Stage 2 population/dynamics experiment.
+# The full cache is a GPU task; CPU is reserved for the four-cell integration gate.
+seed: 20260823
+latent_cache:
+  teacher_path: artifacts/stage1_thunder_f1e5dce/stage1/canonical_ema_teacher.pt
+  teacher_sha256: 03924557312b4829716fe643fd6d6f9f0704acec470773094326ac1fb47c074f
+  output_path: artifacts/replogle_latents_f1e5dce.h5
+  expected_cells: 340684
+  batch_size: 128
+  chunk_cells: 1024
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  dtype: float32

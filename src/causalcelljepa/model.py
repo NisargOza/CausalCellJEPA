@@ -2,6 +2,7 @@
 # The encoder sees gene/value tokens only: no context, action, batch, or cell-line IDs.
 import math
 from copy import deepcopy
+from pathlib import Path
 
 import torch
 from torch import nn
@@ -104,6 +105,26 @@ class CellJEPA(nn.Module):
     def update_teacher(self, momentum):
         for teacher, online in zip(self.teacher.parameters(), self.online.parameters()):
             teacher.lerp_(online, 1.0 - momentum)
+
+
+def load_frozen_teacher(path, vocab_size=3_000, device="cpu"):
+    """Load the completed canonical EMA encoder without any trainable parameters."""
+    payload = torch.load(Path(path), map_location=device, weights_only=False)
+    config = payload["encoder_configuration"]
+    assert payload["format_version"] == 1 and payload["frozen"] is True
+    assert payload["training_state"]["complete"] is True
+    encoder = CellEncoder(
+        vocab_size=vocab_size,
+        token_dim=config["token_dim"],
+        latent_queries=config["latent_queries"],
+        blocks=config["blocks"],
+        heads=config["heads"],
+        ffn_dim=config["ffn_dim"],
+        dropout=config["dropout"],
+        cell_dim=config["cell_dim"],
+    ).to(device)
+    encoder.load_state_dict(payload["teacher"], strict=True)
+    return encoder.requires_grad_(False).eval(), payload
 
 
 def mask_gene_tokens(

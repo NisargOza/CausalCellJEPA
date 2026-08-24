@@ -74,14 +74,18 @@ and 5,623 admitted validation cells. Checkpoints contain online/teacher/predicto
 optimizer and scheduler state, the exact training cursor, all RNG states, effective
 configuration, and source/split/HVG/GMT/code provenance. DataLoader randomness is isolated
 from model randomness, and an interrupted real-data CPU run matched an uninterrupted run
-tensor-for-tensor after resume. The canonical EMA teacher cannot be exported until a full
-configured run completes; early stopping selects the best admitted-cell validation epoch.
+tensor-for-tensor after resume. Stage 1 then completed on one NVIDIA RTX A6000 at clean
+commit `f1e5dce`: early stopping selected epoch 0 after 20,328 optimizer steps, all 20,334
+train/validation records were finite, and the 35.4-minute run peaked at 311,888,896 CUDA
+bytes. The downloaded canonical teacher is frozen and matches the best-checkpoint EMA
+tensors exactly. These are engineering/training facts; downstream biological performance
+has not yet been evaluated.
 
-CPU validation completed 100 real-data optimizer steps at batch size 32 with finite losses;
-the mean engineering-smoke loss changed from 0.0493 over the first 20 steps to 0.0243 over
-the last 20. This is a numerical stability check, not a biological performance result. The
-observed throughput was about 106 cells/second, projecting roughly nine CPU hours for the
-configured 30-epoch fit including validation. Full Stage 1 pretraining has not been run.
+The next phase embeds exactly 340,684 cells carrying non-excluded frozen roles, including
+sealed outcomes only after encoder freezing. `scripts/cache_latents.py` streams the fixed
+256-dimensional states plus cell, context, target, batch, raw-row, and role metadata into a
+provenance-rich HDF5 cache. It refuses CPU fallback; a small CPU integration check precedes
+the short full-cache GPU job.
 
 ## Development
 
@@ -93,13 +97,13 @@ uv run python scripts/resources.py
 uv run python scripts/audit_stage1.py
 uv run python scripts/smoke_stage1.py
 uv run python scripts/smoke_cuda_stage1.py
+uv run python scripts/cache_latents.py
 uv run ruff check .
 uv run pytest
 ```
 
-After committing a clean code/provenance checkpoint, run full Stage 1 pretraining with
-`uv run python scripts/pretrain.py`. A CUDA GPU is required for that run. No biological
-experiment, full model training, or matched-baseline comparison has been run yet.
+Full neural jobs require CUDA. No Stage 2 dynamics experiment, biological evaluation, or
+matched-baseline comparison has been run yet.
 
 Full pretraining refuses to fall back to CPU. To resume without modifying the frozen
 configuration, set `CAUSALCELLJEPA_RESUME_FROM=artifacts/stage1/latest.pt`. CUDA runs set the

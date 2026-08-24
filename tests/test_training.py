@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from causalcelljepa.model import CellEncoder, CellJEPA
+from causalcelljepa.model import CellEncoder, CellJEPA, load_frozen_teacher
 from causalcelljepa.training import (
     _configuration_for_resume,
     _data_loader,
@@ -83,6 +83,27 @@ def test_checkpoint_round_trip_provenance_and_teacher_export_guard(tmp_path):
         load_checkpoint(path, model, optimizer, scheduler, {"wrong": "hash"}, "cpu")
     with pytest.raises(ValueError, match="forbidden"):
         export_canonical_teacher(tmp_path / "teacher.pt", model, state, {"stage1": {}}, provenance)
+
+    state.update(complete=True, completion_reason="configured_epochs")
+    encoder_config = {
+        "token_dim": 12,
+        "latent_queries": 2,
+        "blocks": 1,
+        "heads": 3,
+        "ffn_dim": 24,
+        "dropout": 0.0,
+        "cell_dim": 8,
+    }
+    teacher_path = export_canonical_teacher(
+        tmp_path / "teacher.pt", model, state, {"stage1": encoder_config}, provenance
+    )
+    teacher, payload = load_frozen_teacher(teacher_path, vocab_size=20)
+    assert payload["training_state"]["complete"] is True
+    assert not teacher.training and all(not parameter.requires_grad for parameter in teacher.parameters())
+    assert all(
+        torch.equal(value, model.teacher.state_dict()[key])
+        for key, value in teacher.state_dict().items()
+    )
 
     base = {"stage1": {"training": {"resume_from": None}}}
     resumed = {"stage1": {"training": {"resume_from": "artifacts/stage1/latest.pt"}}}
