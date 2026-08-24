@@ -528,7 +528,12 @@ def _condition_summary(records, resamples, seed):
     return summary
 
 
-def _paired_comparisons(records, resamples, seed):
+def _paired_comparisons(
+    records,
+    resamples,
+    seed,
+    baselines=("no_change", "mean_effect", "linear_esm", "pseudo_paired"),
+):
     target_values = defaultdict(list)
     for record in records:
         for metric in set(record) - _TRANSCRIPTOMIC_METADATA:
@@ -540,7 +545,7 @@ def _paired_comparisons(records, resamples, seed):
     comparisons = []
     for regime in sorted({record["regime"] for record in records}):
         metrics = sorted({key[3] for key in averaged if key[:2] == (regime, "causalcelljepa")})
-        for baseline in ("no_change", "mean_effect", "linear_esm", "pseudo_paired"):
+        for baseline in baselines:
             for metric in metrics:
                 targets = sorted(
                     key[2]
@@ -935,3 +940,267 @@ def run_readout_oracle(config, regimes=None, maximum_conditions=None, output_dir
             for value in values:
                 handle.write(json.dumps(value, sort_keys=True) + "\n")
     return summary, truth_report, provenance
+
+
+def _expression_role_effects(config, roles, maximum_targets=None):
+    inputs = config["inputs"]
+    with h5py.File(inputs["latent_cache_path"], "r") as latent, h5py.File(
+        inputs["expression_cache_path"], "r"
+    ) as expression_cache:
+        cache_roles = latent["role"].asstr()[:]
+        targets = latent["target"].asstr()[:]
+        batches = latent["source_batch"].asstr()[:]
+        contexts = latent["context"].asstr()[:]
+        control_indices = np.flatnonzero(cache_roles == "control_train")
+        assert set(contexts[control_indices]) == {"K562"}
+        expression = expression_cache["expression"]
+        control_means = {
+            batch: expression[np.sort(control_indices[batches[control_indices] == batch])].mean(
+                0, dtype=np.float64
+            )
+            for batch in sorted(set(batches[control_indices]))
+        }
+        effects = {}
+        for role in roles:
+            outcome_indices = np.flatnonzero(cache_roles == role)
+            assert set(contexts[outcome_indices]) == {"K562"}
+            role_targets = sorted(set(targets[outcome_indices]))
+            role_targets = role_targets[: maximum_targets or len(role_targets)]
+            effects[role] = {}
+            for target in role_targets:
+                indices = np.sort(outcome_indices[targets[outcome_indices] == target])
+                target_batches = batches[indices]
+                matched_control = sum(
+                    np.count_nonzero(target_batches == batch) * control_means[batch]
+                    for batch in set(target_batches)
+                ) / len(indices)
+                effects[role][target] = (
+                    expression[indices].mean(0, dtype=np.float64) - matched_control
+                ).astype(np.float32)
+    return effects
+
+
+def fit_direct_gene_baseline(config, maximum_targets=None):
+    """Fit ESM-to-expression effects with K562 train/validation outcomes only."""
+    direct, base = config["direct_gene"], config["transcriptomics"]
+    effects = _expression_role_effects(
+        base,
+        (direct["fit_outcome_role"], direct["selection_outcome_role"]),
+        maximum_targets,
+    )
+    action = torch.load(base["inputs"]["action_cache_path"], map_location="cpu", weights_only=True)
+    action_map = {
+        target: (action["embedding"][index].numpy(), bool(action["known"][index]))
+        for index, target in enumerate(action["targets"])
+    }
+    train = effects[direct["fit_outcome_role"]]
+    known_targets = [target for target in sorted(train) if action_map[target][1]]
+    x = np.stack([action_map[target][0] for target in known_targets]).astype(np.float64)
+    y = np.stack([train[target] for target in known_targets]).astype(np.float64)
+    x_mean, x_std = x.mean(0), x.std(0).clip(1e-8)
+    y_mean = y.mean(0)
+    _, _, components = np.linalg.svd(y - y_mean, full_matrices=False)
+    components = components[: min(direct["rank"], len(known_targets))]
+    scores = (y - y_mean) @ components.T
+    standardized = (x - x_mean) / x_std
+    gram, cross = standardized.T @ standardized, standardized.T @ scores
+    validation = effects[direct["selection_outcome_role"]]
+    validation_targets = sorted(validation)
+    validation_x = np.stack([action_map[target][0] for target in validation_targets])
+    validation_y = np.stack([validation[target] for target in validation_targets])
+    candidates = []
+    for alpha in direct["ridge_candidates"]:
+        weights = np.linalg.solve(gram + alpha * np.eye(gram.shape[0]), cross)
+        prediction = ((validation_x - x_mean) / x_std) @ weights @ components + y_mean
+        candidates.append((float(np.mean((prediction - validation_y) ** 2)), alpha, weights))
+    validation_mse, alpha, weights = min(candidates, key=lambda item: (item[0], item[1]))
+    checkpoint = {
+        "format_version": 1,
+        "architecture": "direct_gene_esm_low_rank_ridge",
+        "x_mean": torch.from_numpy(x_mean.astype(np.float32)),
+        "x_std": torch.from_numpy(x_std.astype(np.float32)),
+        "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
+        "components": torch.from_numpy(components.astype(np.float32)),
+        "weights": torch.from_numpy(weights.astype(np.float32)),
+        "report": {
+            "fit_outcome_role": direct["fit_outcome_role"],
+            "selection_outcome_role": direct["selection_outcome_role"],
+            "fit_targets": len(train),
+            "fit_targets_with_known_action": len(known_targets),
+            "selection_targets": len(validation_targets),
+            "rank": len(components),
+            "selected_ridge": alpha,
+            "selection_mse": validation_mse,
+            "ridge_validation_mse": [value for value, _, _ in candidates],
+        },
+        "provenance": {
+            "config_sha256": file_sha256("configs/direct_gene.yaml"),
+            "latent_cache_sha256": base["inputs"]["latent_cache_sha256"],
+            "expression_cache_sha256": base["inputs"]["expression_cache_sha256"],
+            "action_cache_sha256": base["inputs"]["action_cache_sha256"],
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+    return checkpoint
+
+
+def direct_gene_predictions(checkpoint, action_path):
+    action = torch.load(action_path, map_location="cpu", weights_only=True)
+    standardized = (action["embedding"] - checkpoint["x_mean"]) / checkpoint["x_std"]
+    predicted = (
+        standardized @ checkpoint["weights"] @ checkpoint["components"]
+        + checkpoint["y_mean"]
+    )
+    predicted[~action["known"]] = checkpoint["y_mean"]
+    return {target: predicted[index].numpy() for index, target in enumerate(action["targets"])}
+
+
+def run_direct_gene_evaluation(config, checkpoint):
+    """Evaluate the frozen direct gene-space baseline against the frozen five-model result."""
+    base, direct = config["transcriptomics"], config["direct_gene"]
+    manifest = json.loads(Path(config["transcriptomics_manifest_path"]).read_text())
+    declared = manifest.pop("manifest_sha256")
+    assert declared == config["transcriptomics_manifest_sha256"] == sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    prior_directory = Path(base["output_directory"])
+    prior_hash = manifest["artifacts"]["predictive_evaluation"]["condition_metrics"][
+        "sha256"
+    ]
+    assert file_sha256(prior_directory / "condition_metrics.jsonl") == prior_hash
+    predictions = direct_gene_predictions(checkpoint, base["inputs"]["action_cache_path"])
+    truth, truth_report = expression_truth(base)
+    replogle = json.loads(Path(base["inputs"]["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    pathway_matrix, pathway_labels = _load_pathway_matrix(
+        base["inputs"]["go_gmt_path"], hvg_genes
+    )
+    assert len(pathway_labels) == 4328
+    records, pathway_records, retrieval = [], [], []
+    for regime, specification in base["regimes"].items():
+        targets = sorted(target for key, target in truth if key == regime)
+        predicted_signatures = np.stack([predictions[target] for target in targets])
+        true_signatures = np.stack([truth[regime, target]["effect"] for target in targets])
+        normalized_prediction = predicted_signatures / np.linalg.norm(
+            predicted_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        normalized_truth = true_signatures / np.linalg.norm(
+            true_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        similarity = normalized_prediction @ normalized_truth.T
+        ranks = np.asarray(
+            [
+                1
+                + np.count_nonzero(row > row[index])
+                + 0.5 * (np.count_nonzero(row == row[index]) - 1)
+                for index, row in enumerate(similarity)
+            ]
+        )
+        retrieval.append(
+            {
+                "regime": regime,
+                "model": "direct_gene_esm",
+                "targets": len(targets),
+                "top_1": float(np.mean(ranks <= 1)),
+                "top_5": float(np.mean(ranks <= 5)),
+                "mean_reciprocal_rank": float(np.mean(1 / ranks)),
+                "median_rank": float(np.median(ranks)),
+            }
+        )
+        for index, target in enumerate(targets):
+            observed = truth[regime, target]
+            metadata = {
+                "regime": regime,
+                "context": specification["context"],
+                "outcome_role": specification["outcome_role"],
+                "target": target,
+                "repeat": 0,
+                "model": "direct_gene_esm",
+                "truth_batches": observed["batches"],
+                "truth_cells": observed["cells"],
+                "true_deg_count": int(observed["deg"].sum()),
+                "target_in_hvg": target in hvg_index,
+            }
+            records.append(
+                {
+                    **metadata,
+                    **gene_effect_metrics(
+                        predicted_signatures[index],
+                        observed["effect"],
+                        hvg_index.get(target),
+                        observed["deg"],
+                        base["metrics"]["retrospective_top_genes"],
+                    ),
+                }
+            )
+            pathway_records.append(
+                {
+                    **metadata,
+                    **pathway_agreement(
+                        predicted_signatures[index],
+                        observed["effect"],
+                        pathway_matrix,
+                        base["metrics"]["pathway_top_k"],
+                    ),
+                }
+            )
+    prior_records = [
+        json.loads(line)
+        for line in (prior_directory / "condition_metrics.jsonl").read_text().splitlines()
+        if '"model": "causalcelljepa"' in line
+    ]
+    prior_pathways = [
+        json.loads(line)
+        for line in (prior_directory / "pathway_metrics.jsonl").read_text().splitlines()
+        if '"model": "causalcelljepa"' in line
+    ]
+    resamples = base["metrics"]["bootstrap_resamples"]
+    summary = {
+        "condition_metrics": _condition_summary(records, resamples, base["seed"]),
+        "pathway_metrics": _condition_summary(pathway_records, resamples, base["seed"]),
+        "retrieval": retrieval,
+    }
+    paired = {
+        "condition_comparisons": _paired_comparisons(
+            prior_records + records,
+            resamples,
+            base["seed"],
+            baselines=("direct_gene_esm",),
+        ),
+        "pathway_comparisons": _paired_comparisons(
+            prior_pathways + pathway_records,
+            resamples,
+            base["seed"],
+            baselines=("direct_gene_esm",),
+        ),
+    }
+    provenance = {
+        "config": deepcopy(config),
+        "checkpoint_provenance": checkpoint["provenance"],
+        "prior_transcriptomics_manifest_sha256": declared,
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    output = Path(direct["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    for filename, payload in (
+        ("summary.json", summary),
+        ("paired_comparisons.json", paired),
+        ("truth_report.json", truth_report),
+        ("fit_report.json", checkpoint["report"]),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (
+        ("condition_metrics.jsonl", records),
+        ("pathway_metrics.jsonl", pathway_records),
+    ):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, paired, truth_report, provenance

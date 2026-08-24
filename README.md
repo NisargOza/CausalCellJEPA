@@ -169,6 +169,11 @@ and schedule. All three passed exact two-step CPU checkpoint/resume replay and a
 698-train/100-validation-condition CPU epoch. Bounded CUDA replay is the remaining gate before
 the three full jobs share one paid GPU instance.
 
+The required direct gene-space comparison is implemented separately as an ESM-2-to-expression-
+effect low-rank ridge model. It fits K562 dynamics-training effects, selects ridge strength only
+on K562 perturbation-OOD validation targets, and evaluates the same gene, DE, retrieval, pathway,
+and paired metrics without passing through the JEPA state or transcriptomic decoder.
+
 ## Development
 
 ```bash
@@ -199,6 +204,8 @@ uv run python scripts/audit_readout.py
 uv run python scripts/smoke_ablations.py
 uv run python scripts/smoke_cuda_ablations.py
 uv run python scripts/train_ablations.py
+uv run python scripts/smoke_direct_gene.py
+uv run python scripts/evaluate_direct_gene.py
 uv run ruff check .
 uv run pytest
 ```
