@@ -159,15 +159,28 @@ models and paired statistics without reading sealed or RPE1 perturbed test roles
 four-regime transcriptomic evaluation is followed by a diagnostic decoder-ceiling audit that
 decodes observed outcome latents; that audit is explicitly not a predictive baseline.
 
-## Mechanism ablations
+## Mechanism and representation ablations
 
 [`configs/ablations.yaml`](configs/ablations.yaml) fixes the first three required matched Stage 2
 ablations: removing the pooled global context, replacing the Set Transformer summary with a
 control mean, and removing effect-direction loss. Each preserves the same frozen state/action
 caches, training/validation target roles, transition capacity, selected Sinkhorn blur, optimizer,
-and schedule. All three passed exact two-step CPU checkpoint/resume replay and a complete finite
-698-train/100-validation-condition CPU epoch. Bounded CUDA replay is the remaining gate before
-the three full jobs share one paid GPU instance.
+and schedule. All three passed exact CPU/CUDA replay, full training, and the sealed four-regime
+evaluation. The full model is best calibrated after context transfer, while removing global
+context improves transferred direction; the result is a direction-calibration tradeoff rather
+than uniform support for every proposed mechanism.
+
+The remaining required internal comparisons replace ESM-2 with learned target identity and the
+JEPA state with matched 256-D PCA or reconstruction-autoencoder states. All three passed bounded
+CPU/CUDA replay and full L40 training before evaluation through a common 3,000-HVG expression
+endpoint. PCA uses its frozen inverse projection, the autoencoder uses its frozen reconstruction
+decoder, and the learned-ID model shares the leakage-safe JEPA readout. Perturbation-level paired
+analysis finds no uniform JEPA-state or ESM-2-action advantage: PCA/autoencoder improve K562
+direction and calibration, JEPA is better calibrated after RPE1 transfer but retains poor
+transferred direction, and learned IDs match or beat ESM-2 on most decoded endpoints. Removing
+the perturbed target gene does not change those conclusions. Exact artifacts and hashes are
+frozen in
+[`manifests/evaluation_remaining_comparators_v1.json`](manifests/evaluation_remaining_comparators_v1.json).
 
 The required direct gene-space comparison is implemented separately as an ESM-2-to-expression-
 effect low-rank ridge model. It fits K562 dynamics-training effects, selects ridge strength only
@@ -204,6 +217,9 @@ uv run python scripts/audit_readout.py
 uv run python scripts/smoke_ablations.py
 uv run python scripts/smoke_cuda_ablations.py
 uv run python scripts/train_ablations.py
+uv run python scripts/smoke_remaining_comparators.py
+uv run python scripts/evaluate_remaining_comparators.py
+uv run python scripts/analyze_remaining_comparators.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
 uv run ruff check .
