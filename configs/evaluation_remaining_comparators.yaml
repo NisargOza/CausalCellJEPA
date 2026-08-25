@@ -1,0 +1,43 @@
+# Compare the frozen action/state ablations in the common 3,000-HVG expression space.
+# Every representation readout was fit without validation, sealed, or RPE1 perturbed outcomes.
+base_transcriptomics_config_path: configs/transcriptomics.yaml
+base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+inputs:
+  comparator_manifest_path: manifests/dynamics_comparators_v1.json
+  comparator_manifest_sha256: 6615ac61cdfbd46312ad6d4cc675555f50d803b780f38004aef1cab66f032eae
+  base_manifest_path: manifests/transcriptomics_v1.json
+  base_manifest_sha256: 06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af
+  base_condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+  base_condition_metrics_bytes: 89852133
+  base_condition_metrics_records: 71760
+  base_condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+  base_pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+  base_pathway_metrics_bytes: 4088543
+  base_pathway_metrics_records: 8970
+  base_pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+  base_summary_path: artifacts/transcriptomic_evaluation/summary.json
+  base_summary_bytes: 154198
+  base_summary_sha256: abb6de6c086707355eacb8272891de88284113c93bf9c429bcb0a19de02fb288
+  base_provenance_path: artifacts/transcriptomic_evaluation/provenance.json
+  base_provenance_bytes: 8535
+  base_provenance_sha256: 6c1faeb43786afa0dd0f48b364b4120d7e626aaf7b3448e259a933e6da76fec6
+models:
+  learned_target_id: configs/learned_target_id.yaml
+  pca_state: configs/pca_state.yaml
+  autoencoder_state: configs/autoencoder_state.yaml
+comparisons:
+  - candidate: causalcelljepa
+    reference: learned_target_id
+    hypothesis: structured ESM-2 actions improve over learned target identity
+  - candidate: causalcelljepa
+    reference: pca_state
+    hypothesis: the frozen JEPA state improves over a matched PCA state
+  - candidate: causalcelljepa
+    reference: autoencoder_state
+    hypothesis: predictive JEPA pretraining improves over reconstruction pretraining
+output_directory: artifacts/evaluation_remaining_comparators
+cpu_smoke:
+  regimes: [iid]
+  repeats: 1
+  maximum_conditions_per_regime: 2
+  output_directory: artifacts/evaluation_remaining_comparators_cpu_smoke

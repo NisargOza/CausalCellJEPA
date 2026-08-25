@@ -3,6 +3,8 @@ import torch
 from scipy import sparse
 
 from causalcelljepa.readout import (
+    _paired_transcriptomic_models,
+    decode_representation_centroids,
     decoder_split,
     gene_effect_metrics,
     normalized_hvg_expression,
@@ -59,6 +61,33 @@ def test_reconstruction_autoencoder_uses_the_matched_bottleneck():
     assert model(expression).shape == expression.shape
 
 
+def test_representation_decoders_share_expression_space():
+    latent = torch.tensor([[1.0, 2.0]])
+    pca = decode_representation_centroids(
+        latent,
+        {
+            "kind": "pca_inverse",
+            "latent_mean": torch.tensor([3.0, 4.0]),
+            "latent_scale": torch.tensor([2.0, 3.0]),
+            "components": torch.tensor([[1.0, 0.0, 1.0], [0.0, 1.0, -1.0]]),
+            "expression_mean": torch.tensor([0.5, 0.5, 0.5]),
+        },
+    )
+    assert torch.equal(pca, torch.tensor([[5.5, 10.5, 0.0]]))
+    autoencoder = ReconstructionAutoencoder(3, 4, 2, 0).eval()
+    expected = autoencoder.decoder(torch.tensor([[5.0, 10.0]])).clamp_min(0)
+    observed = decode_representation_centroids(
+        latent,
+        {
+            "kind": "autoencoder",
+            "latent_mean": torch.tensor([3.0, 4.0]),
+            "latent_scale": torch.tensor([2.0, 3.0]),
+            "model": autoencoder,
+        },
+    )
+    assert torch.equal(observed, expected)
+
+
 def test_pca_state_is_deterministic_centered_and_canonically_oriented():
     expression = np.random.default_rng(8).normal(size=(24, 7)).astype(np.float32)
     first = fit_pca_state(expression, 3, 1, 2, 19)
@@ -91,3 +120,38 @@ def test_gene_effect_and_pathway_metrics_are_exact_for_perfect_prediction():
     assert np.isclose(pathways["pathway_rank_spearman"], 1.0)
     assert pathways["pathway_nes_rmse"] == 0
     assert pathways["pathway_top1_jaccard"] == pathways["pathway_top2_jaccard"] == 1.0
+
+
+def test_arbitrary_transcriptomic_pairs_use_metric_specific_directions():
+    records = []
+    for target in ("A", "B"):
+        records.extend(
+            [
+                {
+                    "regime": "double_ood",
+                    "context": "RPE1",
+                    "outcome_role": "double_ood_test",
+                    "target": target,
+                    "repeat": 0,
+                    "model": "candidate",
+                    "all_effect_pearson": 0.5,
+                    "all_magnitude_ratio": 1.1,
+                    "all_magnitude_absolute_error": 0.2,
+                },
+                {
+                    "regime": "double_ood",
+                    "context": "RPE1",
+                    "outcome_role": "double_ood_test",
+                    "target": target,
+                    "repeat": 0,
+                    "model": "reference",
+                    "all_effect_pearson": 0.2,
+                    "all_magnitude_ratio": 1.4,
+                    "all_magnitude_absolute_error": 0.6,
+                },
+            ]
+        )
+    pairs = [{"candidate": "candidate", "reference": "reference", "hypothesis": "test"}]
+    comparisons = _paired_transcriptomic_models(records, pairs, 100, 7)
+    assert len(comparisons) == 3
+    assert all(item["mean_improvement"] > 0 for item in comparisons)
