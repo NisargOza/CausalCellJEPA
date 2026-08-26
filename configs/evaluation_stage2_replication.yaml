@@ -1,0 +1,77 @@
+# Evaluate independent Stage 2 seeds under the already sealed four-regime protocol.
+base_evaluation_config_path: configs/evaluation.yaml
+base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+model_source: stage2_replication
+inputs:
+  replication_training_manifest_path: manifests/stage2_replication_training_v1.json
+  replication_training_manifest_sha256: bd967f5c697efc192ea4837f4b559ad9def89b69041a87c44355dd96a2c903b5
+  base_evaluation_manifest_path: manifests/evaluation_pseudo_v1.json
+  base_evaluation_manifest_sha256: 7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6
+  base_condition_metrics_path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+  base_condition_metrics_bytes: 37262909
+  base_condition_metrics_records: 71760
+  base_condition_metrics_sha256: d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50
+  base_summary_path: artifacts/evaluation_with_pseudo/summary.json
+  base_summary_bytes: 61457
+  base_summary_sha256: 677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b
+  base_provenance_path: artifacts/evaluation_with_pseudo/provenance.json
+  base_provenance_bytes: 6831
+  base_provenance_sha256: a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72
+models:
+  - seed_20260824
+  - seed_20260825
+model_seeds:
+  seed_20260824: 20260824
+  seed_20260825: 20260825
+comparisons:
+  - candidate: causalcelljepa
+    reference: no_change
+    hypothesis: primary seed improves over predicting no perturbation
+  - candidate: causalcelljepa
+    reference: mean_effect
+    hypothesis: primary seed improves over the K562 mean perturbation effect
+  - candidate: causalcelljepa
+    reference: linear_esm
+    hypothesis: primary seed improves over a low-rank ESM-to-effect ridge model
+  - candidate: causalcelljepa
+    reference: pseudo_paired
+    hypothesis: primary distributional training improves over pseudo-paired training
+  - candidate: seed_20260824
+    reference: no_change
+    hypothesis: replication seed 20260824 improves over predicting no perturbation
+  - candidate: seed_20260824
+    reference: mean_effect
+    hypothesis: replication seed 20260824 improves over the K562 mean perturbation effect
+  - candidate: seed_20260824
+    reference: linear_esm
+    hypothesis: replication seed 20260824 improves over a low-rank ESM-to-effect ridge model
+  - candidate: seed_20260824
+    reference: pseudo_paired
+    hypothesis: replicated distributional training improves over pseudo-paired training
+  - candidate: seed_20260825
+    reference: no_change
+    hypothesis: replication seed 20260825 improves over predicting no perturbation
+  - candidate: seed_20260825
+    reference: mean_effect
+    hypothesis: replication seed 20260825 improves over the K562 mean perturbation effect
+  - candidate: seed_20260825
+    reference: linear_esm
+    hypothesis: replication seed 20260825 improves over a low-rank ESM-to-effect ridge model
+  - candidate: seed_20260825
+    reference: pseudo_paired
+    hypothesis: replicated distributional training improves over pseudo-paired training
+  - candidate: seed_20260824
+    reference: causalcelljepa
+    hypothesis: quantify initialization sensitivity relative to the primary seed
+  - candidate: seed_20260825
+    reference: causalcelljepa
+    hypothesis: quantify initialization sensitivity relative to the primary seed
+  - candidate: seed_20260825
+    reference: seed_20260824
+    hypothesis: quantify variability between independent replication seeds
+output_directory: artifacts/evaluation_stage2_replication
+cpu_smoke:
+  regimes: [iid]
+  repeats: 1
+  maximum_conditions_per_regime: 2
+  output_directory: artifacts/evaluation_stage2_replication_cpu_smoke
