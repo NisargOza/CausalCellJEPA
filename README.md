@@ -7,8 +7,9 @@ specification is [`RESEARCH_PROPOSAL.md`](RESEARCH_PROPOSAL.md).
 
 ## Current milestone
 
-The minimum latent-space Replogle experiment is complete and transcriptomic readout is
-underway. Its leakage-resistant data/split foundation includes:
+The minimum latent-space Replogle experiment, common transcriptomic comparisons, and
+three-seed Stage 2 robustness evaluation are complete. The leakage-resistant data/split
+foundation includes:
 
 - 10,000-count normalization followed by `log1p`;
 - HVG fitting on an explicit training-visible mask;
@@ -140,6 +141,19 @@ regime. Cross-context effect direction remains weak and does not beat the linear
 This metric-dependent, partly negative result is frozen in
 [`manifests/evaluation_pseudo_v1.json`](manifests/evaluation_pseudo_v1.json).
 
+Two additional Stage 2 seeds passed exact CPU/CUDA replay and early-stopped independently on
+K562-only validation at losses `0.4402` and `0.4380`. Under identical frozen evaluation
+populations, all three seeds retain strong K562 effect prediction. The additional seeds also
+raise RPE1 effect Pearson correlation to `0.247`--`0.259` in context-OOD and
+`0.252`--`0.258` in double-OOD, above both linear ESM and pseudo-paired baselines; the primary
+seed remains much weaker at `0.059` and `0.071`, exposing material seed sensitivity. All three
+seeds improve RPE1 magnitude and covariance error over linear ESM and improve distribution and
+calibration metrics over pseudo-pairing, but all three lose to no-change/linear baselines on
+RPE1 Sinkhorn and MMD. The multi-seed result therefore strengthens the effect-direction and
+pseudo-pairing conclusions without supporting universal transferred distributional superiority.
+Exact artifacts and paired statistics are frozen in
+[`manifests/evaluation_stage2_replication_v1.json`](manifests/evaluation_stage2_replication_v1.json).
+
 ## Transcriptomic readout
 
 [`configs/readout.yaml`](configs/readout.yaml) defines a separate linear decoder from normalized
@@ -220,6 +234,12 @@ uv run python scripts/train_ablations.py
 uv run python scripts/smoke_remaining_comparators.py
 uv run python scripts/evaluate_remaining_comparators.py
 uv run python scripts/analyze_remaining_comparators.py
+uv run python scripts/smoke_stage2_replication.py
+uv run python scripts/smoke_cuda_stage2_replication.py
+uv run python scripts/train_stage2_replication.py
+uv run python scripts/smoke_evaluation_stage2_replication.py
+uv run python scripts/evaluate_stage2_replication.py
+uv run python scripts/analyze_stage2_replication.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
 uv run ruff check .
