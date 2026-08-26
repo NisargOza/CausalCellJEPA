@@ -15,8 +15,14 @@ from scipy import sparse
 from scipy.stats import rankdata, t, wilcoxon
 from torch.utils.data import DataLoader
 
-from causalcelljepa.dynamics import LatentPopulationDataset, build_dynamics_model
+from causalcelljepa.dynamics import (
+    LatentPopulationDataset,
+    build_dynamics_model,
+    learned_target_id_config,
+    state_ablation_config,
+)
 from causalcelljepa.evaluation import fit_linear_baseline
+from causalcelljepa.representations import build_autoencoder
 from causalcelljepa.resources import file_sha256
 from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
 
@@ -269,6 +275,19 @@ def decode_normalized_latents(latents, checkpoint):
     return (latents @ checkpoint["weights"] + checkpoint["bias"]).clamp_min(
         checkpoint["output_clamp_min"]
     )
+
+
+def decode_representation_centroids(latents, decoder):
+    """Map normalized state centroids through one frozen representation-specific readout."""
+    if decoder["kind"] == "jepa_linear":
+        return decode_normalized_latents(latents, decoder["checkpoint"])
+    raw = latents * decoder["latent_scale"] + decoder["latent_mean"]
+    if decoder["kind"] == "pca_inverse":
+        expression = raw @ decoder["components"] + decoder["expression_mean"]
+    else:
+        assert decoder["kind"] == "autoencoder"
+        expression = decoder["model"].decoder(raw)
+    return expression.clamp_min(0)
 
 
 def _bh_adjust(p_values):
@@ -596,6 +615,83 @@ def _paired_comparisons(
     return comparisons
 
 
+def _paired_transcriptomic_models(records, pairs, resamples, seed):
+    """Compare arbitrary models on matched perturbations using transcriptomic metric directions."""
+    target_values = defaultdict(list)
+    for record in records:
+        for metric in set(record) - _TRANSCRIPTOMIC_METADATA:
+            if record[metric] is not None:
+                target_values[record["regime"], record["model"], record["target"], metric].append(
+                    record[metric]
+                )
+    averaged = {key: float(np.mean(values)) for key, values in target_values.items()}
+    comparisons = []
+    for regime in sorted({record["regime"] for record in records}):
+        for pair in pairs:
+            candidate, reference = pair["candidate"], pair["reference"]
+            metrics = sorted({
+                key[3]
+                for key in averaged
+                if key[:2] == (regime, candidate)
+                and (regime, reference, key[2], key[3]) in averaged
+            })
+            for metric in metrics:
+                targets = sorted(
+                    key[2]
+                    for key in averaged
+                    if key[:2] == (regime, candidate)
+                    and key[3] == metric
+                    and (regime, reference, key[2], metric) in averaged
+                )
+                candidate_values = np.asarray(
+                    [averaged[regime, candidate, target, metric] for target in targets]
+                )
+                reference_values = np.asarray(
+                    [averaged[regime, reference, target, metric] for target in targets]
+                )
+                if metric.endswith("magnitude_ratio"):
+                    improvement = np.abs(reference_values - 1) - np.abs(candidate_values - 1)
+                    direction = "closer_to_one_is_better"
+                elif metric.endswith(("absolute_error", "rmse")):
+                    improvement, direction = reference_values - candidate_values, "lower_is_better"
+                else:
+                    improvement, direction = candidate_values - reference_values, "higher_is_better"
+                key = f"{regime}\0{candidate}\0{reference}\0{metric}"
+                generator = np.random.default_rng(
+                    (int.from_bytes(sha256(key.encode()).digest()[:8], "little") + seed)
+                    % (1 << 64)
+                )
+                bootstrap = improvement[
+                    generator.integers(0, len(improvement), (resamples, len(improvement)))
+                ].mean(1)
+                p_value = 1.0 if np.all(improvement == 0) else float(
+                    wilcoxon(improvement, alternative="two-sided", method="approx").pvalue
+                )
+                comparisons.append(
+                    {
+                        "regime": regime,
+                        "candidate": candidate,
+                        "reference": reference,
+                        "hypothesis": pair["hypothesis"],
+                        "metric": metric,
+                        "direction": direction,
+                        "targets": len(targets),
+                        "candidate_mean": float(candidate_values.mean()),
+                        "reference_mean": float(reference_values.mean()),
+                        "mean_improvement": float(improvement.mean()),
+                        "median_improvement": float(np.median(improvement)),
+                        "mean_improvement_bootstrap_95ci": [
+                            float(value) for value in np.quantile(bootstrap, (0.025, 0.975))
+                        ],
+                        "wilcoxon_two_sided_p": p_value,
+                    }
+                )
+    q_values = _bh_adjust(np.asarray([item["wilcoxon_two_sided_p"] for item in comparisons]))
+    for comparison, q_value in zip(comparisons, q_values):
+        comparison["benjamini_hochberg_q"] = float(q_value)
+    return comparisons
+
+
 @torch.no_grad()
 def run_transcriptomic_evaluation(
     config, regimes=None, repeats=None, maximum_conditions=None, output_directory=None
@@ -811,6 +907,352 @@ def run_transcriptomic_evaluation(
         ("paired_comparisons.json", paired),
         ("truth_report.json", truth_report),
         ("baseline_report.json", baseline_report),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (
+        ("condition_metrics.jsonl", records),
+        ("pathway_metrics.jsonl", pathway_records),
+    ):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, paired, truth_report, provenance
+
+
+@torch.no_grad()
+def run_remaining_comparator_evaluation(
+    config, base_config, regimes=None, repeats=None, maximum_conditions=None, output_directory=None
+):
+    """Evaluate frozen action/state comparators through leakage-safe representation readouts."""
+    inputs = config["inputs"]
+    assert file_sha256(config["base_transcriptomics_config_path"]) == config[
+        "base_transcriptomics_config_sha256"
+    ]
+    manifests = {}
+    for name in ("base", "comparator"):
+        payload = json.loads(Path(inputs[f"{name}_manifest_path"]).read_text())
+        declared = payload.pop("manifest_sha256")
+        assert declared == inputs[f"{name}_manifest_sha256"] == sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        manifests[name] = payload
+    base_artifacts = manifests["base"]["artifacts"]["predictive_evaluation"]
+    for name in ("condition_metrics", "pathway_metrics", "summary", "provenance"):
+        path = Path(inputs[f"base_{name}_path"])
+        assert (path.stat().st_size, file_sha256(path)) == (
+            inputs[f"base_{name}_bytes"],
+            inputs[f"base_{name}_sha256"],
+        )
+        assert base_artifacts[name]["sha256"] == inputs[f"base_{name}_sha256"]
+    assert base_artifacts["condition_metrics"]["records"] == inputs[
+        "base_condition_metrics_records"
+    ]
+    assert base_artifacts["pathway_metrics"]["records"] == inputs[
+        "base_pathway_metrics_records"
+    ]
+    base_provenance = json.loads(Path(inputs["base_provenance_path"]).read_text())
+    assert base_provenance["config"] == base_config and base_provenance["git"]["dirty"] is False
+    for kind in ("latent_cache", "expression_cache", "readout_checkpoint", "go_gmt"):
+        assert file_sha256(base_config["inputs"][f"{kind}_path"]) == base_config["inputs"][
+            f"{kind}_sha256"
+        ]
+
+    readout = torch.load(
+        base_config["inputs"]["readout_checkpoint_path"], map_location="cpu", weights_only=False
+    )
+    assert readout["report"]["fit_roles"] == [
+        "control_inference",
+        "control_train",
+        "dynamics_train",
+    ]
+    models, decoders, model_configs, checkpoint_provenance = {}, {}, {}, {}
+    representation_provenance = {"jepa_linear": readout["provenance"]}
+    comparator_manifest = manifests["comparator"]
+    assert comparator_manifest["protocol"]["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
+    assert comparator_manifest["protocol"]["sealed_test_outcomes_used_for_fit_or_selection"] is False
+    for name, path in config["models"].items():
+        if name == "learned_target_id":
+            model_config, _, representation_manifest = learned_target_id_config(path)
+            policy = representation_manifest["policy"]
+            assert policy["heldout_target_identity_used_for_fit"] is False
+            assert policy["validation_target_identity_used_for_fit"] is False
+            decoder = {"kind": "jepa_linear", "checkpoint": readout}
+        else:
+            model_config, specification, representation_manifest = state_ablation_config(path)
+            policy = representation_manifest["policy"]
+            assert policy["rpe1_perturbed_outcomes_used_for_fit"] is False
+            assert policy["sealed_test_outcomes_used_for_fit"] is False
+            dynamics_manifest = json.loads(
+                Path(model_config["inputs"]["dynamics_manifest_path"]).read_text()
+            )
+            normalization = dynamics_manifest["normalization"]
+            mean = torch.tensor(normalization["latent_mean"], dtype=torch.float32)
+            scale = torch.tensor(normalization["latent_std"], dtype=torch.float32) * normalization[
+                "dimension_scale"
+            ]
+            if name == "pca_state":
+                with h5py.File(model_config["inputs"]["latent_cache_path"], "r") as cache:
+                    components = np.ascontiguousarray(cache["component"][:])
+                    expression_mean = np.ascontiguousarray(cache["expression_mean"][:])
+                artifact = representation_manifest["artifact"]
+                assert sha256(components.tobytes()).hexdigest() == artifact["component_sha256"]
+                assert sha256(expression_mean.tobytes()).hexdigest() == artifact[
+                    "expression_mean_sha256"
+                ]
+                decoder = {
+                    "kind": "pca_inverse",
+                    "latent_mean": mean,
+                    "latent_scale": scale,
+                    "components": torch.from_numpy(components),
+                    "expression_mean": torch.from_numpy(expression_mean),
+                }
+            else:
+                assert name == "autoencoder_state"
+                artifact = representation_manifest["training"]["best_checkpoint"]
+                assert (Path(artifact["path"]).stat().st_size, file_sha256(artifact["path"])) == (
+                    artifact["bytes"],
+                    artifact["sha256"],
+                )
+                representation = torch.load(
+                    artifact["path"], map_location="cpu", weights_only=False
+                )
+                assert representation["configuration"] == specification
+                autoencoder = build_autoencoder(specification).eval()
+                autoencoder.load_state_dict(representation["model"])
+                decoder = {
+                    "kind": "autoencoder",
+                    "latent_mean": mean,
+                    "latent_scale": scale,
+                    "model": autoencoder,
+                }
+                representation_provenance[name] = representation["provenance"]
+        entry = comparator_manifest["experiments"][name]["best_checkpoint"]
+        assert (Path(entry["path"]).stat().st_size, file_sha256(entry["path"])) == (
+            entry["bytes"],
+            entry["sha256"],
+        )
+        checkpoint = torch.load(entry["path"], map_location="cpu", weights_only=False)
+        assert checkpoint["configuration"] == model_config
+        assert checkpoint["provenance"]["git"]["dirty"] is False
+        model = build_dynamics_model(model_config).eval()
+        model.load_state_dict(checkpoint["model"])
+        models[name], decoders[name], model_configs[name] = model, decoder, model_config
+        checkpoint_provenance[name] = checkpoint["provenance"]
+        representation_provenance[f"{name}_manifest_sha256"] = representation_manifest[
+            "manifest_sha256"
+        ]
+
+    replogle = json.loads(Path(base_config["inputs"]["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    pathway_matrix, pathway_labels = _load_pathway_matrix(
+        base_config["inputs"]["go_gmt_path"], hvg_genes
+    )
+    assert len(pathway_labels) == 4328
+    regimes = regimes or base_config["regimes"]
+    repeats = repeats or base_config["sampling"]["repeats"]
+    truth, truth_report = expression_truth(base_config, regimes, maximum_conditions)
+    output = Path(output_directory or config["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    records, signatures = [], defaultdict(lambda: [0, None])
+    for regime, regime_config in regimes.items():
+        for name, model in models.items():
+            model_config = model_configs[name]
+            dataset = LatentPopulationDataset(
+                model_config["inputs"]["latent_cache_path"],
+                model_config["inputs"]["action_cache_path"],
+                model_config["inputs"]["dynamics_manifest_path"],
+                regime,
+                base_config["sampling"]["population_size"],
+                base_config["seed"],
+                regime_config["outcome_role"],
+                regime_config["control_role"],
+                regime_config["context"],
+            )
+            indices = range(min(len(dataset), maximum_conditions or len(dataset)))
+            for repeat in range(repeats):
+                dataset.set_epoch(repeat)
+                loader = DataLoader(
+                    dataset,
+                    batch_size=base_config["sampling"]["batch_size"],
+                    sampler=list(indices),
+                    num_workers=base_config["sampling"]["num_workers"],
+                )
+                for batch in loader:
+                    control = batch["control"]
+                    predicted = model(control, batch["action"], batch["action_known"])
+                    predicted_effect = (
+                        decode_representation_centroids(predicted.mean(1), decoders[name])
+                        - decode_representation_centroids(control.mean(1), decoders[name])
+                    ).numpy()
+                    for index, target in enumerate(batch["target"]):
+                        observed = truth[regime, target]
+                        records.append(
+                            {
+                                "regime": regime,
+                                "context": regime_config["context"],
+                                "outcome_role": regime_config["outcome_role"],
+                                "target": target,
+                                "repeat": repeat,
+                                "model": name,
+                                "truth_batches": observed["batches"],
+                                "truth_cells": observed["cells"],
+                                "true_deg_count": int(observed["deg"].sum()),
+                                "target_in_hvg": target in hvg_index,
+                                **gene_effect_metrics(
+                                    predicted_effect[index],
+                                    observed["effect"],
+                                    hvg_index.get(target),
+                                    observed["deg"],
+                                    base_config["metrics"]["retrospective_top_genes"],
+                                ),
+                            }
+                        )
+                        key = (regime, name, target)
+                        signatures[key][0] += 1
+                        signatures[key][1] = (
+                            predicted_effect[index]
+                            if signatures[key][1] is None
+                            else signatures[key][1] + predicted_effect[index]
+                        )
+
+    pathway_records, retrieval = [], []
+    for regime, regime_config in regimes.items():
+        targets = sorted(target for key, target in truth if key == regime)
+        true_signatures = np.stack([truth[regime, target]["effect"] for target in targets])
+        normalized_truth = true_signatures / np.linalg.norm(
+            true_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        for name in models:
+            predicted_signatures = np.stack(
+                [signatures[regime, name, target][1] / signatures[regime, name, target][0] for target in targets]
+            )
+            normalized_prediction = predicted_signatures / np.linalg.norm(
+                predicted_signatures, axis=1, keepdims=True
+            ).clip(1e-12)
+            similarity = normalized_prediction @ normalized_truth.T
+            ranks = np.asarray(
+                [
+                    1
+                    + np.count_nonzero(row > row[index])
+                    + 0.5 * (np.count_nonzero(row == row[index]) - 1)
+                    for index, row in enumerate(similarity)
+                ]
+            )
+            retrieval.append(
+                {
+                    "regime": regime,
+                    "model": name,
+                    "targets": len(targets),
+                    "top_1": float(np.mean(ranks <= 1)),
+                    "top_5": float(np.mean(ranks <= 5)),
+                    "mean_reciprocal_rank": float(np.mean(1 / ranks)),
+                    "median_rank": float(np.median(ranks)),
+                }
+            )
+            for index, target in enumerate(targets):
+                observed = truth[regime, target]
+                pathway_records.append(
+                    {
+                        "regime": regime,
+                        "context": regime_config["context"],
+                        "outcome_role": regime_config["outcome_role"],
+                        "target": target,
+                        "repeat": 0,
+                        "model": name,
+                        "truth_batches": observed["batches"],
+                        "truth_cells": observed["cells"],
+                        "true_deg_count": int(observed["deg"].sum()),
+                        "target_in_hvg": target in hvg_index,
+                        **pathway_agreement(
+                            predicted_signatures[index],
+                            true_signatures[index],
+                            pathway_matrix,
+                            base_config["metrics"]["pathway_top_k"],
+                        ),
+                    }
+                )
+
+    base_summary = json.loads(Path(inputs["base_summary_path"]).read_text())
+    resamples = base_config["metrics"]["bootstrap_resamples"]
+    summary = {
+        "condition_metrics": sorted(
+            base_summary["condition_metrics"]
+            + _condition_summary(records, resamples, base_config["seed"]),
+            key=lambda item: (item["regime"], item["model"], item["metric"]),
+        ),
+        "pathway_metrics": sorted(
+            base_summary["pathway_metrics"]
+            + _condition_summary(pathway_records, resamples, base_config["seed"]),
+            key=lambda item: (item["regime"], item["model"], item["metric"]),
+        ),
+        "retrieval": sorted(
+            base_summary["retrieval"] + retrieval,
+            key=lambda item: (item["regime"], item["model"]),
+        ),
+    }
+    base_models = {
+        model
+        for pair in config["comparisons"]
+        for model in (pair["candidate"], pair["reference"])
+        if model not in models
+    }
+    base_condition_lines = Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
+    assert len(base_condition_lines) == inputs["base_condition_metrics_records"]
+    base_records = []
+    for line in base_condition_lines:
+        record = json.loads(line)
+        if record["model"] in base_models:
+            base_records.append(record)
+    base_pathway_lines = Path(inputs["base_pathway_metrics_path"]).read_text().splitlines()
+    assert len(base_pathway_lines) == inputs["base_pathway_metrics_records"]
+    base_pathway_records = []
+    for line in base_pathway_lines:
+        record = json.loads(line)
+        if record["model"] in base_models:
+            base_pathway_records.append(record)
+    paired = {
+        "condition_comparisons": _paired_transcriptomic_models(
+            base_records + records, config["comparisons"], resamples, base_config["seed"]
+        ),
+        "pathway_comparisons": _paired_transcriptomic_models(
+            base_pathway_records + pathway_records,
+            config["comparisons"],
+            resamples,
+            base_config["seed"],
+        ),
+    }
+    provenance = {
+        "config": deepcopy(config),
+        "base_transcriptomics_config": deepcopy(base_config),
+        "executed_regimes": regimes,
+        "executed_repeats": repeats,
+        "maximum_conditions_per_regime": maximum_conditions,
+        "checkpoint_provenance": checkpoint_provenance,
+        "representation_provenance": representation_provenance,
+        "base_artifact_sha256": {
+            name: inputs[f"base_{name}_sha256"]
+            for name in ("condition_metrics", "pathway_metrics", "summary", "provenance")
+        },
+        "comparator_manifest_sha256": inputs["comparator_manifest_sha256"],
+        "base_manifest_sha256": inputs["base_manifest_sha256"],
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    expected_records = repeats * len(models) * sum(item["targets"] for item in truth_report.values())
+    assert len(records) == expected_records
+    assert all(
+        value is None or not isinstance(value, float) or np.isfinite(value)
+        for record in records + pathway_records
+        for value in record.values()
+    )
+    for filename, payload in (
+        ("summary.json", summary),
+        ("paired_comparisons.json", paired),
+        ("truth_report.json", truth_report),
         ("provenance.json", provenance),
     ):
         (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

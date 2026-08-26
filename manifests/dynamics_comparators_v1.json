@@ -1,0 +1,141 @@
+{
+  "experiments": {
+    "autoencoder_state": {
+      "best_checkpoint": {
+        "bytes": 70617067,
+        "path": "artifacts/ablations/autoencoder_state/best.pt",
+        "sha256": "e36edf946247c97ed8f7dba2fa039593c427d30ba6f7e00221b57510b7439826"
+      },
+      "best_snapshot": {
+        "epoch": 196,
+        "global_step": 8668,
+        "validation_loss": 0.6384122133255005
+      },
+      "full_run": {
+        "completion_reason": "configured_epochs",
+        "epochs": 200,
+        "global_steps": 8800,
+        "latest_checkpoint_bytes": 70618443,
+        "latest_checkpoint_sha256": "c11e7e36a63e999e3327870fd28814dad853dbab08b09b315ccf787294f7441b",
+        "latest_validation_loss": 0.6399861168861389,
+        "training_log_bytes": 2989050,
+        "training_log_sha256": "559c96e8554e7972c72d647231943d4895ec53105829fd665516f3cc924d18f2",
+        "wall_seconds": 1094.9668398257345
+      },
+      "hypothesis": "test whether JEPA latent prediction improves OOD dynamics over reconstruction pretraining",
+      "inputs": {
+        "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+        "action_manifest_sha256": "5d3bd9217b4a5781725562044306bc31f2be8d4cf211b9eca3ded0eadb4c1b85",
+        "config_sha256": "560b072c8ce3fa352dc68a2196922fc49154bf6164578c26e41f6b0daeda7a56",
+        "dynamics_manifest_sha256": "ae8ae5bc42fad26a485a9da9c4a4edcc4338a8fda986174cc8df6274bba2c54f",
+        "latent_cache_sha256": "ff58ec4dcb6d921d0d5953bb4eab1ffd2b21da50db238eceafe37ee3e74d676b",
+        "latent_manifest_sha256": "fbe24a32555b588518e774dfea454ec3d2f9e128d327062c91daa1d0f1540600"
+      }
+    },
+    "learned_target_id": {
+      "best_checkpoint": {
+        "bytes": 71786987,
+        "path": "artifacts/ablations/learned_target_id/best.pt",
+        "sha256": "2db328f095661764f287aaae6a2a017984b0f8b46a34e3667de350eba2bc9211"
+      },
+      "best_snapshot": {
+        "epoch": 75,
+        "global_step": 3344,
+        "validation_loss": 0.4377125144004822
+      },
+      "full_run": {
+        "completion_reason": "early_stopping",
+        "epochs": 91,
+        "global_steps": 4004,
+        "latest_checkpoint_bytes": 71788299,
+        "latest_checkpoint_sha256": "1e4dd0c29be1364a6591cd4d540cdc3d057bd26babefc5d4aed97aa96d026406",
+        "latest_validation_loss": 0.4480540895462036,
+        "training_log_bytes": 1363783,
+        "training_log_sha256": "e254a632c9a0dde0502c98a85693c0c37fbc78002ff39dbfcd8c0ba13785b0a0",
+        "wall_seconds": 466.7212220621295
+      },
+      "hypothesis": "test whether structured ESM-2 actions improve unseen-target transfer over learned target identity",
+      "inputs": {
+        "action_cache_sha256": "495d1741dc46d3a4f3bf594da4833a6111a0a8d648532662efbbe3343c028e2d",
+        "action_manifest_sha256": "4fd12f70643101bc8de586712206f88a8b5a7afabc294c3830b7bca336d70f2a",
+        "config_sha256": "eaa43ba3c89138f95fe9c8ba87a5bcaf2210941b9efc6ec2ee0bc17e492ef6a1",
+        "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+        "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+      }
+    },
+    "pca_state": {
+      "best_checkpoint": {
+        "bytes": 70617003,
+        "path": "artifacts/ablations/pca_state/best.pt",
+        "sha256": "6948cf5f3cc2fc2b22359e92c92d42a876dcf1ebc00539c599fb7874c5365638"
+      },
+      "best_snapshot": {
+        "epoch": 199,
+        "global_step": 8800,
+        "validation_loss": 0.6005912375450134
+      },
+      "full_run": {
+        "completion_reason": "configured_epochs",
+        "epochs": 200,
+        "global_steps": 8800,
+        "latest_checkpoint_bytes": 70618379,
+        "latest_checkpoint_sha256": "e9ca259554ed616b31a46bc410eec774ede820c59cea1dc29fec093d65d79ea7",
+        "latest_validation_loss": 0.6005912375450134,
+        "training_log_bytes": 2988565,
+        "training_log_sha256": "a415caf48d73e2eb683132cd90fbab0c0ea343666a9c52fa090f073a96481f08",
+        "wall_seconds": 1118.9485444282182
+      },
+      "hypothesis": "test whether the frozen JEPA state improves OOD dynamics over PCA",
+      "inputs": {
+        "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+        "action_manifest_sha256": "5d3bd9217b4a5781725562044306bc31f2be8d4cf211b9eca3ded0eadb4c1b85",
+        "config_sha256": "9ce17b4e6abacdf559ca933410d72539f8bbeac2a345bf1cb6c6acb73d9f410e",
+        "dynamics_manifest_sha256": "13c076e5b7487b588810a21275f1fb2d838072d4c25f5b21a4f8ad1012626da4",
+        "latent_cache_sha256": "271f19dbc77c1ac171f71cc85d4331fd04d546b9d656667dc1ec1959643077ba",
+        "latent_manifest_sha256": "49ab2a52933cf367cae35a0c1782cba8b2c3cb070621f0c8da55608f23fbd2e1"
+      }
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "6615ac61cdfbd46312ad6d4cc675555f50d803b780f38004aef1cab66f032eae",
+  "protocol": {
+    "context": "K562",
+    "cuda_smoke_checkpoint_step": 16,
+    "cuda_smoke_resumed_step": 64,
+    "cuda_smokes_passed": true,
+    "outcome_roles_read": [
+      "dynamics_train",
+      "perturbation_ood_validation"
+    ],
+    "population_size": 32,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_rule": "minimum in-objective loss on K562 perturbation-OOD validation within each comparator",
+    "statistical_unit": "perturbation-condition",
+    "wall_seconds_for_three_dynamics_runs": 2680.636606316082
+  },
+  "source": {
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "git_commit": "fbb53f52d4c23781adf4ab70a0ce19c9a3d59cc2",
+    "git_dirty": false,
+    "gpu": "NVIDIA L40",
+    "runtime_source_sha256": "d0d6163c3fdcf18e920f2e0ee1ef8e06a25101f15b9c10c2523b12492f1aab52",
+    "training_audits": {
+      "autoencoder_state": {
+        "bytes": 813,
+        "path": "artifacts/autoencoder_dynamics_training_audit.json",
+        "sha256": "5a98f25ea4a972ae86e5b2888736cc8d2d37e1f2b110d7c971d093ad9c6ac510"
+      },
+      "learned_target_id": {
+        "bytes": 808,
+        "path": "artifacts/learned_target_id_training_audit.json",
+        "sha256": "df3eafec9042afd55585cbd7e184f5e406fb4bcd00431d3df1a5796f2b1530da"
+      },
+      "pca_state": {
+        "bytes": 766,
+        "path": "artifacts/pca_state_training_audit.json",
+        "sha256": "e0cac2c84f207d9472d74a4c4fa7826f3e3f1bc2e07c4aafd54f0c74b03af19c"
+      }
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 34281,
+      "path": "artifacts/evaluation_remaining_comparators/analysis.json",
+      "sha256": "09fb2a840d1f009fe34231aea59968a4701a431789b363571316a190237f839a"
+    },
+    "condition_metrics": {
+      "bytes": 56092449,
+      "path": "artifacts/evaluation_remaining_comparators/condition_metrics.jsonl",
+      "records": 43056,
+      "sha256": "77adebdfc89d518131d5e66f631fd72b52a6d27d66fbae3e16ac511a88ac3413"
+    },
+    "paired_comparisons": {
+      "bytes": 238746,
+      "condition_comparisons": 264,
+      "path": "artifacts/evaluation_remaining_comparators/paired_comparisons.json",
+      "pathway_comparisons": 72,
+      "sha256": "5b899a196a6340f3245bf94524656e87660aa03df5b7f9bf5cc4b2c13df3db04"
+    },
+    "pathway_metrics": {
+      "bytes": 2530579,
+      "path": "artifacts/evaluation_remaining_comparators/pathway_metrics.jsonl",
+      "records": 5382,
+      "sha256": "469c9d4fd87d06c4f99bd53a94b288dd362ecd547a25695d90bf9a4845e21312"
+    },
+    "provenance": {
+      "bytes": 14563,
+      "path": "artifacts/evaluation_remaining_comparators/provenance.json",
+      "sha256": "9f6108062efb3a744a0b9a1b71457d3c20522fa26c6d56efbd1c7599e2ffe731"
+    },
+    "summary": {
+      "bytes": 261084,
+      "condition_summaries": 656,
+      "path": "artifacts/evaluation_remaining_comparators/summary.json",
+      "pathway_summaries": 172,
+      "retrieval_summaries": 32,
+      "sha256": "66ce1f853d8d8c426fc890e25810f921e87de0acc48b1826291dcb635f1d53ab"
+    },
+    "truth_report": {
+      "bytes": 560,
+      "path": "artifacts/evaluation_remaining_comparators/truth_report.json",
+      "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+    }
+  },
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "autoencoder_state": {
+        "all_effect_pearson": 0.014988,
+        "all_magnitude_absolute_error": 12.93363,
+        "pathway_nes_pearson": -0.098649
+      },
+      "causalcelljepa": {
+        "all_effect_pearson": -0.129911,
+        "all_magnitude_absolute_error": 4.300444,
+        "pathway_nes_pearson": -0.236243
+      },
+      "learned_target_id": {
+        "all_effect_pearson": -0.095381,
+        "all_magnitude_absolute_error": 2.977698,
+        "pathway_nes_pearson": -0.177079
+      },
+      "pca_state": {
+        "all_effect_pearson": -0.197507,
+        "all_magnitude_absolute_error": 11.159741,
+        "pathway_nes_pearson": -0.261524
+      }
+    },
+    "double_ood": {
+      "autoencoder_state": {
+        "all_effect_pearson": 0.0029,
+        "all_magnitude_absolute_error": 13.312685,
+        "pathway_nes_pearson": -0.112397
+      },
+      "causalcelljepa": {
+        "all_effect_pearson": -0.133761,
+        "all_magnitude_absolute_error": 3.910857,
+        "pathway_nes_pearson": -0.244825
+      },
+      "learned_target_id": {
+        "all_effect_pearson": -0.141973,
+        "all_magnitude_absolute_error": 2.296154,
+        "pathway_nes_pearson": -0.218185
+      },
+      "pca_state": {
+        "all_effect_pearson": -0.198008,
+        "all_magnitude_absolute_error": 11.528144,
+        "pathway_nes_pearson": -0.266998
+      }
+    },
+    "iid": {
+      "autoencoder_state": {
+        "all_effect_pearson": 0.204822,
+        "all_magnitude_absolute_error": 1.985215,
+        "pathway_nes_pearson": 0.288147
+      },
+      "causalcelljepa": {
+        "all_effect_pearson": 0.081431,
+        "all_magnitude_absolute_error": 4.129832,
+        "pathway_nes_pearson": 0.159179
+      },
+      "learned_target_id": {
+        "all_effect_pearson": 0.16192,
+        "all_magnitude_absolute_error": 3.70899,
+        "pathway_nes_pearson": 0.216286
+      },
+      "pca_state": {
+        "all_effect_pearson": 0.172848,
+        "all_magnitude_absolute_error": 1.999011,
+        "pathway_nes_pearson": 0.252941
+      }
+    },
+    "perturbation_ood": {
+      "autoencoder_state": {
+        "all_effect_pearson": 0.121581,
+        "all_magnitude_absolute_error": 1.150706,
+        "pathway_nes_pearson": 0.192464
+      },
+      "causalcelljepa": {
+        "all_effect_pearson": 0.091855,
+        "all_magnitude_absolute_error": 2.440427,
+        "pathway_nes_pearson": 0.191729
+      },
+      "learned_target_id": {
+        "all_effect_pearson": 0.110305,
+        "all_magnitude_absolute_error": 2.425426,
+        "pathway_nes_pearson": 0.234274
+      },
+      "pca_state": {
+        "all_effect_pearson": 0.136592,
+        "all_magnitude_absolute_error": 1.08333,
+        "pathway_nes_pearson": 0.225913
+      }
+    }
+  },
+  "manifest_sha256": "9d9e138fb1076d846424212a8a60ff81392aef09465a013b9946dc1c759c3ece",
+  "protocol": {
+    "bootstrap_resamples": 10000,
+    "common_endpoint": "normalized log expression over 3000 frozen HVGs",
+    "models": [
+      "causalcelljepa",
+      "learned_target_id",
+      "pca_state",
+      "autoencoder_state"
+    ],
+    "population_repeats": 8,
+    "readouts": {
+      "autoencoder_state": "frozen reconstruction decoder",
+      "causalcelljepa_and_learned_target_id": "frozen leakage-safe linear JEPA readout",
+      "pca_state": "frozen exact inverse PCA projection"
+    },
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "statistical_unit": "perturbation-condition",
+    "target_counts": {
+      "context_ood": 698,
+      "double_ood": 199,
+      "iid": 698,
+      "perturbation_ood": 199
+    }
+  },
+  "result_scope": {
+    "core_representation_hypotheses_supported": false,
+    "interpretation": "The comparisons do not establish a uniform advantage for the JEPA state or structured ESM-2 action representation. PCA and autoencoder states improve K562 direction and calibration; JEPA is better calibrated after RPE1 transfer but retains poor transferred direction. Learned target IDs match or beat ESM-2 in most decoded endpoints. Target-gene exclusion preserves these conclusions.",
+    "jepa_uniformly_beats_autoencoder": false,
+    "jepa_uniformly_beats_pca": false,
+    "structured_action_uniformly_beats_target_id": false,
+    "target_gene_exclusion_changes_conclusion": false
+  },
+  "source": {
+    "analysis_git_commit": "cf501bd640a3d51c3d7fb2d3b715574158a530b2",
+    "base_transcriptomics_manifest_sha256": "06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af",
+    "comparator_training_manifest_sha256": "6615ac61cdfbd46312ad6d4cc675555f50d803b780f38004aef1cab66f032eae",
+    "config_file_sha256": "cee5109c6406df8d114a8d1f589966ae1c7fb530a157b8b92b96cf4c9d5021b0",
+    "evaluation_git_commit": "e162043c242d4f139952557bbc13b0e5c8d0f34a"
+  }
+}
