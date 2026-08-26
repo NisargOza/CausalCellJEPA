@@ -1,0 +1,73 @@
+# Explicit post-primary architecture revision. Selection is K562 validation only.
+seed: 20260826
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+revision:
+  name: anchored_decomposed_population_dynamics_v1
+  status: post_primary_experiment
+  rationale_path: docs/architecture_revision_v1.md
+  changes:
+    - frozen low-rank ESM-to-latent mean-effect anchor
+    - bounded action-only nonlinear mean correction
+    - exactly mean-centered context-conditioned population residual
+  unchanged:
+    - frozen JEPA state space
+    - frozen ESM-2 action embeddings
+    - unpaired population sampling
+    - Stage 2 loss and optimizer
+    - K562 target split
+effect_anchor:
+  architecture: esm2_low_rank_ridge
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  rank: 64
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+  output_path: artifacts/latent_effect_anchor_v1.pt
+  output_bytes: 154953
+  output_sha256: 37e22f0b050142355791bcce963e6dc4d60ffd837cad0a96aaf0ba27c7131bee
+  manifest_path: manifests/latent_effect_anchor_v1.json
+  manifest_sha256: 79a8dea00c0163221383e570707a257a0645794711c5a847919d39bfc8391815
+experiments:
+  anchor_only:
+    anchor_gain_max: 1.0
+    mean_residual_max_ratio: 0.0
+    output_directory: artifacts/anchored_dynamics/anchor_only
+  anchor_residual_025:
+    anchor_gain_max: 4.0
+    mean_residual_max_ratio: 0.25
+    output_directory: artifacts/anchored_dynamics/anchor_residual_025
+  anchor_residual_050:
+    anchor_gain_max: 4.0
+    mean_residual_max_ratio: 0.50
+    output_directory: artifacts/anchored_dynamics/anchor_residual_050
+selection:
+  context: K562
+  outcome_role: perturbation_ood_validation
+  control_role: control_train
+  transcriptomics_config_path: configs/transcriptomics.yaml
+  transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+  checkpoint_rule: minimum_original_latent_validation_loss
+  primary_metric: decoded_all_effect_pearson
+  practical_tie_margin: 0.01
+  guardrail_reference: anchor_only
+  maximum_sinkhorn_ratio: 1.05
+  maximum_magnitude_absolute_error_ratio: 1.05
+  tie_breakers: [latent_sinkhorn, mean_residual_max_ratio]
+  repeats: 8
+  batch_size: 16
+  num_workers: 0
+  reference_sinkhorn_blur_ratio: 0.10
+  mmd_bandwidth_ratio: 1.0
+  output_directory: artifacts/anchored_dynamics_validation
+  decision_manifest_path: manifests/anchored_dynamics_selection_v1.json
+cpu_smoke:
+  batch_size: 2
+  steps: 2
+  checkpoint_step: 1
+  output_directory: artifacts/anchored_dynamics_cpu_smoke
+cuda_smoke:
+  batch_size: 16
+  steps: 64
+  checkpoint_step: 16
+  validation_batches: 2
+  output_directory: artifacts/anchored_dynamics_cuda_smoke
