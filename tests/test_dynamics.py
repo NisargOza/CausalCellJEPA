@@ -8,6 +8,7 @@ import torch
 import yaml
 
 from causalcelljepa.dynamics import (
+    AnchoredPopulationDynamics,
     LatentPopulationDataset,
     PopulationDynamics,
     dynamics_loss,
@@ -163,6 +164,73 @@ def test_context_ablation_modes_remove_or_simplify_the_global_summary():
     assert torch.count_nonzero(interactions["none"][:, 16:24]) == 0
     assert torch.count_nonzero(interactions["mean"][:, :8]) > 0
     assert torch.count_nonzero(interactions["set_transformer"][:, :8]) > 0
+
+
+def test_anchored_dynamics_preserves_mean_prior_and_bounds_action_correction():
+    torch.manual_seed(21)
+    anchor = {
+        "format_version": 1,
+        "architecture": "esm2_low_rank_latent_effect_ridge",
+        "x_mean": torch.zeros(3),
+        "x_std": torch.ones(3),
+        "y_mean": torch.tensor([0.1, -0.2, 0.3, -0.1]),
+        "components": torch.eye(4),
+        "weights": torch.tensor(
+            [[0.2, 0.1, 0.0, -0.1], [0.0, 0.2, -0.1, 0.1], [0.1, 0.0, 0.2, 0.0]]
+        ),
+        "report": {"training_null_effect_threshold": 0.05},
+    }
+    model = AnchoredPopulationDynamics(
+        cell_dim=4,
+        action_input_dim=3,
+        action_dim=4,
+        context_blocks=1,
+        transition_blocks=1,
+        heads=2,
+        ffn_dim=8,
+        dropout=0.0,
+        effect_anchor=anchor,
+        mean_residual_max_ratio=0.25,
+    ).eval()
+    with torch.no_grad():
+        model.delta[-1].weight.normal_()
+        model.mean_residual[-1].bias.fill_(10)
+    control = torch.randn(2, 5, 4)
+    action = torch.tensor([[1.0, 0.5, -0.5], [0.2, -0.3, 0.7]])
+    known = torch.tensor([True, False])
+    predicted = model(control, action, known)
+    frozen = model.effect_anchor(action, known)
+    correction = (predicted - control).mean(1) - frozen
+    maximum = 0.25 * torch.linalg.vector_norm(frozen, dim=1).clamp_min(0.05)
+    assert torch.all(torch.linalg.vector_norm(correction, dim=1) <= maximum + 1e-6)
+    heterogeneity = predicted - control - frozen[:, None] - correction[:, None]
+    assert torch.allclose(heterogeneity.mean(1), torch.zeros(2, 4), atol=1e-6)
+    permutation = torch.tensor([3, 0, 4, 1, 2])
+    permuted = model(control[:, permutation], action, known)
+    assert torch.allclose(permuted, predicted[:, permutation], atol=1e-5, rtol=1e-5)
+    assert torch.allclose(frozen[1], anchor["y_mean"])
+
+    gain_model = AnchoredPopulationDynamics(
+        cell_dim=4,
+        action_input_dim=3,
+        action_dim=4,
+        context_blocks=1,
+        transition_blocks=1,
+        heads=2,
+        ffn_dim=8,
+        dropout=0.0,
+        effect_anchor=anchor,
+        anchor_gain_max=4.0,
+        mean_residual_max_ratio=0.0,
+    ).eval()
+    with torch.no_grad():
+        gain_model.anchor_gain[-1].bias.fill_(100)
+    gained = (gain_model(control, action, known) - control).mean(1)
+    ratio = torch.linalg.vector_norm(gained, dim=1) / torch.linalg.vector_norm(frozen, dim=1)
+    assert torch.all(ratio <= 4.0 + 1e-6)
+    assert torch.allclose(
+        torch.nn.functional.cosine_similarity(gained, frozen), torch.ones(2), atol=1e-6
+    )
 
 
 def test_population_evaluation_metrics_are_exact_for_identical_populations():

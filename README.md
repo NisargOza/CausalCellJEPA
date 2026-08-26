@@ -213,6 +213,25 @@ evaluation outperforms the latent world model on effect direction, DE recovery, 
 and pathway agreement in all four regimes; the negative result is frozen in
 [`manifests/direct_gene_v1.json`](manifests/direct_gene_v1.json).
 
+## Post-primary architecture revision
+
+The completed diagnostics motivate an explicit experimental revision without changing the
+locked primary result. [`docs/architecture_revision_v1.md`](docs/architecture_revision_v1.md)
+preregisters an anchored, decomposed transition: a frozen rank-64 ESM-to-latent mean-effect
+prior; a strictly positive, bounded action-only gain; a bounded action-only nonlinear
+correction; and an exactly mean-centered set-transformer residual for population
+heterogeneity. This prevents contextual population reshaping from freely reversing the shared
+mean action effect while retaining unpaired set-to-set modeling.
+
+The anchor uses 698 K562 dynamics-training targets and selects ridge strength on the 100 K562
+perturbation-OOD validation targets. Its deterministic artifact is pinned in
+[`manifests/latent_effect_anchor_v1.json`](manifests/latent_effect_anchor_v1.json); no sealed
+K562 test or RPE1 perturbed outcome is read. Three fixed correction caps (`0`, `0.25`, `0.50`)
+share seed, loss, optimizer, and stopping protocol. Exact CPU resume and two-condition
+selection-path smoke gates pass for all three. Full CUDA training and the preregistered
+K562-validation-only architecture decision remain pending; sealed evaluation is prohibited
+until that decision manifest is frozen.
+
 ## Modern baseline feasibility
 
 The proposal asks for GEARS, CPA, CellOT, and State where feasible. Their official interfaces do
@@ -223,10 +242,12 @@ an unseen-action model and reports hours for an example CPU fit;
 [CPA](https://github.com/theislab/cpa) supports external embeddings and context transfer but
 requires a separate training/tuning stack; and [State](https://github.com/ArcInstitute/state)
 supports Replogle plus explicit few-shot/zero-shot split files but requires its own preprocessing
-and GPU training pipeline. The locked minimum experiment already fails to clearly beat simple,
-direct-gene, PCA, and autoencoder baselines, which activates the proposal's rule that scaling is
-not justified. Additional paid runs are therefore deferred rather than used to search for a more
-favorable result. If external review requires a modern neural baseline, State is the first
+and GPU training pipeline. The locked minimum experiment fails to clearly beat simple,
+direct-gene, PCA, and autoencoder baselines, which activates the proposal's rule that broad
+external-model scaling is not justified. Those baseline runs remain deferred rather than being
+used to search for a more favorable result. A separately labeled, small architecture revision is
+now authorized and uses K562 validation only. If external review requires a modern neural
+baseline, State is the first
 recommended extension, followed by a K562-only GEARS comparison. The auditable decision record is
 [`manifests/modern_baseline_feasibility_v1.json`](manifests/modern_baseline_feasibility_v1.json).
 
@@ -274,6 +295,12 @@ uv run python scripts/evaluate_stage2_replication_transcriptomics.py
 uv run python scripts/analyze_stage2_replication_transcriptomics.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
+uv run python scripts/prepare_effect_anchor.py
+uv run python scripts/smoke_anchored_dynamics.py
+uv run python scripts/smoke_anchored_validation.py
+uv run python scripts/smoke_cuda_anchored_dynamics.py
+uv run python scripts/train_anchored_dynamics.py
+uv run python scripts/select_anchored_dynamics.py
 uv run ruff check .
 uv run pytest
 ```

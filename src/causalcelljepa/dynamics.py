@@ -248,6 +248,110 @@ class PopulationDynamics(nn.Module):
         return control + self.delta(states)
 
 
+class FrozenLowRankEffectAnchor(nn.Module):
+    """Apply a frozen low-rank ESM-to-latent perturbation-effect map."""
+
+    def __init__(self, checkpoint):
+        super().__init__()
+        assert checkpoint["format_version"] == 1
+        assert checkpoint["architecture"] == "esm2_low_rank_latent_effect_ridge"
+        for name in ("x_mean", "x_std", "y_mean", "components", "weights"):
+            value = checkpoint[name].detach().float()
+            assert torch.isfinite(value).all()
+            self.register_buffer(name, value)
+        assert self.weights.shape == (len(self.x_mean), len(self.components))
+        assert self.components.shape[1] == len(self.y_mean)
+
+    def forward(self, action_embedding, action_known):
+        standardized = (action_embedding - self.x_mean) / self.x_std
+        predicted = standardized @ self.weights @ self.components + self.y_mean
+        return torch.where(action_known.unsqueeze(1), predicted, self.y_mean.unsqueeze(0))
+
+
+class AnchoredPopulationDynamics(PopulationDynamics):
+    """Separate a transferable mean action effect from population heterogeneity."""
+
+    def __init__(
+        self,
+        *args,
+        effect_anchor,
+        anchor_gain_max=1.0,
+        mean_residual_max_ratio=0.0,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        assert anchor_gain_max >= 1
+        assert 0 <= mean_residual_max_ratio <= 1
+        self.effect_anchor = FrozenLowRankEffectAnchor(effect_anchor)
+        self.anchor_gain_max = float(anchor_gain_max)
+        self.mean_residual_max_ratio = float(mean_residual_max_ratio)
+        cell_dim = self.effect_anchor.y_mean.numel()
+        ffn_dim = self.interaction[1].out_features
+        dropout = self.transition[0].ffn[2].p
+        self.mean_residual = nn.Sequential(
+            nn.LayerNorm(cell_dim),
+            nn.Linear(cell_dim, ffn_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(ffn_dim, cell_dim),
+        )
+        nn.init.zeros_(self.mean_residual[-1].weight)
+        nn.init.zeros_(self.mean_residual[-1].bias)
+        self.anchor_gain = nn.Sequential(nn.LayerNorm(cell_dim), nn.Linear(cell_dim, 1))
+        nn.init.zeros_(self.anchor_gain[-1].weight)
+        nn.init.zeros_(self.anchor_gain[-1].bias)
+        self.minimum_anchor_norm = float(
+            effect_anchor["report"]["training_null_effect_threshold"]
+        )
+
+    def _scaled_anchor(self, action, anchor):
+        if self.anchor_gain_max == 1:
+            return anchor
+        log_limit = math.log(self.anchor_gain_max)
+        gain = torch.exp(torch.tanh(self.anchor_gain(action)) * log_limit)
+        return anchor * gain
+
+    def _bounded_mean_residual(self, action, anchor):
+        if self.mean_residual_max_ratio == 0:
+            return torch.zeros_like(anchor)
+        residual = self.mean_residual(action)
+        residual_norm = torch.linalg.vector_norm(residual, dim=1, keepdim=True)
+        anchor_norm = torch.linalg.vector_norm(anchor, dim=1, keepdim=True).clamp_min(
+            self.minimum_anchor_norm
+        )
+        maximum = self.mean_residual_max_ratio * anchor_norm
+        scale = torch.minimum(torch.ones_like(residual_norm), maximum / residual_norm.clamp_min(1e-12))
+        return residual * scale
+
+    def forward(self, control, action_embedding, action_known):
+        if self.context_mode == "set_transformer":
+            encoded = self.context_blocks(control)
+            query = self.pool_query.unsqueeze(0).expand(control.shape[0], -1, -1)
+            context, _ = self.pool(query, encoded, encoded, need_weights=False)
+            context = self.context_output(context.squeeze(1))
+        elif self.context_mode == "mean":
+            context = self.context_output(control.mean(1))
+        else:
+            context = torch.zeros_like(control[:, 0])
+        projected = self.action_projection(action_embedding)
+        action = torch.where(
+            action_known.unsqueeze(1), projected, self.unknown_action.unsqueeze(0)
+        )
+        interaction = self.interaction(
+            torch.cat((context, action, context * action, torch.abs(context - action)), dim=1)
+        )
+        states = control
+        for block in self.transition:
+            states = block(states, interaction)
+        population_residual = self.delta(states)
+        population_residual = population_residual - population_residual.mean(1, keepdim=True)
+        anchor = self._scaled_anchor(
+            action, self.effect_anchor(action_embedding, action_known)
+        )
+        mean_residual = self._bounded_mean_residual(action, anchor)
+        return control + anchor.unsqueeze(1) + mean_residual.unsqueeze(1) + population_residual
+
+
 def dynamics_loss(predicted, observed, control, config, median_distance, null_threshold):
     """Locked unpaired Sinkhorn + MMD + direction + magnitude population objective."""
     blur = config["sinkhorn_blur_ratio"] * median_distance
@@ -316,12 +420,12 @@ def dynamics_objective(predicted, observed, control, config, statistics):
 
 
 def build_dynamics_model(config):
-    """Build the fixed primary model without optional context IDs or stochastic noise."""
+    """Build the primary model or an explicitly declared post-primary revision."""
     model = config["model"]
     assert model["cell_dim"] == model["action_dim"]
     assert model["predicted_population_size"] == config["data"]["population_size"]
     assert model["cell_line_id"] is False and model["stochastic_noise"] is False
-    return PopulationDynamics(
+    arguments = (
         model["cell_dim"],
         model["action_input_dim"],
         model["action_dim"],
@@ -331,6 +435,29 @@ def build_dynamics_model(config):
         model["ffn_dim"],
         model["dropout"],
         model.get("context_mode", "set_transformer"),
+    )
+    architecture = model.get("architecture", "population_dynamics")
+    if architecture == "population_dynamics":
+        return PopulationDynamics(*arguments)
+    assert architecture == "anchored_decomposed_population_dynamics"
+    anchor = config["effect_anchor"]
+    path = Path(anchor["output_path"])
+    assert (path.stat().st_size, file_sha256(path)) == (
+        anchor["output_bytes"],
+        anchor["output_sha256"],
+    )
+    manifest = json.loads(Path(anchor["manifest_path"]).read_text())
+    declared = manifest.pop("manifest_sha256")
+    assert declared == anchor["manifest_sha256"] == sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert manifest["artifact"]["sha256"] == anchor["output_sha256"]
+    checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+    return AnchoredPopulationDynamics(
+        *arguments,
+        effect_anchor=checkpoint,
+        anchor_gain_max=model["anchor_gain_max"],
+        mean_residual_max_ratio=model["mean_residual_max_ratio"],
     )
 
 
@@ -384,6 +511,199 @@ def dynamics_replication_configs(path="configs/stage2_replication.yaml"):
             "base_config_sha256": specification["base_config_sha256"],
         }
         configs[seed] = config
+    return configs, specification
+
+
+def _normalized_role_effects(base, roles):
+    """Compute batch-matched latent effects for explicitly named K562 roles."""
+    inputs = base["inputs"]
+    manifest = json.loads(Path(inputs["dynamics_manifest_path"]).read_text())
+    normalization = manifest["normalization"]
+    mean = np.asarray(normalization["latent_mean"], dtype=np.float32)
+    scale = np.asarray(normalization["latent_std"], dtype=np.float32) * normalization[
+        "dimension_scale"
+    ]
+    with h5py.File(inputs["latent_cache_path"], "r") as cache:
+        cache_roles = cache["role"].asstr()[:]
+        targets = cache["target"].asstr()[:]
+        batches = cache["source_batch"].asstr()[:]
+        contexts = cache["context"].asstr()[:]
+        control_indices = np.flatnonzero(cache_roles == base["data"]["control_role"])
+        assert set(contexts[control_indices]) == {base["data"]["context"]} == {"K562"}
+        control_means = {
+            batch: ((cache["latent"][control_indices[batches[control_indices] == batch]] - mean) / scale).mean(0)
+            for batch in sorted(set(batches[control_indices]))
+        }
+        effects = {}
+        target_ids = {}
+        for role in roles:
+            role_indices = np.flatnonzero(cache_roles == role)
+            assert len(role_indices) and set(contexts[role_indices]) == {"K562"}
+            target_ids[role] = sorted(set(targets[role_indices]))
+            effects[role] = {}
+            for target in target_ids[role]:
+                selected = role_indices[targets[role_indices] == target]
+                outcome = ((cache["latent"][selected] - mean) / scale).mean(0)
+                counts = Counter(batches[selected])
+                matched_control = sum(
+                    count * control_means[batch] for batch, count in counts.items()
+                ) / len(selected)
+                effects[role][target] = (outcome - matched_control).astype(np.float32)
+    return effects, target_ids, manifest
+
+
+def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
+    """Fit the frozen ESM-to-latent anchor without test or RPE1 outcomes."""
+    path = Path(path)
+    specification = yaml.safe_load(path.read_text())
+    base_path = Path(specification["base_config_path"])
+    assert file_sha256(base_path) == specification["base_config_sha256"]
+    base = yaml.safe_load(base_path.read_text())
+    anchor = specification["effect_anchor"]
+    roles = (anchor["fit_outcome_role"], anchor["selection_outcome_role"])
+    assert roles == ("dynamics_train", "perturbation_ood_validation")
+    effects, targets, dynamics_manifest = _normalized_role_effects(base, roles)
+    action = torch.load(base["inputs"]["action_cache_path"], map_location="cpu", weights_only=True)
+    action_map = {
+        target: (action["embedding"][index].numpy(), bool(action["known"][index]))
+        for index, target in enumerate(action["targets"])
+    }
+    train = effects[roles[0]]
+    known_targets = [target for target in targets[roles[0]] if action_map[target][1]]
+    x = np.stack([action_map[target][0] for target in known_targets]).astype(np.float64)
+    y = np.stack([train[target] for target in known_targets]).astype(np.float64)
+    x_mean, x_std = x.mean(0), x.std(0).clip(1e-8)
+    y_mean = y.mean(0)
+    _, _, components = np.linalg.svd(y - y_mean, full_matrices=False)
+    components = components[: min(anchor["rank"], len(known_targets))]
+    standardized = (x - x_mean) / x_std
+    scores = (y - y_mean) @ components.T
+    gram, cross = standardized.T @ standardized, standardized.T @ scores
+    validation = effects[roles[1]]
+    validation_targets = targets[roles[1]]
+    validation_x = np.stack([action_map[target][0] for target in validation_targets])
+    validation_y = np.stack([validation[target] for target in validation_targets])
+    candidates = []
+    for alpha in anchor["ridge_candidates"]:
+        weights = np.linalg.solve(gram + alpha * np.eye(gram.shape[0]), cross)
+        prediction = ((validation_x - x_mean) / x_std) @ weights @ components + y_mean
+        correlations = [
+            float(np.corrcoef(predicted, observed)[0, 1])
+            for predicted, observed in zip(prediction, validation_y)
+        ]
+        magnitude_error = np.abs(
+            np.linalg.norm(prediction, axis=1) - np.linalg.norm(validation_y, axis=1)
+        )
+        candidates.append(
+            {
+                "alpha": float(alpha),
+                "mse": float(np.mean(np.square(prediction - validation_y))),
+                "mean_effect_pearson": float(np.mean(correlations)),
+                "mean_magnitude_absolute_error": float(np.mean(magnitude_error)),
+                "weights": weights,
+            }
+        )
+    selected = min(candidates, key=lambda item: (item["mse"], item["alpha"]))
+    report = {
+        "fit_outcome_role": roles[0],
+        "selection_outcome_role": roles[1],
+        "fit_targets": len(train),
+        "fit_targets_with_known_action": len(known_targets),
+        "selection_targets": len(validation_targets),
+        "rank": len(components),
+        "selected_ridge": selected["alpha"],
+        "selection_mse": selected["mse"],
+        "selection_mean_effect_pearson": selected["mean_effect_pearson"],
+        "selection_mean_magnitude_absolute_error": selected[
+            "mean_magnitude_absolute_error"
+        ],
+        "ridge_candidates": [item["alpha"] for item in candidates],
+        "ridge_validation_mse": [item["mse"] for item in candidates],
+        "training_null_effect_threshold": dynamics_manifest["direction"][
+            "null_effect_threshold"
+        ],
+        "target_sha256": {
+            role: sha256("\n".join(targets[role]).encode()).hexdigest() for role in roles
+        },
+        "leakage": {
+            "contexts": ["K562"],
+            "sealed_test_outcomes_used": False,
+            "rpe1_outcomes_used": False,
+        },
+    }
+    checkpoint = {
+        "format_version": 1,
+        "architecture": "esm2_low_rank_latent_effect_ridge",
+        "x_mean": torch.from_numpy(x_mean.astype(np.float32)),
+        "x_std": torch.from_numpy(x_std.astype(np.float32)),
+        "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
+        "components": torch.from_numpy(components.astype(np.float32)),
+        "weights": torch.from_numpy(selected["weights"].astype(np.float32)),
+        "report": report,
+    }
+    output = Path(anchor["output_path"])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(checkpoint, output)
+    artifact = {"path": str(output), "bytes": output.stat().st_size, "sha256": file_sha256(output)}
+    manifest = {
+        "format_version": 1,
+        "architecture": checkpoint["architecture"],
+        "artifact": artifact,
+        "fit": report,
+        "source": {
+            "base_config_path": str(base_path),
+            "base_config_sha256": specification["base_config_sha256"],
+            "latent_cache_sha256": base["inputs"]["latent_cache_sha256"],
+            "action_cache_sha256": base["inputs"]["action_cache_sha256"],
+            "dynamics_manifest_sha256": dynamics_manifest["manifest_sha256"],
+        },
+    }
+    manifest["manifest_sha256"] = sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    Path(anchor["manifest_path"]).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    return manifest
+
+
+def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
+    """Materialize the preregistered validation-only anchored candidates."""
+    path = Path(path)
+    specification = yaml.safe_load(path.read_text())
+    base_path = Path(specification["base_config_path"])
+    assert file_sha256(base_path) == specification["base_config_sha256"]
+    base = yaml.safe_load(base_path.read_text())
+    anchor = specification["effect_anchor"]
+    assert anchor["output_sha256"] != "PENDING" and anchor["manifest_sha256"] != "PENDING"
+    artifact_path = Path(anchor["output_path"])
+    assert (artifact_path.stat().st_size, file_sha256(artifact_path)) == (
+        anchor["output_bytes"],
+        anchor["output_sha256"],
+    )
+    manifest = json.loads(Path(anchor["manifest_path"]).read_text())
+    declared = manifest.pop("manifest_sha256")
+    assert declared == anchor["manifest_sha256"] == sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    configs = {}
+    for name, experiment in specification["experiments"].items():
+        config = deepcopy(base)
+        config["seed"] = specification["seed"]
+        config["effect_anchor"] = deepcopy(anchor)
+        config["model"]["architecture"] = "anchored_decomposed_population_dynamics"
+        config["model"]["anchor_gain_max"] = experiment["anchor_gain_max"]
+        config["model"]["mean_residual_max_ratio"] = experiment[
+            "mean_residual_max_ratio"
+        ]
+        config["training"]["output_directory"] = experiment["output_directory"]
+        config["training"]["resume_from"] = None
+        config["revision"] = {
+            **deepcopy(specification["revision"]),
+            "candidate": name,
+            "anchor_gain_max": experiment["anchor_gain_max"],
+            "mean_residual_max_ratio": experiment["mean_residual_max_ratio"],
+            "target_split_seed": base["seed"],
+        }
+        configs[name] = config
     return configs, specification
 
 
@@ -645,12 +965,23 @@ def dynamics_provenance(config, config_path="configs/dynamics.yaml"):
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         manifests["latent"] = declared
+    cache_sha256 = {
+        "latent": inputs["latent_cache_sha256"],
+        "action": inputs["action_cache_sha256"],
+    }
+    if "effect_anchor" in config:
+        anchor = config["effect_anchor"]
+        assert file_sha256(anchor["output_path"]) == anchor["output_sha256"]
+        payload = json.loads(Path(anchor["manifest_path"]).read_text())
+        declared = payload.pop("manifest_sha256")
+        assert declared == anchor["manifest_sha256"] == sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        manifests["effect_anchor"] = declared
+        cache_sha256["effect_anchor"] = anchor["output_sha256"]
     return {
         "config_sha256": file_sha256(config_path),
-        "cache_sha256": {
-            "latent": inputs["latent_cache_sha256"],
-            "action": inputs["action_cache_sha256"],
-        },
+        "cache_sha256": cache_sha256,
         "manifest_sha256": manifests,
         "runtime_source_sha256": _runtime_source_hash(),
         "runtime_environment": _runtime_environment(),
