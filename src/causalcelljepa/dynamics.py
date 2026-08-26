@@ -358,6 +358,35 @@ def dynamics_ablation_configs(path="configs/ablations.yaml"):
     return configs, specification
 
 
+def dynamics_replication_configs(path="configs/stage2_replication.yaml"):
+    """Vary only Stage 2 stochastic seeds while retaining the frozen primary protocol."""
+    path = Path(path)
+    specification = yaml.safe_load(path.read_text())
+    base_path = Path(specification["base_config_path"])
+    assert file_sha256(base_path) == specification["base_config_sha256"]
+    base = yaml.safe_load(base_path.read_text())
+    split = json.loads(Path(base["inputs"]["replogle_manifest_path"]).read_text())["targets"][
+        "split"
+    ]
+    assert split["seed"] == base["seed"] == specification["target_split_seed"]
+    configs = {}
+    for entry in specification["model_seeds"]:
+        seed = entry["seed"]
+        assert seed != specification["target_split_seed"] and seed not in configs
+        config = deepcopy(base)
+        config["seed"] = seed
+        config["training"]["output_directory"] = entry["output_directory"]
+        config["training"]["resume_from"] = None
+        config["replication"] = {
+            "model_and_sampling_seed": seed,
+            "target_split_seed": specification["target_split_seed"],
+            "base_config_path": str(base_path),
+            "base_config_sha256": specification["base_config_sha256"],
+        }
+        configs[seed] = config
+    return configs, specification
+
+
 def prepare_dynamics_manifest(config, config_path="configs/dynamics.yaml"):
     """Fit state-space statistics without reading validation, test, or RPE1 outcomes."""
     inputs, data, normalization = config["inputs"], config["data"], config["normalization"]

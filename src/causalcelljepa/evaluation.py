@@ -639,8 +639,14 @@ def run_ablation_evaluation(
         inputs["base_evaluation_manifest_path"],
         inputs["base_evaluation_manifest_sha256"],
     )
-    ablation_manifest, ablation_manifest_sha256 = _self_hashed_manifest(
-        inputs["ablation_manifest_path"], inputs["ablation_manifest_sha256"]
+    model_source = config.get("model_source", "ablation")
+    assert model_source in {"ablation", "stage2_replication"}
+    manifest_kind = (
+        "ablation" if model_source == "ablation" else "replication_training"
+    )
+    model_manifest, model_manifest_sha256 = _self_hashed_manifest(
+        inputs[f"{manifest_kind}_manifest_path"],
+        inputs[f"{manifest_kind}_manifest_sha256"],
     )
     for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
         path = Path(inputs[f"{kind}_path"])
@@ -665,20 +671,39 @@ def run_ablation_evaluation(
 
     models, checkpoint_provenance = {}, {}
     for name in config["models"]:
-        entry = ablation_manifest["experiments"][name]
+        if model_source == "ablation":
+            entry = model_manifest["experiments"][name]
+        else:
+            seed = str(config["model_seeds"][name])
+            entry = model_manifest["artifacts"]["seeds"][seed]
         artifact = entry["best_checkpoint"]
         checkpoint_path = Path(artifact["path"])
         assert checkpoint_path.stat().st_size == artifact["bytes"]
         assert file_sha256(checkpoint_path) == artifact["sha256"]
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        assert checkpoint["configuration"]["ablation"]["name"] == name
-        assert checkpoint["configuration"]["model"]["context_mode"] == entry["mechanism"][
-            "context_mode"
-        ]
-        assert (
-            float(checkpoint["configuration"]["loss"]["weights"]["direction"])
-            == entry["mechanism"]["direction_weight"]
-        )
+        if model_source == "ablation":
+            assert checkpoint["configuration"]["ablation"]["name"] == name
+            assert checkpoint["configuration"]["model"]["context_mode"] == entry[
+                "mechanism"
+            ]["context_mode"]
+            assert (
+                float(checkpoint["configuration"]["loss"]["weights"]["direction"])
+                == entry["mechanism"]["direction_weight"]
+            )
+        else:
+            assert checkpoint["configuration"]["seed"] == int(seed)
+            assert checkpoint["configuration"]["replication"] == {
+                "model_and_sampling_seed": int(seed),
+                "target_split_seed": base_config["seed"],
+                "base_config_path": "configs/dynamics.yaml",
+                "base_config_sha256": model_manifest["source"]["base_config_sha256"],
+            }
+            assert checkpoint["state"]["best_validation_epoch"] == entry["full_run"][
+                "best_validation_epoch"
+            ]
+            assert checkpoint["state"]["best_validation_loss"] == entry["full_run"][
+                "best_validation_loss"
+            ]
         assert checkpoint["provenance"]["git"]["dirty"] is False
         model = build_dynamics_model(checkpoint["configuration"]).eval()
         model.load_state_dict(checkpoint["model"])
@@ -802,12 +827,12 @@ def run_ablation_evaluation(
             "base_summary": inputs["base_summary_sha256"],
             "base_provenance": inputs["base_provenance_sha256"],
         },
-        "ablation_manifest_sha256": ablation_manifest_sha256,
         "base_evaluation_manifest_sha256": base_manifest_sha256,
         "runtime_source_sha256": _runtime_source_hash(),
         "runtime_environment": _runtime_environment(),
         "git": _git_state(),
     }
+    provenance[f"{manifest_kind}_manifest_sha256"] = model_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     (output / "paired_comparisons.json").write_text(
         json.dumps(comparisons, indent=2, sort_keys=True) + "\n"

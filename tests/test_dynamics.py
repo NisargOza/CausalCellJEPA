@@ -1,15 +1,18 @@
 import json
 from collections import Counter
+from pathlib import Path
 
 import h5py
 import numpy as np
 import torch
+import yaml
 
 from causalcelljepa.dynamics import (
     LatentPopulationDataset,
     PopulationDynamics,
     dynamics_loss,
     dynamics_objective,
+    dynamics_replication_configs,
 )
 from causalcelljepa.evaluation import (
     paired_condition_comparisons,
@@ -192,6 +195,22 @@ def test_pseudo_paired_objective_is_pointwise_and_pairing_dependent():
     assert not torch.equal(direct["loss"], permuted["loss"])
     direct["loss"].backward()
     assert torch.isfinite(predicted.grad).all()
+
+
+def test_stage2_replications_change_only_model_sampling_seed_and_output():
+    configs, specification = dynamics_replication_configs()
+    base = yaml.safe_load(Path(specification["base_config_path"]).read_text())
+    assert set(configs) == {20260824, 20260825}
+    for seed, config in configs.items():
+        assert config["seed"] == config["replication"]["model_and_sampling_seed"] == seed
+        assert config["replication"]["target_split_seed"] == base["seed"] == 20260823
+        for section in ("inputs", "data", "normalization", "model", "loss"):
+            assert config[section] == base[section]
+        assert config["training"] == {
+            **base["training"],
+            "output_directory": f"artifacts/replications/dynamics_seed_{seed}",
+            "resume_from": None,
+        }
 
 
 def test_paired_comparisons_orient_improvement_and_adjust_multiplicity():
