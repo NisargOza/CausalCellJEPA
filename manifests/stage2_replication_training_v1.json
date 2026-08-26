@@ -1,0 +1,151 @@
+{
+  "artifacts": {
+    "console_log": {
+      "bytes": 1292,
+      "path": "artifacts/stage2_replication_console.log",
+      "sha256": "9d2c3593a2e397da73e677095ed09c1f0e8bc879a9f864716538dfaf93f57bee"
+    },
+    "seeds": {
+      "20260824": {
+        "best_checkpoint": {
+          "bytes": 70616683,
+          "path": "artifacts/replications/dynamics_seed_20260824/best.pt",
+          "sha256": "256793044c70e9b968386c3d674ca44121e482fe830f30e1b4c56a7892c40466"
+        },
+        "cuda_smoke": {
+          "checkpoint_report": {
+            "bytes": 148,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260824/checkpoint_report.json",
+            "sha256": "026af4aff5cf1c9e9f698b59feeffefdccc2767a406d24bdd988d59a497c37fe"
+          },
+          "resume_report": {
+            "bytes": 374,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260824/resume_report.json",
+            "sha256": "d0643be0959ba45a2561103af1415b0d3f1f43d02713a85e7f62d69805b67774"
+          },
+          "training_log": {
+            "bytes": 21385,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260824/training.jsonl",
+            "sha256": "718b5d0451f628ec8c560fcdd77d68891d54d9b34b6f83db9a04d85791b6f722"
+          }
+        },
+        "full_run": {
+          "best_validation_epoch": 109,
+          "best_validation_loss": 0.4401943874359131,
+          "completion_reason": "early_stopping",
+          "elapsed_seconds": 642.1145317791961,
+          "epochs": 125,
+          "epochs_without_improvement": 15,
+          "global_steps": 5500,
+          "peak_cuda_memory_bytes": 278060544
+        },
+        "latest_checkpoint": {
+          "bytes": 70617995,
+          "path": "artifacts/replications/dynamics_seed_20260824/latest.pt",
+          "sha256": "b3d77b85ba15a2dfb2f9940a61f945bd6c25d0d4c5314750dd7fe277871c2acf"
+        },
+        "training_log": {
+          "bytes": 1872630,
+          "path": "artifacts/replications/dynamics_seed_20260824/training.jsonl",
+          "sha256": "67ad1bf132643202824a44c0208872e12a214a4eb8107239d427ad30db1811dc"
+        }
+      },
+      "20260825": {
+        "best_checkpoint": {
+          "bytes": 70616619,
+          "path": "artifacts/replications/dynamics_seed_20260825/best.pt",
+          "sha256": "b8fad3c21abbd4494fc69dd75061d3503dde6256c67e29241324e38f100a0042"
+        },
+        "cuda_smoke": {
+          "checkpoint_report": {
+            "bytes": 148,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260825/checkpoint_report.json",
+            "sha256": "6179c22148f30551b3067a9395272a5537db7ae387d9c2a5c12e046a33e9d6d8"
+          },
+          "resume_report": {
+            "bytes": 374,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260825/resume_report.json",
+            "sha256": "a82669e51f04a017b0b84e6c5f4945f5878edd3408c3fabf8d74c36cc54912d9"
+          },
+          "training_log": {
+            "bytes": 21419,
+            "path": "artifacts/dynamics_replication_cuda_smoke/20260825/training.jsonl",
+            "sha256": "21cff74e242b0167e286c777a2a8c39a6e3d48880cbcf3bc47ab19fdef4b78bc"
+          }
+        },
+        "full_run": {
+          "best_validation_epoch": 99,
+          "best_validation_loss": 0.4379767394065857,
+          "completion_reason": "early_stopping",
+          "elapsed_seconds": 635.7997722481377,
+          "epochs": 115,
+          "epochs_without_improvement": 15,
+          "global_steps": 5060,
+          "peak_cuda_memory_bytes": 325053952
+        },
+        "latest_checkpoint": {
+          "bytes": 70617995,
+          "path": "artifacts/replications/dynamics_seed_20260825/latest.pt",
+          "sha256": "c7a9f57abfea5c240d6809e8f9f578e8b1cdacb2c7dceb1cbc056adf39fcdb7c"
+        },
+        "training_log": {
+          "bytes": 1721856,
+          "path": "artifacts/replications/dynamics_seed_20260825/training.jsonl",
+          "sha256": "8ca63e01e2e6e3e1238f33bd5ab6ab224ab8b982c7f3fba3d9a4c7e3c2961a97"
+        }
+      }
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "bd967f5c697efc192ea4837f4b559ad9def89b69041a87c44355dd96a2c903b5",
+  "protocol": {
+    "checkpoint_selection": "minimum in-objective loss on frozen K562 perturbation-OOD validation",
+    "context": "K562",
+    "cuda_smoke_checkpoint_step": 16,
+    "cuda_smoke_resume_step": 64,
+    "cuda_smoke_resume_exactness_passed": true,
+    "fit_outcome_role": "dynamics_train",
+    "fit_statistics_roles": [
+      "control_train",
+      "dynamics_train"
+    ],
+    "model_and_sampling_seeds": [
+      20260824,
+      20260825
+    ],
+    "population_size": 32,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "statistical_unit": "perturbation-condition",
+    "target_split_seed": 20260823
+  },
+  "runtime": {
+    "cuda": "13.0",
+    "gpu": "NVIDIA L40",
+    "gpu_capability": [
+      8,
+      9
+    ],
+    "python": "3.12.13",
+    "torch": "2.12.1"
+  },
+  "source": {
+    "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "git_commit": "952108e511ec00012f06fadf3b6a6a7ef2e7855c",
+    "git_dirty": false,
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "replication_config_sha256": "f27f84d386ef74a054e026c527cb78afbe773721b2e1e32339b560237ea49365",
+    "runtime_source_sha256": "2164d1baa283f3b1f81807987522cd9071f02dee3a29d42661b7bdbe3971b799"
+  },
+  "validation": {
+    "all_checkpoint_model_tensors_finite": true,
+    "all_log_numeric_values_finite": true,
+    "best_checkpoint_matches_logged_minimum": true,
+    "checkpoint_provenance_matches_clean_commit": true,
+    "local_transfer_byte_and_sha256_match": true,
+    "optimizer_steps_contiguous": true
+  }
+}
