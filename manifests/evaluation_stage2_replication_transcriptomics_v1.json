@@ -1,0 +1,151 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 60939,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/analysis.json",
+      "sha256": "812689d063bbb94a93e232f7984c31573fc013c99668f2d7a16d2ba40acf2cc7"
+    },
+    "condition_metrics": {
+      "bytes": 37416389,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/condition_metrics.jsonl",
+      "records": 28704,
+      "sha256": "7d723778546f16a751deb03a30b1f1542b29550c3cfbf86cc6e78c7999773c76"
+    },
+    "console_log": {
+      "bytes": 774,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics_console.log",
+      "sha256": "be87ff7ce80882e059a63cd4a63e517816b5de79e76f9c1f21ca0ee6e3f74c94"
+    },
+    "paired_comparisons": {
+      "bytes": 569326,
+      "condition_comparisons": 616,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/paired_comparisons.json",
+      "pathway_comparisons": 168,
+      "sha256": "924a591be8f44ee3bb98cdbc3314fd3b16597f3e444fe94a249dcffc2df09fb9"
+    },
+    "pathway_metrics": {
+      "bytes": 1679514,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/pathway_metrics.jsonl",
+      "records": 3588,
+      "sha256": "e9c1799fa5b0d442ddd5dc1f97f22ce2e75f6c9eb75c01ed2f8bc4667365eebb"
+    },
+    "provenance": {
+      "bytes": 12187,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/provenance.json",
+      "sha256": "9fa595a53dbe4c6d50a29977cbfbf38f85687b91000814351903e5a10929870d"
+    },
+    "summary": {
+      "bytes": 225333,
+      "condition_summaries": 568,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/summary.json",
+      "pathway_summaries": 148,
+      "retrieval_summaries": 28,
+      "sha256": "f368131b9941091645c60f6d21595401d1f89f209427d8ede74db459f5f8e39d"
+    },
+    "truth_report": {
+      "bytes": 560,
+      "path": "artifacts/evaluation_stage2_replication_transcriptomics/truth_report.json",
+      "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+    }
+  },
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {
+        "20260823": -0.129911,
+        "20260824": -0.10439,
+        "20260825": -0.04361,
+        "linear_esm": 0.236497,
+        "pseudo_paired": -0.110691
+      },
+      "all_magnitude_absolute_error": {
+        "20260823": 4.300444,
+        "20260824": 3.412047,
+        "20260825": 3.897731,
+        "linear_esm": 4.697679,
+        "pseudo_paired": 2.931386
+      },
+      "pathway_nes_pearson": {
+        "20260823": -0.236243,
+        "20260824": -0.20329,
+        "20260825": -0.12925,
+        "linear_esm": 0.273363,
+        "pseudo_paired": -0.200299
+      }
+    },
+    "double_ood": {
+      "all_effect_pearson": {
+        "20260823": -0.133761,
+        "20260824": -0.10909,
+        "20260825": -0.04885,
+        "linear_esm": 0.224352,
+        "pseudo_paired": -0.108458
+      },
+      "all_magnitude_absolute_error": {
+        "20260823": 3.910857,
+        "20260824": 2.992769,
+        "20260825": 3.518986,
+        "linear_esm": 4.279563,
+        "pseudo_paired": 2.693102
+      },
+      "pathway_nes_pearson": {
+        "20260823": -0.244825,
+        "20260824": -0.21107,
+        "20260825": -0.1369,
+        "linear_esm": 0.272678,
+        "pseudo_paired": -0.203673
+      }
+    },
+    "iid": {
+      "all_effect_pearson": {
+        "20260823": 0.081431,
+        "20260824": 0.13193,
+        "20260825": 0.12211,
+        "linear_esm": 0.161163,
+        "pseudo_paired": 0.135799
+      }
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {
+        "20260823": 0.091855,
+        "20260824": 0.14672,
+        "20260825": 0.13407,
+        "linear_esm": 0.203033,
+        "pseudo_paired": 0.154979
+      }
+    }
+  },
+  "manifest_sha256": "a44e8c2ab2ebd58280b2572feedbf0f5a7894b77a19707071ef8f515ce38afd8",
+  "protocol": {
+    "condition_records": 28704,
+    "decoder": "frozen leakage-safe JEPA linear readout",
+    "evaluation_sampling_seed": 20260823,
+    "model_seeds": [
+      20260823,
+      20260824,
+      20260825
+    ],
+    "pathway_records": 3588,
+    "population_repeats": 8,
+    "population_size": 32,
+    "statistical_unit": "perturbation-condition",
+    "target_gene_excluded": true
+  },
+  "result_scope": {
+    "decoded_direction_replication": "Both new seeds improve on the primary seed but remain below linear ESM in every regime.",
+    "latent_gain_survives_as_positive_rpe1_transcriptomic_direction": false,
+    "magnitude_advantage_over_linear": "Both new seeds have lower magnitude absolute error than linear ESM in every regime.",
+    "rpe1_pathway_direction": "All three JEPA seeds are negative while linear ESM is positive.",
+    "selection_used_test_outcomes": false,
+    "target_gene_exclusion_changes_conclusion": false,
+    "transcriptomic_superiority_supported": false
+  },
+  "source": {
+    "analysis_git_commit": "79eb82fe150c463861e2b7a8b962a754cdec3927",
+    "analysis_script_sha256": "17c962bb40d458ab187ecbae2aa1a1464e48e2a23632c7c4b6aed8806121f72f",
+    "evaluation_config_sha256": "81998d1c2584cbffea4024225077f21e2c35db377674328147fc86080c54fff6",
+    "evaluation_git_commit": "d755bff163a2d1fa312bdac19daeeb7f0a67cb30",
+    "replication_training_manifest_sha256": "bd967f5c697efc192ea4837f4b559ad9def89b69041a87c44355dd96a2c903b5",
+    "transcriptomics_manifest_sha256": "06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af"
+  }
+}

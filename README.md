@@ -154,6 +154,15 @@ pseudo-pairing conclusions without supporting universal transferred distribution
 Exact artifacts and paired statistics are frozen in
 [`manifests/evaluation_stage2_replication_v1.json`](manifests/evaluation_stage2_replication_v1.json).
 
+Passing the two new seeds through the frozen transcriptomic decoder does not rescue the
+gene-level claim. Both improve on the primary seed in every regime, but context-OOD effect
+Pearson remains `-0.104` and `-0.044`, and double-OOD remains `-0.109` and `-0.049`, versus
+positive linear-ESM values of `0.236` and `0.224`. All three JEPA seeds also have negative RPE1
+pathway correlations. Target-gene exclusion leaves the result unchanged. The replicated models
+do improve magnitude absolute error over linear ESM, demonstrating a direction-calibration
+tradeoff rather than total model failure. This decisive gene/pathway result is frozen in
+[`manifests/evaluation_stage2_replication_transcriptomics_v1.json`](manifests/evaluation_stage2_replication_transcriptomics_v1.json).
+
 ## Transcriptomic readout
 
 [`configs/readout.yaml`](configs/readout.yaml) defines a separate linear decoder from normalized
@@ -240,6 +249,9 @@ uv run python scripts/train_stage2_replication.py
 uv run python scripts/smoke_evaluation_stage2_replication.py
 uv run python scripts/evaluate_stage2_replication.py
 uv run python scripts/analyze_stage2_replication.py
+uv run python scripts/smoke_stage2_replication_transcriptomics.py
+uv run python scripts/evaluate_stage2_replication_transcriptomics.py
+uv run python scripts/analyze_stage2_replication_transcriptomics.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
 uv run ruff check .
