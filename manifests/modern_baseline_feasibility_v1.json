@@ -1,0 +1,83 @@
+{
+  "accessed_date": "2026-08-25",
+  "decision": {
+    "additional_paid_gpu_run_authorized": false,
+    "basis": "The locked minimum experiment does not clearly beat simple, direct-gene, PCA, or autoencoder baselines, so proposal section 26 says scaling is not justified.",
+    "next_if_external_review_requires_a_modern_baseline": [
+      "State under the frozen perturbation-by-context split",
+      "GEARS for K562 IID and perturbation-OOD only"
+    ],
+    "result_optimization_motivated_run_rejected": true
+  },
+  "format_version": 1,
+  "manifest_sha256": "2875f26aed7cb9ee2836a04da028932f8445ad4f787ef2901a72bd4d2e9c2d60",
+  "methods": {
+    "CPA": {
+      "feasibility": "technically feasible but substantial",
+      "official_capabilities": [
+        "external embeddings for unseen perturbations",
+        "context transfer",
+        "gene perturbations"
+      ],
+      "required_project_work": [
+        "custom leakage-safe AnnData construction",
+        "external ESM-2 embedding integration",
+        "K562-only tuning protocol",
+        "separate GPU training and exact four-regime export"
+      ],
+      "status": "deferred"
+    },
+    "CellOT": {
+      "feasibility": "not feasible as a full unseen-action benchmark at current scale",
+      "official_limitations_for_this_task": [
+        "condition-specific transport maps rather than a universal unseen-target action model",
+        "official example reports approximately three CPU hours for one 4i training task"
+      ],
+      "scientifically_fair_scope": "A prespecified small seen-perturbation transport subset only, not perturbation-OOD.",
+      "status": "deferred"
+    },
+    "GEARS": {
+      "feasibility": "feasible for K562-only regimes",
+      "official_capabilities": [
+        "Replogle K562 and RPE1 loaders",
+        "custom splits",
+        "unseen genetic perturbation prediction"
+      ],
+      "official_limitation": "The implementation states that it is not designed for training across multiple cell types or cross-cell-type transfer.",
+      "scientifically_fair_scope": [
+        "iid",
+        "perturbation_ood"
+      ],
+      "status": "deferred after MVP falsification"
+    },
+    "State": {
+      "feasibility": "best matching modern extension but GPU-scale",
+      "official_capabilities": [
+        "Replogle-Nadig genetic perturbation training",
+        "explicit few-shot perturbation splits",
+        "explicit zero-shot context splits",
+        "prediction on alternate split TOML files"
+      ],
+      "required_project_work": [
+        "new AnnData export",
+        "reconcile State preprocessing with the frozen 3000-HVG protocol",
+        "custom TOML split audit",
+        "bounded CUDA replay",
+        "full GPU training and common evaluation export"
+      ],
+      "status": "recommended first only if external review requires a modern neural baseline"
+    }
+  },
+  "proposal_alignment": {
+    "mandatory_modern_baselines_wording": "GEARS, CPA, CellOT, State where feasible",
+    "minimum_experiment_stop_rule_applied": true,
+    "negative_results_preserved": true,
+    "protocol_changed": false
+  },
+  "sources": {
+    "CPA": "https://github.com/theislab/cpa",
+    "CellOT": "https://github.com/bunnech/cellot",
+    "GEARS": "https://github.com/snap-stanford/GEARS",
+    "State": "https://github.com/ArcInstitute/state"
+  }
+}

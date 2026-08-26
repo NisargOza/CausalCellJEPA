@@ -208,7 +208,27 @@ frozen in
 The required direct gene-space comparison is implemented separately as an ESM-2-to-expression-
 effect low-rank ridge model. It fits K562 dynamics-training effects, selects ridge strength only
 on K562 perturbation-OOD validation targets, and evaluates the same gene, DE, retrieval, pathway,
-and paired metrics without passing through the JEPA state or transcriptomic decoder.
+and paired metrics without passing through the JEPA state or transcriptomic decoder. Its full
+evaluation outperforms the latent world model on effect direction, DE recovery, magnitude error,
+and pathway agreement in all four regimes; the negative result is frozen in
+[`manifests/direct_gene_v1.json`](manifests/direct_gene_v1.json).
+
+## Modern baseline feasibility
+
+The proposal asks for GEARS, CPA, CellOT, and State where feasible. Their official interfaces do
+not define one interchangeable four-regime task. [GEARS](https://github.com/snap-stanford/GEARS)
+supports Replogle and custom splits but explicitly does not support cross-cell-type transfer;
+[CellOT](https://github.com/bunnech/cellot) learns condition-specific transport maps rather than
+an unseen-action model and reports hours for an example CPU fit;
+[CPA](https://github.com/theislab/cpa) supports external embeddings and context transfer but
+requires a separate training/tuning stack; and [State](https://github.com/ArcInstitute/state)
+supports Replogle plus explicit few-shot/zero-shot split files but requires its own preprocessing
+and GPU training pipeline. The locked minimum experiment already fails to clearly beat simple,
+direct-gene, PCA, and autoencoder baselines, which activates the proposal's rule that scaling is
+not justified. Additional paid runs are therefore deferred rather than used to search for a more
+favorable result. If external review requires a modern neural baseline, State is the first
+recommended extension, followed by a K562-only GEARS comparison. The auditable decision record is
+[`manifests/modern_baseline_feasibility_v1.json`](manifests/modern_baseline_feasibility_v1.json).
 
 ## Development
 
