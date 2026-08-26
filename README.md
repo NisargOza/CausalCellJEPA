@@ -228,9 +228,19 @@ perturbation-OOD validation targets. Its deterministic artifact is pinned in
 [`manifests/latent_effect_anchor_v1.json`](manifests/latent_effect_anchor_v1.json); no sealed
 K562 test or RPE1 perturbed outcome is read. Three fixed correction caps (`0`, `0.25`, `0.50`)
 share seed, loss, optimizer, and stopping protocol. Exact CPU resume and two-condition
-selection-path smoke gates pass for all three. Full CUDA training and the preregistered
-K562-validation-only architecture decision remain pending; sealed evaluation is prohibited
-until that decision manifest is frozen.
+selection-path smoke gates pass for all three. All three then passed a bounded CUDA gate and
+full early-stopped A6000 training, frozen in
+[`manifests/anchored_dynamics_training_v1.json`](manifests/anchored_dynamics_training_v1.json).
+
+The preregistered K562-validation-only comparison selected `anchor_only`. Its decoded
+all-gene effect Pearson is `0.1969`, an 83.6% relative improvement over the original primary
+checkpoint's `0.1072`. The `0.25` correction reaches `0.2005`, but that improvement is below
+the fixed `0.01` practical-tie margin and its latent Sinkhorn is worse (`0.2948` versus
+`0.2807`), so the simpler candidate wins the frozen tie-break. The revision does not improve
+every endpoint: selected decoded magnitude error is worse than the primary and latent effect
+direction is substantially lower. Exact metrics, checkpoint hash, condition-level artifact
+hashes, and confirmation that no sealed K562 or RPE1 perturbed outcome was read are frozen in
+[`manifests/anchored_dynamics_selection_v1.json`](manifests/anchored_dynamics_selection_v1.json).
 
 ## Modern baseline feasibility
 

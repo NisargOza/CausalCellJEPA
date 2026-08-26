@@ -1,0 +1,198 @@
+{
+  "artifacts": {
+    "condition_metrics.jsonl": {
+      "bytes": 2791219,
+      "path": "artifacts/anchored_dynamics_validation/condition_metrics.jsonl",
+      "sha256": "a34c5e4b36790132d219e085be5b8d6d365d34a0996c0f13b024226bb1ac5f0a"
+    },
+    "decision.json": {
+      "bytes": 7002,
+      "path": "artifacts/anchored_dynamics_validation/decision.json",
+      "sha256": "02db90bbc96d944ee72095767582fc3bda5c027265c9ce42c56cc1107675a5e8"
+    }
+  },
+  "candidate_summaries": {
+    "anchor_only": {
+      "decoded_all_effect_pearson": 0.1969337820535293,
+      "decoded_all_effect_spearman": 0.18681584420613945,
+      "decoded_all_magnitude_absolute_error": 2.5564391313493253,
+      "latent_centroid_shift_error": 0.2629093019850552,
+      "latent_covariance_shift_error": 0.22630302479490638,
+      "latent_direction_cosine": 0.12631499318114947,
+      "latent_effect_pearson": 0.12616557617839136,
+      "latent_effect_spearman": 0.1231906354291641,
+      "latent_energy_distance": 0.13676946759223937,
+      "latent_magnitude_absolute_error": 0.21226728308480233,
+      "latent_magnitude_ratio": 0.20822075970470905,
+      "latent_mmd": 0.036312724500894546,
+      "latent_sinkhorn": 0.28072776149958373
+    },
+    "anchor_residual_025": {
+      "decoded_all_effect_pearson": 0.20045050030119455,
+      "decoded_all_effect_spearman": 0.1892939044277955,
+      "decoded_all_magnitude_absolute_error": 2.3997689335793257,
+      "latent_centroid_shift_error": 0.2643606605567038,
+      "latent_covariance_shift_error": 0.23216350020840765,
+      "latent_direction_cosine": 0.1343983494839631,
+      "latent_effect_pearson": 0.13438514919231237,
+      "latent_effect_spearman": 0.1310016328677466,
+      "latent_energy_distance": 0.13812413960695266,
+      "latent_magnitude_absolute_error": 0.19300362787209452,
+      "latent_magnitude_ratio": 0.2847865603864193,
+      "latent_mmd": 0.03667040437459946,
+      "latent_sinkhorn": 0.2947621624171734
+    },
+    "anchor_residual_050": {
+      "decoded_all_effect_pearson": 0.19709662405271955,
+      "decoded_all_effect_spearman": 0.18579327000799822,
+      "decoded_all_magnitude_absolute_error": 2.5781333556026222,
+      "latent_centroid_shift_error": 0.2636928229313344,
+      "latent_covariance_shift_error": 0.23237004740163683,
+      "latent_direction_cosine": 0.13336437628604472,
+      "latent_effect_pearson": 0.1334560954644803,
+      "latent_effect_spearman": 0.130399885100378,
+      "latent_energy_distance": 0.13950857907533645,
+      "latent_magnitude_absolute_error": 0.19953181587159632,
+      "latent_magnitude_ratio": 0.259431388983503,
+      "latent_mmd": 0.03687068447470665,
+      "latent_sinkhorn": 0.29383021680638194
+    },
+    "linear_anchor": {
+      "decoded_all_effect_pearson": 0.19693385106675124,
+      "decoded_all_effect_spearman": 0.18681578177202027,
+      "decoded_all_magnitude_absolute_error": 2.556439278796315,
+      "latent_centroid_shift_error": 0.2629093020875007,
+      "latent_covariance_shift_error": 0.24750330006703736,
+      "latent_direction_cosine": 0.12631499622832051,
+      "latent_effect_pearson": 0.1261655803157919,
+      "latent_effect_spearman": 0.12319052726070367,
+      "latent_energy_distance": 0.09551292240619659,
+      "latent_magnitude_absolute_error": 0.21226728301029651,
+      "latent_magnitude_ratio": 0.20822075945325197,
+      "latent_mmd": 0.02647653564810753,
+      "latent_sinkhorn": 0.391047146730125
+    },
+    "original_primary": {
+      "decoded_all_effect_pearson": 0.10724110110803395,
+      "decoded_all_effect_spearman": 0.10247229759370384,
+      "decoded_all_magnitude_absolute_error": 2.439232724010944,
+      "latent_centroid_shift_error": 0.2168462124746293,
+      "latent_covariance_shift_error": 0.24260234812274575,
+      "latent_direction_cosine": 0.597892222913215,
+      "latent_effect_pearson": 0.5977760288651917,
+      "latent_effect_spearman": 0.5823788090678863,
+      "latent_energy_distance": 0.08020782336592674,
+      "latent_magnitude_absolute_error": 0.07005652447231114,
+      "latent_magnitude_ratio": 0.8108607504144311,
+      "latent_mmd": 0.019637461006641387,
+      "latent_sinkhorn": 0.3715569606795907
+    }
+  },
+  "eligibility": {
+    "anchor_only": {
+      "eligible": true,
+      "reasons": []
+    },
+    "anchor_residual_025": {
+      "eligible": true,
+      "reasons": []
+    },
+    "anchor_residual_050": {
+      "eligible": true,
+      "reasons": []
+    }
+  },
+  "format_version": 1,
+  "leakage": {
+    "context": "K562",
+    "outcome_role": "perturbation_ood_validation",
+    "rpe1_outcomes_used": false,
+    "sealed_test_outcomes_used": false
+  },
+  "manifest_sha256": "61f6a564986d793d3c88622b0397e004caad1664a2f6d3b194cdec16ea49a5e7",
+  "practical_ties": [
+    "anchor_only",
+    "anchor_residual_025",
+    "anchor_residual_050"
+  ],
+  "provenance": {
+    "config_sha256": "982537d15312f58d086d5f4d32768d8e43f532388994c732665ad669d503c74f",
+    "git": {
+      "commit": "d44dccc3c8fa6aaeb3cb12139426d8ac841b9cc6",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "f456d14be8e51579b41c625e69c123003dac34a2491a56e141972dc1fa1eb15a"
+  },
+  "revision": {
+    "changes": [
+      "frozen low-rank ESM-to-latent mean-effect anchor",
+      "bounded action-only nonlinear mean correction",
+      "exactly mean-centered context-conditioned population residual"
+    ],
+    "name": "anchored_decomposed_population_dynamics_v1",
+    "rationale_path": "docs/architecture_revision_v1.md",
+    "status": "post_primary_experiment",
+    "unchanged": [
+      "frozen JEPA state space",
+      "frozen ESM-2 action embeddings",
+      "unpaired population sampling",
+      "Stage 2 loss and optimizer",
+      "K562 target split"
+    ]
+  },
+  "selected": {
+    "best_validation_epoch": 139,
+    "best_validation_loss": 0.6974033451080323,
+    "bytes": 72881485,
+    "candidate": "anchor_only",
+    "mean_residual_max_ratio": 0.0,
+    "path": "artifacts/anchored_dynamics/anchor_only/best.pt",
+    "sha256": "dd588a993cf8e8a7a3b9ecc61e3435bdd5117e5bad80763123550921b6263613"
+  },
+  "selection_rule": {
+    "batch_size": 16,
+    "checkpoint_rule": "minimum_original_latent_validation_loss",
+    "context": "K562",
+    "control_role": "control_train",
+    "decision_manifest_path": "manifests/anchored_dynamics_selection_v1.json",
+    "guardrail_reference": "anchor_only",
+    "maximum_magnitude_absolute_error_ratio": 1.05,
+    "maximum_sinkhorn_ratio": 1.05,
+    "mmd_bandwidth_ratio": 1.0,
+    "num_workers": 0,
+    "outcome_role": "perturbation_ood_validation",
+    "output_directory": "artifacts/anchored_dynamics_validation",
+    "practical_tie_margin": 0.01,
+    "primary_metric": "decoded_all_effect_pearson",
+    "reference_sinkhorn_blur_ratio": 0.1,
+    "repeats": 8,
+    "tie_breakers": [
+      "latent_sinkhorn",
+      "mean_residual_max_ratio"
+    ],
+    "transcriptomics_config_path": "configs/transcriptomics.yaml",
+    "transcriptomics_config_sha256": "db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971"
+  },
+  "truth_report": {
+    "validation": {
+      "conditions_with_no_degs": 18,
+      "context": "K562",
+      "outcome_role": "perturbation_ood_validation",
+      "targets": 100
+    }
+  }
+}

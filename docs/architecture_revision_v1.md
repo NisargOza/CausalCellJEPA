@@ -99,3 +99,30 @@ Selection is performed once using only K562 `perturbation_ood_validation` outcom
 Only after the selected name, checkpoint hash, and this decision record are frozen may
 sealed K562 test or RPE1 outcomes be evaluated. A weak result remains a valid negative
 result; no candidate will be chosen or redesigned from sealed outcomes.
+
+## Frozen validation result
+
+All three candidates passed exact CPU checkpoint/resume replay, a bounded CUDA
+checkpoint/resume and finite-validation gate, and full early-stopped training on one
+NVIDIA RTX A6000. The training artifacts and checks are pinned in
+`manifests/anchored_dynamics_training_v1.json`.
+
+| Candidate | Best epoch | Latent validation loss | Decoded effect Pearson | Latent Sinkhorn | Decoded magnitude absolute error |
+|---|---:|---:|---:|---:|---:|
+| `anchor_only` | 139 | 0.697403 | 0.196934 | 0.280728 | 2.556439 |
+| `anchor_residual_025` | 40 | **0.687205** | **0.200451** | 0.294762 | **2.399769** |
+| `anchor_residual_050` | 40 | 0.687624 | 0.197097 | 0.293830 | 2.578133 |
+| Original primary reference | 28 | 0.568212 | 0.107241 | 0.371557 | 2.439233 |
+
+Every candidate passed the preregistered eligibility and corrected-candidate guardrails.
+Their decoded Pearson values fall within the fixed 0.01 practical-tie margin, so the
+tie-break selects `anchor_only`: it has lower latent Sinkhorn than either corrected
+candidate and the smallest correction cap. Its decoded validation Pearson is 83.6%
+higher than the original primary reference, but it is worse on decoded magnitude error
+and substantially worse on latent effect direction. The revision therefore improves the
+chosen decoded-direction endpoint without establishing uniform superiority.
+
+The immutable decision, selected checkpoint SHA-256, condition-level artifact hashes,
+and explicit leakage report are in `manifests/anchored_dynamics_selection_v1.json`.
+Selection read exactly 100 K562 perturbation-OOD validation targets over eight fixed
+repeats. It did not read sealed K562 test or RPE1 perturbed outcomes.
