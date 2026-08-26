@@ -1,0 +1,118 @@
+{
+  "artifacts": {
+    "baseline_report": {
+      "bytes": 684,
+      "sha256": "65411068560e11f2ea73ebf4835b90f21f1146c225ab18d6ba98b246f8891b41"
+    },
+    "condition_metrics": {
+      "bytes": 29657802,
+      "records": 57408,
+      "sha256": "9fa024c21cc737f1db10abbfd26ca5b8ad46dd1d3e812c0187e8dcd0d88a32c9"
+    },
+    "paired_comparisons": {
+      "bytes": 65502,
+      "comparisons": 112,
+      "sha256": "0a2c9f0bb2217c9dc1bda10c39c642a91438b3d0c5146ab9051784d03187ebc0"
+    },
+    "provenance": {
+      "bytes": 4833,
+      "sha256": "6da53d9a8a03e44dc6fa5ffbc54f5399296345d702b72e2990ad41defd8bfc42"
+    },
+    "summary": {
+      "bytes": 48559,
+      "condition_summaries": 152,
+      "retrieval_summaries": 16,
+      "sha256": "896568986fdc2ab2b1c95536e86b815723e584f5ffa410d1937d8bd6bcee6251"
+    }
+  },
+  "format_version": 1,
+  "headline_latent_means": {
+    "context_ood": {
+      "causalcelljepa": {
+        "covariance_shift_error": 0.160446,
+        "effect_pearson": 0.0586411,
+        "magnitude_absolute_error": 0.0579358,
+        "sinkhorn": 0.140224
+      },
+      "linear_esm": {
+        "covariance_shift_error": 0.162538,
+        "effect_pearson": 0.136166,
+        "magnitude_absolute_error": 0.145298,
+        "sinkhorn": 0.125024
+      }
+    },
+    "double_ood": {
+      "causalcelljepa": {
+        "covariance_shift_error": 0.157776,
+        "effect_pearson": 0.0714652,
+        "magnitude_absolute_error": 0.0591146,
+        "sinkhorn": 0.137104
+      },
+      "linear_esm": {
+        "covariance_shift_error": 0.159686,
+        "effect_pearson": 0.126755,
+        "magnitude_absolute_error": 0.142457,
+        "sinkhorn": 0.1227
+      }
+    },
+    "iid": {
+      "causalcelljepa": {
+        "covariance_shift_error": 0.241108,
+        "effect_pearson": 0.596648,
+        "magnitude_absolute_error": 0.068962,
+        "sinkhorn": 0.369471
+      },
+      "linear_esm": {
+        "covariance_shift_error": 0.245986,
+        "effect_pearson": 0.169803,
+        "magnitude_absolute_error": 0.21462,
+        "sinkhorn": 0.388027
+      }
+    },
+    "perturbation_ood": {
+      "causalcelljepa": {
+        "covariance_shift_error": 0.241588,
+        "effect_pearson": 0.598526,
+        "magnitude_absolute_error": 0.0667425,
+        "sinkhorn": 0.369154
+      },
+      "linear_esm": {
+        "covariance_shift_error": 0.246479,
+        "effect_pearson": 0.155982,
+        "magnitude_absolute_error": 0.212743,
+        "sinkhorn": 0.387743
+      }
+    }
+  },
+  "manifest_sha256": "3a2891be8eae65116550c955ed704ccfa39f14ae150b4bc87458bdf4d350d156",
+  "protocol": {
+    "bootstrap_resamples": 10000,
+    "models": [
+      "causalcelljepa",
+      "no_change",
+      "mean_effect",
+      "linear_esm"
+    ],
+    "population_repeats": 8,
+    "population_size": 32,
+    "regime_targets": {
+      "context_ood": 698,
+      "double_ood": 199,
+      "iid": 698,
+      "perturbation_ood": 199
+    },
+    "statistical_unit": "perturbation-condition"
+  },
+  "result_scope": {
+    "interpretation": "Strong K562 performance did not transfer to RPE1 on effect direction or primary distribution distances; RPE1 magnitude calibration and covariance error improved.",
+    "latent_only": true,
+    "pseudo_paired_comparator_complete": false,
+    "transcriptomic_readout_complete": false
+  },
+  "source": {
+    "analysis_git_commit": "b0a94b34cb90e344f66e65fadee9662c029f96a2",
+    "checkpoint_sha256": "d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4",
+    "evaluation_git_commit": "5ed756724dfe396a036cc5109e1082f509c649a4",
+    "selection_manifest_sha256": "3648cfc5a507bbaa9833ee4826c826846afbd93372ca5c4f22980fc5d46b8733"
+  }
+}

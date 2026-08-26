@@ -1,0 +1,121 @@
+{
+  "artifacts": {
+    "audit": {
+      "bytes": 1889,
+      "path": "artifacts/thunder_logs/ablation_training_audit.json",
+      "sha256": "3f9e1b4eff99a03c8c1d098838934678cddddfcb28f1ded0b77427dad4f3f77b"
+    },
+    "cuda_smoke_console_sha256": "42022fe45085b7c9c57e5dbbd02b66a06c3b07ae614402fad501fd720db579ad",
+    "training_console_sha256": "fc03debb637ea61679fee391edc232ae6641447a8f8b569478a7d6f550881b28"
+  },
+  "experiments": {
+    "mean_context": {
+      "best_checkpoint": {
+        "bytes": 55843173,
+        "path": "artifacts/dynamics_ablation_mean_context_e65fc1e.pt",
+        "sha256": "e65fc1e2aa00b8e9a9264d361ff91f781fad2fd7aaab2aa2bab31ac26dc62677"
+      },
+      "best_snapshot": {
+        "epoch": 29,
+        "global_step": 1276,
+        "validation_loss": 0.5113771343231202
+      },
+      "full_run": {
+        "completion_reason": "early_stopping",
+        "epochs": 44,
+        "global_steps": 1936,
+        "latest_checkpoint_bytes": 55844299,
+        "latest_checkpoint_sha256": "eba1eeb2e2a912f02582b585ea7a6cea7f9bb39fd783d55dabcd3fe784f37409",
+        "latest_validation_loss": 0.5138194978237152,
+        "training_log_bytes": 656789,
+        "training_log_sha256": "32d1e1fc47ed856773f6e63f8ea475a4082019402278c720e51da3dc55267028"
+      },
+      "hypothesis": "test whether population structure beyond the control mean matters",
+      "mechanism": {
+        "context_mode": "mean",
+        "direction_weight": 0.5
+      }
+    },
+    "no_direction_loss": {
+      "best_checkpoint": {
+        "bytes": 70616811,
+        "path": "artifacts/dynamics_ablation_no_direction_loss_e89adee.pt",
+        "sha256": "e89adee11a870877081416df0f1205cf5b95374b57c35e91c55366573c05e9f9"
+      },
+      "best_snapshot": {
+        "epoch": 133,
+        "global_step": 5852,
+        "validation_loss": 0.23945982933044432
+      },
+      "full_run": {
+        "completion_reason": "early_stopping",
+        "epochs": 148,
+        "global_steps": 6512,
+        "latest_checkpoint_bytes": 70618123,
+        "latest_checkpoint_sha256": "2409dbea99f9c5c3a897d252fc388b5c2e33ef9a4b27945f8e6f7775730f2737",
+        "latest_validation_loss": 0.2404196220636368,
+        "training_log_bytes": 2224508,
+        "training_log_sha256": "f3b3a521660f0092ffff77c82c26c58b84443dc20ffefb36d28f9caf6b1da4ea"
+      },
+      "hypothesis": "test whether explicit effect-direction supervision matters",
+      "mechanism": {
+        "context_mode": "set_transformer",
+        "direction_weight": 0.0
+      }
+    },
+    "no_global_context": {
+      "best_checkpoint": {
+        "bytes": 55837425,
+        "path": "artifacts/dynamics_ablation_no_global_context_ae1750d.pt",
+        "sha256": "ae1750d8ec41d05b6448477f3e4ce9ce091bb8a1eaacd2680c322096aa785e3e"
+      },
+      "best_snapshot": {
+        "epoch": 39,
+        "global_step": 1716,
+        "validation_loss": 0.4477643549442291
+      },
+      "full_run": {
+        "completion_reason": "early_stopping",
+        "epochs": 54,
+        "global_steps": 2376,
+        "latest_checkpoint_bytes": 55838539,
+        "latest_checkpoint_sha256": "d85dee729eb550b4db4cdfad43f96d7d6c2e51ae193bdc2eff184ab15f3418e9",
+        "latest_validation_loss": 0.4572145962715149,
+        "training_log_bytes": 808091,
+        "training_log_sha256": "f89249a7d1d618d55027401fc1ecb2abf6a9c047f93f6b94c0417cd0e5c9fa71"
+      },
+      "hypothesis": "remove pooled baseline susceptibility while retaining control states",
+      "mechanism": {
+        "context_mode": "none",
+        "direction_weight": 0.5
+      }
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "e10eb72a60484f209f7d9830cf78041b104230c3a99368b9fdb687da67087a18",
+  "protocol": {
+    "ablation_config_path": "configs/ablations.yaml",
+    "base_config_path": "configs/dynamics.yaml",
+    "context": "K562",
+    "outcome_roles_read": [
+      "dynamics_train",
+      "perturbation_ood_validation"
+    ],
+    "population_size": 32,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_rule": "minimum in-objective loss on K562 perturbation-OOD validation within each ablation",
+    "statistical_unit": "perturbation-condition",
+    "wall_seconds_for_three_runs": 1476
+  },
+  "source": {
+    "ablation_config_sha256": "2142d2a8ecc6b899365baac34a153bbc8a3e964c3cc194e9306cadeee61ab292",
+    "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "git_commit": "02b9a7c9686039f7573b5d446585244274ec4c4b",
+    "git_dirty": false,
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "runtime_source_sha256": "a99ee10e43fa10105dd8366e694417a1f63d07ff035103addd9898238873957a"
+  }
+}

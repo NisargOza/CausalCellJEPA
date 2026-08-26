@@ -1,0 +1,14 @@
+# Required direct gene-space baseline using the same frozen ESM-2 action representation.
+# Fit and ridge selection use K562 training/validation effects only.
+transcriptomics_config_path: configs/transcriptomics.yaml
+transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+transcriptomics_manifest_path: manifests/transcriptomics_v1.json
+transcriptomics_manifest_sha256: 06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af
+direct_gene:
+  architecture: ESM-2 to rank-64 gene-effect ridge
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  rank: 64
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+  checkpoint_path: artifacts/direct_gene_esm_v1.pt
+  output_directory: artifacts/direct_gene_baseline

@@ -1,9 +1,9 @@
 {
   "admission_policy": "controls_and_k562_dynamics_train_only",
   "admitted_cells": 114029,
-  "config_sha256": "65af3d84f4aef2600207d94b7136bd25dc4cf07aea7eaf99953042495f7f3f5e",
+  "config_sha256": "c7edf9639eda681878a02a9299b9bc6b2a635268ca91f2db3bfde9e2f237d36f",
   "hvg_sha256": "e808fc0975b133aee150f008596c5bdb7adcae3859b0921a97f8588e2b0aa9e8",
-  "manifest_sha256": "a7300115ab7638e6c896f54dcc3b4eb7605dbf5771c4bc28a06cb1d9311193a3",
+  "manifest_sha256": "e57247d910bdf5d120b09f423ec0f35f5c5f6b81ca797ed2223e01ce3fc8b733",
   "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
   "seed": 20260823,
   "splits": {

@@ -1,0 +1,33 @@
+# Required Stage 2 mechanism ablations; each starts from the same frozen caches and loss scale.
+# All selection and early stopping remain restricted to K562 perturbation-OOD validation.
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+experiments:
+  no_global_context:
+    hypothesis: remove pooled baseline susceptibility while retaining control states
+    context_mode: none
+    direction_weight: 0.50
+    output_directory: artifacts/ablations/no_global_context
+  mean_context:
+    hypothesis: test whether population structure beyond the control mean matters
+    context_mode: mean
+    direction_weight: 0.50
+    output_directory: artifacts/ablations/mean_context
+  no_direction_loss:
+    hypothesis: test whether explicit effect-direction supervision matters
+    context_mode: set_transformer
+    direction_weight: 0.0
+    output_directory: artifacts/ablations/no_direction_loss
+cpu_smoke:
+  batch_size: 2
+  epoch_batch_size: 16
+  checkpoint_step: 1
+  steps: 2
+  output_root: artifacts/ablation_cpu_smoke
+  epoch_output_root: artifacts/ablation_cpu_epoch
+cuda_smoke:
+  batch_size: 16
+  checkpoint_step: 16
+  steps: 64
+  validation_batches: 2
+  output_root: artifacts/ablation_cuda_smoke

@@ -1,0 +1,40 @@
+{
+  "format_version": 1,
+  "leakage": {
+    "fit_roles": [
+      "control_train",
+      "control_inference",
+      "dynamics_train"
+    ],
+    "heldout_perturbation_outcomes_used_for_fit": false,
+    "rpe1_perturbed_outcomes_used_for_fit": false,
+    "sealed_test_outcomes_used_for_fit": false
+  },
+  "manifest_sha256": "0a1b03bfcbf3dbb36234ec5c80f3e0d9d5300999aa394c840f1a9666bc88a4df",
+  "policy": {
+    "fit_cell_ids_sha256": "8512ecafb3b293a47e98c6eb634d4e78bf4149d5f39dcf934e74c68f290b43b4",
+    "fit_cells": 114029,
+    "fit_role_counts": {
+      "control_inference": 11485,
+      "control_train": 10691,
+      "dynamics_train": 91853
+    },
+    "representation_dimension": 256
+  },
+  "protocol": {
+    "centering": "per_gene_mean_from_fit_cells",
+    "component_orientation": "largest_absolute_loading_positive",
+    "expression": "library_size_10000_log1p_frozen_3000_hvgs",
+    "fit_method": "randomized_pca",
+    "oversampling": 32,
+    "power_iterations": 2,
+    "projection_dimension": 256,
+    "statistical_unit": "perturbation-condition"
+  },
+  "source": {
+    "expression_cache_sha256": "3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0",
+    "hvg_sha256": "e808fc0975b133aee150f008596c5bdb7adcae3859b0921a97f8588e2b0aa9e8",
+    "metadata_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488"
+  }
+}

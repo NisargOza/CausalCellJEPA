@@ -9,6 +9,7 @@ from causalcelljepa.data import (
     fit_hvgs_stream,
     normalize_log1p,
     representation_fit_mask,
+    required_embedding_mask,
     target_manifest,
 )
 
@@ -91,3 +92,6 @@ def test_cell_roles_encode_all_four_regimes_without_leakage():
     fit = representation_fit_mask(roles)
     assert not np.any(fit & np.char.endswith(roles.astype(str), "test"))
     assert not np.any(fit & ((arrays[2] == "RPE1") & ~arrays[3]))
+    required = required_embedding_mask(roles)
+    assert required.sum() == np.count_nonzero(roles != "excluded")
+    assert not required[roles == "excluded"].any()

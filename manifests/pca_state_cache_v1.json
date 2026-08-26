@@ -1,0 +1,36 @@
+{
+  "artifact": {
+    "bytes": 434903296,
+    "cell_dim": 256,
+    "cells": 340684,
+    "component_sha256": "e850f7a0469c5e489f43e5b30c31934447c9aa54c72c46b406b536e28af3ff5c",
+    "expression_mean_sha256": "2f2469d5be168fa187de8f1c4b32b61bc100abc0a5edcfd6552afd9be9b208ef",
+    "path": "artifacts/replogle_pca_state_v1.h5",
+    "sha256": "271f19dbc77c1ac171f71cc85d4331fd04d546b9d656667dc1ec1959643077ba",
+    "singular_value_sha256": "a33d29f3bdf954cf43f5ece97cd3d4450b08ab6b3c8a229400d9218a98d8e379"
+  },
+  "format_version": 1,
+  "manifest_sha256": "49ab2a52933cf367cae35a0c1782cba8b2c3cb070621f0c8da55608f23fbd2e1",
+  "policy": {
+    "fit_cell_ids_sha256": "8512ecafb3b293a47e98c6eb634d4e78bf4149d5f39dcf934e74c68f290b43b4",
+    "fit_cells": 114029,
+    "fit_roles": [
+      "control_train",
+      "control_inference",
+      "dynamics_train"
+    ],
+    "heldout_perturbation_outcomes_used_for_fit": false,
+    "rpe1_perturbed_outcomes_used_for_fit": false,
+    "sealed_test_outcomes_used_for_fit": false
+  },
+  "source": {
+    "config_sha256": "9ce17b4e6abacdf559ca933410d72539f8bbeac2a345bf1cb6c6acb73d9f410e",
+    "dynamics_manifest_sha256": "13c076e5b7487b588810a21275f1fb2d838072d4c25f5b21a4f8ad1012626da4",
+    "expression_cache_sha256": "3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0",
+    "generation_git_commit": "e8e27827fa20993cf1d318ddb4be3d8b3eeba465",
+    "generation_git_dirty": false,
+    "metadata_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "runtime_source_sha256": "81e343541eb1cb181d172be8fff78a556f743d9180df828ae128a08d17564523",
+    "specification_manifest_sha256": "0a1b03bfcbf3dbb36234ec5c80f3e0d9d5300999aa394c840f1a9666bc88a4df"
+  }
+}

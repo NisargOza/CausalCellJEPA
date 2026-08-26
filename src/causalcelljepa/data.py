@@ -163,6 +163,11 @@ def representation_fit_mask(roles):
     return np.isin(roles, ("control_train", "control_inference", "dynamics_train"))
 
 
+def required_embedding_mask(roles):
+    """Admit every frozen train/evaluation role, but no ineligible target outcomes."""
+    return np.asarray(roles) != "excluded"
+
+
 def tokenize_cell(counts, hvg_columns, max_tokens=512, library_size=10_000):
     """Convert one raw cell into deterministic sparse gene/value tokens."""
     counts = np.asarray(counts, dtype=np.float32)
@@ -181,10 +186,13 @@ def tokenize_cell(counts, hvg_columns, max_tokens=512, library_size=10_000):
 
 
 class ReplogleTokenDataset(Dataset):
-    """Training-visible Replogle cells backed by the untouched raw H5AD files."""
+    """Role-filtered Replogle cells backed by the untouched raw H5AD files."""
 
     def __init__(
-        self, config_path="configs/replogle.yaml", manifest_path="manifests/replogle_v1.json"
+        self,
+        config_path="configs/replogle.yaml",
+        manifest_path="manifests/replogle_v1.json",
+        all_required=False,
     ):
         config_path = Path(config_path)
         self.config = yaml.safe_load(config_path.read_text())
@@ -218,22 +226,40 @@ class ReplogleTokenDataset(Dataset):
                 self.config["split"]["iid_test_fraction"],
                 self.config["split"]["population_size"],
             )
+            admitted = (
+                required_embedding_mask(roles) if all_required else representation_fit_mask(roles)
+            )
             self.samples.extend(
-                (context, int(row), str(cell_ids[row]), roles[row])
-                for row in np.flatnonzero(representation_fit_mask(roles))
+                (
+                    context,
+                    int(row),
+                    str(cell_ids[row]),
+                    roles[row],
+                    str(targets[row]),
+                    str(gems[row]),
+                )
+                for row in np.flatnonzero(admitted)
             )
             self.paths[context] = path
             self.columns[context] = np.asarray(
                 [data.var_names.get_loc(gene_id) for gene_id in hvg_ids]
             )
             data.file.close()
-        assert len(self.samples) == self.manifest["genes"]["fit_cells"]
+        if all_required:
+            expected_roles = Counter()
+            for context in self.manifest["roles"].values():
+                expected_roles.update(
+                    {role: count for role, count in context.items() if role != "excluded"}
+                )
+            assert Counter(sample[3] for sample in self.samples) == expected_roles
+        else:
+            assert len(self.samples) == self.manifest["genes"]["fit_cells"]
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, index):
-        context, row, cell_id, role = self.samples[index]
+        context, row, cell_id, role, target, source_batch = self.samples[index]
         if context not in self._backed:
             self._backed[context] = ad.read_h5ad(self.paths[context], backed="r")
         counts = np.asarray(self._backed[context].X[row])
@@ -248,7 +274,11 @@ class ReplogleTokenDataset(Dataset):
             "values": torch.from_numpy(values),
             "padding_mask": torch.from_numpy(padding_mask),
             "cell_id": cell_id,
+            "context": context,
+            "target": target,
             "role": role,
+            "source_batch": source_batch,
+            "source_row": row,
         }
 
     def __getstate__(self):

@@ -1,0 +1,244 @@
+{
+  "artifacts": {
+    "oracle": {
+      "condition_metrics": {
+        "bytes": 2339519,
+        "records": 1794,
+        "sha256": "834fef4e574b05c121a956842666c371e9399a3c615ffe065ca552d8efa7202c"
+      },
+      "console_sha256": "ac767f53fd18e3881b7d6263ee502fb5c3e56069b2e74bd9cc5bcadf752e28cc",
+      "pathway_metrics": {
+        "bytes": 861974,
+        "records": 1794,
+        "sha256": "cd565ca2646e4c106e9d0502aa894b0549fa737d51fb14a7d3574211dcd78115"
+      },
+      "provenance": {
+        "bytes": 2296,
+        "sha256": "e5c322726fb33b7b5362e07cf4499e5bcc78dc38be8b7abc07ed07112bac1509"
+      },
+      "summary": {
+        "bytes": 35443,
+        "condition_summaries": 88,
+        "pathway_summaries": 24,
+        "sha256": "7415dfcac133a7ede3340165660257ded7056e522ace3e5769ce1a5500dcc9f6"
+      },
+      "truth_report": {
+        "bytes": 560,
+        "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+      }
+    },
+    "predictive_evaluation": {
+      "baseline_report": {
+        "bytes": 684,
+        "sha256": "65411068560e11f2ea73ebf4835b90f21f1146c225ab18d6ba98b246f8891b41"
+      },
+      "condition_metrics": {
+        "bytes": 89852133,
+        "records": 71760,
+        "sha256": "213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f"
+      },
+      "console_sha256": "93e02e414156c9f0e3c52afb8aa7b4dd3c08d73d9aca8569cc246d2f0a61f5fb",
+      "paired_comparisons": {
+        "bytes": 204858,
+        "condition_comparisons": 304,
+        "pathway_comparisons": 76,
+        "sha256": "914e5cd8994496c0e09988f60cb854c3172a473025c6ce121b7f6dca2964f265"
+      },
+      "pathway_metrics": {
+        "bytes": 4088543,
+        "records": 8970,
+        "sha256": "fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b"
+      },
+      "provenance": {
+        "bytes": 8535,
+        "sha256": "6c1faeb43786afa0dd0f48b364b4120d7e626aaf7b3448e259a933e6da76fec6"
+      },
+      "summary": {
+        "bytes": 154198,
+        "condition_summaries": 392,
+        "pathway_summaries": 100,
+        "retrieval_summaries": 20,
+        "sha256": "abb6de6c086707355eacb8272891de88284113c93bf9c429bcb0a19de02fb288"
+      },
+      "truth_report": {
+        "bytes": 560,
+        "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+      }
+    }
+  },
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": -0.129911,
+        "linear_esm": 0.236497,
+        "observed_latent_readout_oracle": 0.375183,
+        "pseudo_paired": -0.110691
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 4.300444,
+        "linear_esm": 4.697679,
+        "observed_latent_readout_oracle": 3.856108,
+        "pseudo_paired": 2.931386
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": -0.236243,
+        "linear_esm": 0.273363,
+        "observed_latent_readout_oracle": 0.454541,
+        "pseudo_paired": -0.200299
+      }
+    },
+    "double_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": -0.133761,
+        "linear_esm": 0.224352,
+        "observed_latent_readout_oracle": 0.3702,
+        "pseudo_paired": -0.108458
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 3.910857,
+        "linear_esm": 4.279563,
+        "observed_latent_readout_oracle": 3.553403,
+        "pseudo_paired": 2.693102
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": -0.244825,
+        "linear_esm": 0.272678,
+        "observed_latent_readout_oracle": 0.465381,
+        "pseudo_paired": -0.203673
+      }
+    },
+    "iid": {
+      "all_effect_pearson": {
+        "causalcelljepa": 0.081431,
+        "linear_esm": 0.161163,
+        "observed_latent_readout_oracle": 0.252341,
+        "pseudo_paired": 0.135799
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 4.129832,
+        "linear_esm": 4.275342,
+        "observed_latent_readout_oracle": 3.797297,
+        "pseudo_paired": 3.974443
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": 0.159179,
+        "linear_esm": 0.200329,
+        "observed_latent_readout_oracle": 0.316238,
+        "pseudo_paired": 0.202049
+      }
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {
+        "causalcelljepa": 0.091855,
+        "linear_esm": 0.203033,
+        "observed_latent_readout_oracle": 0.302059,
+        "pseudo_paired": 0.154979
+      },
+      "all_magnitude_absolute_error": {
+        "causalcelljepa": 2.440427,
+        "linear_esm": 2.580789,
+        "observed_latent_readout_oracle": 2.36697,
+        "pseudo_paired": 2.279074
+      },
+      "pathway_nes_pearson": {
+        "causalcelljepa": 0.191729,
+        "linear_esm": 0.257237,
+        "observed_latent_readout_oracle": 0.373285,
+        "pseudo_paired": 0.242817
+      }
+    }
+  },
+  "headline_paired_full_minus_comparator": {
+    "double_ood": {
+      "all_effect_pearson": {
+        "linear_esm": {
+          "bootstrap_95ci": [
+            -0.409548,
+            -0.305385
+          ],
+          "mean": -0.358113
+        },
+        "pseudo_paired": {
+          "bootstrap_95ci": [
+            -0.036058,
+            -0.014765
+          ],
+          "mean": -0.025302
+        }
+      },
+      "pathway_nes_pearson": {
+        "linear_esm": {
+          "bootstrap_95ci": [
+            -0.600945,
+            -0.431588
+          ],
+          "mean": -0.517503
+        },
+        "pseudo_paired": {
+          "bootstrap_95ci": [
+            -0.053816,
+            -0.028503
+          ],
+          "mean": -0.041151
+        }
+      }
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {
+        "linear_esm": {
+          "bootstrap_95ci": [
+            -0.130588,
+            -0.092191
+          ],
+          "mean": -0.111178
+        },
+        "pseudo_paired": {
+          "bootstrap_95ci": [
+            -0.076704,
+            -0.049439
+          ],
+          "mean": -0.063124
+        }
+      }
+    }
+  },
+  "manifest_sha256": "06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af",
+  "protocol": {
+    "bootstrap_resamples": 10000,
+    "de_ground_truth": "two-sided batch-level t-test with BH FDR 0.05 and absolute normalized-log effect at least 0.10",
+    "gene_scopes": [
+      "all 3000 HVGs",
+      "target gene excluded",
+      "retrospective true top 20, 50, and 100 effect genes"
+    ],
+    "models": [
+      "causalcelljepa",
+      "pseudo_paired",
+      "no_change",
+      "mean_effect",
+      "linear_esm"
+    ],
+    "oracle_is_predictive_baseline": false,
+    "oracle_uses_observed_outcomes": true,
+    "pathways": "4328 pinned GO Biological Process sets with analytic size-normalized signed rank enrichment",
+    "population_repeats": 8,
+    "statistical_unit": "perturbation-condition",
+    "target_in_hvg_conditions": 902,
+    "truth_conditions_with_no_degs": 262
+  },
+  "result_scope": {
+    "interpretation": "The full distributional model does not outperform pseudo-pairing or strong simple baselines after transcriptomic decoding. Target-gene exclusion does not change this conclusion. Cross-context and double-OOD decoded effect and pathway directions are anticorrelated with truth. The observed-latent oracle is positive in those regimes, so cross-context dynamics failure is primary, while the oracle's moderate ceiling also identifies the linear decoder as a secondary bottleneck.",
+    "latent_and_transcriptomic_conclusions_agree_on_context_transfer_failure": true,
+    "predictive_evaluation_complete": true,
+    "readout_oracle_complete": true,
+    "target_gene_exclusion_complete": true
+  },
+  "source": {
+    "config_sha256": "db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971",
+    "evaluation_git_commit": "a83853ca5eb0c780c60de1cdf3e4d0194f25b7e0",
+    "evaluation_pseudo_manifest_sha256": "7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6",
+    "oracle_git_commit": "0445772247a74b3f909201a620e69a393fd31f07",
+    "readout_manifest_sha256": "587568af253810bdc4c9b12236054b3a48c79e021444893dd655f9eaa3abcba2"
+  }
+}

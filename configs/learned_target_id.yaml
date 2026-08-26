@@ -1,0 +1,24 @@
+# Required ESM-2 versus learned target-ID action ablation.
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+specification_manifest_path: manifests/learned_target_id_v1.json
+specification_manifest_sha256: cf08e2e4f978253462ecf56b85250ef066c78e42ad8c324e22b05abb219f4527
+cache_manifest_path: manifests/learned_target_id_cache_v1.json
+source_action_cache_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+source_action_cache_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+action_cache_path: artifacts/replogle_actions_learned_target_id_v1.pt
+output_directory: artifacts/ablations/learned_target_id
+cpu_smoke:
+  batch_size: 2
+  epoch_batch_size: 16
+  checkpoint_step: 1
+  steps: 2
+  output_directory: artifacts/learned_target_id_cpu_smoke
+  uninterrupted_output_directory: artifacts/learned_target_id_cpu_smoke_uninterrupted
+  epoch_output_directory: artifacts/learned_target_id_cpu_epoch
+cuda_smoke:
+  batch_size: 16
+  checkpoint_step: 16
+  steps: 64
+  validation_batches: 2
+  output_directory: artifacts/learned_target_id_cuda_smoke

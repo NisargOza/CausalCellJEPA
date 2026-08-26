@@ -1,0 +1,48 @@
+{
+  "artifacts": {
+    "best_checkpoint": {
+      "bytes": 70616043,
+      "path": "artifacts/pseudo_paired_selected_4efbe79.pt",
+      "sha256": "4a3fce2d0698092ca2c12238ae9b6bd716d7de02dfca593790c5ee6814f5318b"
+    },
+    "cuda_checkpoint_report_sha256": "14a7243a28b34673b9e16f8321b55ad015daae93c3679422b7b73421b96de0c6",
+    "cuda_resume_report_sha256": "2a4ed85da6128d287e2fccd2bdba1afdc005014f4a1de5f96319aa490a25bbc3",
+    "training_console_sha256": "fce5a1f66775318782952536d00c18aebed1d7c43d1f52266d0a30609b6579a5",
+    "training_log_sha256": "a3b6a5240bf769a3d6f5abcc8409663c08cf37d54d8324b9c351f9c44fce979c"
+  },
+  "best_snapshot": {
+    "epoch": 76,
+    "global_step": 3388,
+    "validation_pointwise_mse": 0.0039639946445822714
+  },
+  "format_version": 1,
+  "full_run": {
+    "best_epoch": 76,
+    "completion_reason": "early_stopping",
+    "elapsed_seconds": 585.6535606821999,
+    "epochs": 92,
+    "global_steps": 4048,
+    "peak_cuda_memory_bytes": 182892544,
+    "train_conditions": 698,
+    "validation_conditions": 100
+  },
+  "manifest_sha256": "2fb214f97de56c3a75fe76a99c816802ce5248d10ecd05d38e72a158f304e5b4",
+  "protocol": {
+    "architecture": "matched PopulationDynamics capacity",
+    "control_outcome_pairing": "independent deterministic shuffles; no experimental pairing",
+    "objective": "pseudo_paired_mse",
+    "outcome_roles_read": [
+      "dynamics_train",
+      "perturbation_ood_validation"
+    ],
+    "population_size": 32
+  },
+  "source": {
+    "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "config_sha256": "e43a28fb55dcf9e86b320c47271b469dffd97b77c2706d6a18177feea406b8a9",
+    "git_commit": "4efbe795ae555d0ec772214f24fc41e1602380a2",
+    "git_dirty": false,
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "runtime_source_sha256": "d289b9e322aa4cb436d52fac0891f66140cb6649ef86d85dba419075a20878da"
+  }
+}

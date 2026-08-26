@@ -1,0 +1,181 @@
+{
+  "artifacts": {
+    "baseline_report": {
+      "bytes": 684,
+      "sha256": "65411068560e11f2ea73ebf4835b90f21f1146c225ab18d6ba98b246f8891b41"
+    },
+    "condition_metrics": {
+      "bytes": 37262909,
+      "records": 71760,
+      "sha256": "d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50"
+    },
+    "paired_comparisons": {
+      "bytes": 88659,
+      "comparisons": 152,
+      "sha256": "cfdc4dbd800809daa9276013d92939ff7bad84093bc982e349822ffc38b7c4c3"
+    },
+    "provenance": {
+      "bytes": 6831,
+      "sha256": "a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72"
+    },
+    "summary": {
+      "bytes": 61457,
+      "condition_summaries": 192,
+      "retrieval_summaries": 20,
+      "sha256": "677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b"
+    }
+  },
+  "format_version": 1,
+  "headline_latent_means": {
+    "context_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.0586411,
+        "magnitude_absolute_error": 0.0579358,
+        "sinkhorn": 0.140224
+      },
+      "pseudo_paired": {
+        "effect_pearson": 0.167224,
+        "magnitude_absolute_error": 0.227822,
+        "sinkhorn": 0.272997
+      }
+    },
+    "double_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.0714652,
+        "magnitude_absolute_error": 0.0591146,
+        "sinkhorn": 0.137104
+      },
+      "pseudo_paired": {
+        "effect_pearson": 0.187275,
+        "magnitude_absolute_error": 0.227373,
+        "sinkhorn": 0.273529
+      }
+    },
+    "iid": {
+      "causalcelljepa": {
+        "effect_pearson": 0.596648,
+        "magnitude_absolute_error": 0.068962,
+        "sinkhorn": 0.369471
+      },
+      "pseudo_paired": {
+        "effect_pearson": 0.637839,
+        "magnitude_absolute_error": 0.0872102,
+        "sinkhorn": 0.457872
+      }
+    },
+    "perturbation_ood": {
+      "causalcelljepa": {
+        "effect_pearson": 0.598526,
+        "magnitude_absolute_error": 0.0667425,
+        "sinkhorn": 0.369154
+      },
+      "pseudo_paired": {
+        "effect_pearson": 0.6265,
+        "magnitude_absolute_error": 0.0849917,
+        "sinkhorn": 0.458966
+      }
+    }
+  },
+  "headline_paired_improvements": {
+    "context_ood": {
+      "effect_pearson": {
+        "bootstrap_95ci": [
+          -0.130323,
+          -0.087265
+        ],
+        "mean": -0.108583
+      },
+      "sinkhorn": {
+        "bootstrap_95ci": [
+          0.130645,
+          0.134888
+        ],
+        "mean": 0.132773
+      }
+    },
+    "double_ood": {
+      "effect_pearson": {
+        "bootstrap_95ci": [
+          -0.151973,
+          -0.079102
+        ],
+        "mean": -0.11581
+      },
+      "sinkhorn": {
+        "bootstrap_95ci": [
+          0.132625,
+          0.140007
+        ],
+        "mean": 0.136426
+      }
+    },
+    "iid": {
+      "effect_pearson": {
+        "bootstrap_95ci": [
+          -0.047494,
+          -0.035001
+        ],
+        "mean": -0.041191
+      },
+      "sinkhorn": {
+        "bootstrap_95ci": [
+          0.08619,
+          0.090594
+        ],
+        "mean": 0.0884
+      }
+    },
+    "perturbation_ood": {
+      "effect_pearson": {
+        "bootstrap_95ci": [
+          -0.037691,
+          -0.018427
+        ],
+        "mean": -0.027974
+      },
+      "sinkhorn": {
+        "bootstrap_95ci": [
+          0.087266,
+          0.092291
+        ],
+        "mean": 0.089812
+      }
+    }
+  },
+  "manifest_sha256": "7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6",
+  "protocol": {
+    "bootstrap_resamples": 10000,
+    "models": [
+      "causalcelljepa",
+      "pseudo_paired",
+      "no_change",
+      "mean_effect",
+      "linear_esm"
+    ],
+    "population_repeats": 8,
+    "population_size": 32,
+    "regime_targets": {
+      "context_ood": 698,
+      "double_ood": 199,
+      "iid": 698,
+      "perturbation_ood": 199
+    },
+    "statistical_unit": "perturbation-condition"
+  },
+  "result_scope": {
+    "interpretation": "The distributional objective strongly improved population calibration and distribution distances over the pseudo-paired MSE comparator in every regime, while the pseudo-paired comparator had higher latent effect-direction correlations in every regime; this is a metric-dependent result, not uniform dominance.",
+    "latent_only": true,
+    "prior_four_model_records_reproduced_exactly": 57408,
+    "pseudo_paired_comparator_complete": true,
+    "transcriptomic_readout_complete": false
+  },
+  "source": {
+    "analysis_git_commit": "5970ec40cbd96c7df12cc90d22cb974c45008767",
+    "evaluation_git_commit": "5970ec40cbd96c7df12cc90d22cb974c45008767",
+    "prior_evaluation_manifest_sha256": "3a2891be8eae65116550c955ed704ccfa39f14ae150b4bc87458bdf4d350d156",
+    "pseudo_paired_checkpoint_sha256": "4a3fce2d0698092ca2c12238ae9b6bd716d7de02dfca593790c5ee6814f5318b",
+    "pseudo_paired_manifest_sha256": "2fb214f97de56c3a75fe76a99c816802ce5248d10ecd05d38e72a158f304e5b4",
+    "selected_checkpoint_sha256": "d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4",
+    "selection_manifest_sha256": "3648cfc5a507bbaa9833ee4826c826846afbd93372ca5c4f22980fc5d46b8733"
+  }
+}
