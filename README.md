@@ -154,6 +154,15 @@ pseudo-pairing conclusions without supporting universal transferred distribution
 Exact artifacts and paired statistics are frozen in
 [`manifests/evaluation_stage2_replication_v1.json`](manifests/evaluation_stage2_replication_v1.json).
 
+Passing the two new seeds through the frozen transcriptomic decoder does not rescue the
+gene-level claim. Both improve on the primary seed in every regime, but context-OOD effect
+Pearson remains `-0.104` and `-0.044`, and double-OOD remains `-0.109` and `-0.049`, versus
+positive linear-ESM values of `0.236` and `0.224`. All three JEPA seeds also have negative RPE1
+pathway correlations. Target-gene exclusion leaves the result unchanged. The replicated models
+do improve magnitude absolute error over linear ESM, demonstrating a direction-calibration
+tradeoff rather than total model failure. This decisive gene/pathway result is frozen in
+[`manifests/evaluation_stage2_replication_transcriptomics_v1.json`](manifests/evaluation_stage2_replication_transcriptomics_v1.json).
+
 ## Transcriptomic readout
 
 [`configs/readout.yaml`](configs/readout.yaml) defines a separate linear decoder from normalized
@@ -199,7 +208,27 @@ frozen in
 The required direct gene-space comparison is implemented separately as an ESM-2-to-expression-
 effect low-rank ridge model. It fits K562 dynamics-training effects, selects ridge strength only
 on K562 perturbation-OOD validation targets, and evaluates the same gene, DE, retrieval, pathway,
-and paired metrics without passing through the JEPA state or transcriptomic decoder.
+and paired metrics without passing through the JEPA state or transcriptomic decoder. Its full
+evaluation outperforms the latent world model on effect direction, DE recovery, magnitude error,
+and pathway agreement in all four regimes; the negative result is frozen in
+[`manifests/direct_gene_v1.json`](manifests/direct_gene_v1.json).
+
+## Modern baseline feasibility
+
+The proposal asks for GEARS, CPA, CellOT, and State where feasible. Their official interfaces do
+not define one interchangeable four-regime task. [GEARS](https://github.com/snap-stanford/GEARS)
+supports Replogle and custom splits but explicitly does not support cross-cell-type transfer;
+[CellOT](https://github.com/bunnech/cellot) learns condition-specific transport maps rather than
+an unseen-action model and reports hours for an example CPU fit;
+[CPA](https://github.com/theislab/cpa) supports external embeddings and context transfer but
+requires a separate training/tuning stack; and [State](https://github.com/ArcInstitute/state)
+supports Replogle plus explicit few-shot/zero-shot split files but requires its own preprocessing
+and GPU training pipeline. The locked minimum experiment already fails to clearly beat simple,
+direct-gene, PCA, and autoencoder baselines, which activates the proposal's rule that scaling is
+not justified. Additional paid runs are therefore deferred rather than used to search for a more
+favorable result. If external review requires a modern neural baseline, State is the first
+recommended extension, followed by a K562-only GEARS comparison. The auditable decision record is
+[`manifests/modern_baseline_feasibility_v1.json`](manifests/modern_baseline_feasibility_v1.json).
 
 ## Development
 
@@ -240,6 +269,9 @@ uv run python scripts/train_stage2_replication.py
 uv run python scripts/smoke_evaluation_stage2_replication.py
 uv run python scripts/evaluate_stage2_replication.py
 uv run python scripts/analyze_stage2_replication.py
+uv run python scripts/smoke_stage2_replication_transcriptomics.py
+uv run python scripts/evaluate_stage2_replication_transcriptomics.py
+uv run python scripts/analyze_stage2_replication_transcriptomics.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
 uv run ruff check .

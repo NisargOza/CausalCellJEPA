@@ -1,0 +1,54 @@
+# Decode independent Stage 2 seeds under the already sealed transcriptomic protocol.
+base_transcriptomics_config_path: configs/transcriptomics.yaml
+base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+model_source: stage2_replication
+inputs:
+  replication_training_manifest_path: manifests/stage2_replication_training_v1.json
+  replication_training_manifest_sha256: bd967f5c697efc192ea4837f4b559ad9def89b69041a87c44355dd96a2c903b5
+  base_manifest_path: manifests/transcriptomics_v1.json
+  base_manifest_sha256: 06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af
+  base_condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+  base_condition_metrics_bytes: 89852133
+  base_condition_metrics_records: 71760
+  base_condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+  base_pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+  base_pathway_metrics_bytes: 4088543
+  base_pathway_metrics_records: 8970
+  base_pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+  base_summary_path: artifacts/transcriptomic_evaluation/summary.json
+  base_summary_bytes: 154198
+  base_summary_sha256: abb6de6c086707355eacb8272891de88284113c93bf9c429bcb0a19de02fb288
+  base_provenance_path: artifacts/transcriptomic_evaluation/provenance.json
+  base_provenance_bytes: 8535
+  base_provenance_sha256: 6c1faeb43786afa0dd0f48b364b4120d7e626aaf7b3448e259a933e6da76fec6
+models:
+  seed_20260824: 20260824
+  seed_20260825: 20260825
+comparisons:
+  - candidate: seed_20260824
+    reference: causalcelljepa
+    hypothesis: replication seed 20260824 changes decoded performance relative to the primary seed
+  - candidate: seed_20260825
+    reference: causalcelljepa
+    hypothesis: replication seed 20260825 changes decoded performance relative to the primary seed
+  - candidate: seed_20260825
+    reference: seed_20260824
+    hypothesis: quantify decoded variability between independent replication seeds
+  - candidate: seed_20260824
+    reference: linear_esm
+    hypothesis: replication seed 20260824 improves over the direct latent-effect linear baseline
+  - candidate: seed_20260825
+    reference: linear_esm
+    hypothesis: replication seed 20260825 improves over the direct latent-effect linear baseline
+  - candidate: seed_20260824
+    reference: pseudo_paired
+    hypothesis: replicated distributional training improves over pseudo-paired training after decoding
+  - candidate: seed_20260825
+    reference: pseudo_paired
+    hypothesis: replicated distributional training improves over pseudo-paired training after decoding
+output_directory: artifacts/evaluation_stage2_replication_transcriptomics
+cpu_smoke:
+  regimes: [iid]
+  repeats: 1
+  maximum_conditions_per_regime: 2
+  output_directory: artifacts/evaluation_stage2_replication_transcriptomics_cpu_smoke

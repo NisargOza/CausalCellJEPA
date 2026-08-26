@@ -929,8 +929,13 @@ def run_remaining_comparator_evaluation(
     assert file_sha256(config["base_transcriptomics_config_path"]) == config[
         "base_transcriptomics_config_sha256"
     ]
+    model_source = config.get("model_source", "comparator")
+    assert model_source in {"comparator", "stage2_replication"}
+    model_manifest_kind = (
+        "comparator" if model_source == "comparator" else "replication_training"
+    )
     manifests = {}
-    for name in ("base", "comparator"):
+    for name in ("base", model_manifest_kind):
         payload = json.loads(Path(inputs[f"{name}_manifest_path"]).read_text())
         declared = payload.pop("manifest_sha256")
         assert declared == inputs[f"{name}_manifest_sha256"] == sha256(
@@ -968,11 +973,14 @@ def run_remaining_comparator_evaluation(
     ]
     models, decoders, model_configs, checkpoint_provenance = {}, {}, {}, {}
     representation_provenance = {"jepa_linear": readout["provenance"]}
-    comparator_manifest = manifests["comparator"]
-    assert comparator_manifest["protocol"]["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
-    assert comparator_manifest["protocol"]["sealed_test_outcomes_used_for_fit_or_selection"] is False
+    model_manifest = manifests[model_manifest_kind]
+    assert model_manifest["protocol"]["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
+    assert model_manifest["protocol"]["sealed_test_outcomes_used_for_fit_or_selection"] is False
     for name, path in config["models"].items():
-        if name == "learned_target_id":
+        if model_source == "stage2_replication":
+            entry = model_manifest["artifacts"]["seeds"][str(path)]["best_checkpoint"]
+            decoder = {"kind": "jepa_linear", "checkpoint": readout}
+        elif name == "learned_target_id":
             model_config, _, representation_manifest = learned_target_id_config(path)
             policy = representation_manifest["policy"]
             assert policy["heldout_target_identity_used_for_fit"] is False
@@ -1027,21 +1035,32 @@ def run_remaining_comparator_evaluation(
                     "model": autoencoder,
                 }
                 representation_provenance[name] = representation["provenance"]
-        entry = comparator_manifest["experiments"][name]["best_checkpoint"]
+        if model_source == "comparator":
+            entry = model_manifest["experiments"][name]["best_checkpoint"]
         assert (Path(entry["path"]).stat().st_size, file_sha256(entry["path"])) == (
             entry["bytes"],
             entry["sha256"],
         )
         checkpoint = torch.load(entry["path"], map_location="cpu", weights_only=False)
-        assert checkpoint["configuration"] == model_config
+        if model_source == "stage2_replication":
+            model_config = checkpoint["configuration"]
+            assert model_config["seed"] == path
+            assert model_config["replication"]["model_and_sampling_seed"] == path
+            assert model_config["replication"]["target_split_seed"] == base_config["seed"]
+            assert checkpoint["state"]["best_validation_epoch"] == model_manifest["artifacts"][
+                "seeds"
+            ][str(path)]["full_run"]["best_validation_epoch"]
+        else:
+            assert checkpoint["configuration"] == model_config
         assert checkpoint["provenance"]["git"]["dirty"] is False
         model = build_dynamics_model(model_config).eval()
         model.load_state_dict(checkpoint["model"])
         models[name], decoders[name], model_configs[name] = model, decoder, model_config
         checkpoint_provenance[name] = checkpoint["provenance"]
-        representation_provenance[f"{name}_manifest_sha256"] = representation_manifest[
-            "manifest_sha256"
-        ]
+        if model_source == "comparator":
+            representation_provenance[f"{name}_manifest_sha256"] = representation_manifest[
+                "manifest_sha256"
+            ]
 
     replogle = json.loads(Path(base_config["inputs"]["replogle_manifest_path"]).read_text())
     hvg_genes = replogle["genes"]["hvg_gene_names"]
@@ -1236,12 +1255,14 @@ def run_remaining_comparator_evaluation(
             name: inputs[f"base_{name}_sha256"]
             for name in ("condition_metrics", "pathway_metrics", "summary", "provenance")
         },
-        "comparator_manifest_sha256": inputs["comparator_manifest_sha256"],
         "base_manifest_sha256": inputs["base_manifest_sha256"],
         "runtime_source_sha256": _runtime_source_hash(),
         "runtime_environment": _runtime_environment(),
         "git": _git_state(),
     }
+    provenance[f"{model_manifest_kind}_manifest_sha256"] = inputs[
+        f"{model_manifest_kind}_manifest_sha256"
+    ]
     expected_records = repeats * len(models) * sum(item["targets"] for item in truth_report.values())
     assert len(records) == expected_records
     assert all(
