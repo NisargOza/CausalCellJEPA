@@ -7,9 +7,9 @@ specification is [`RESEARCH_PROPOSAL.md`](RESEARCH_PROPOSAL.md).
 
 ## Current milestone
 
-The minimum latent-space Replogle experiment, common transcriptomic comparisons, and
-three-seed Stage 2 robustness evaluation are complete. The leakage-resistant data/split
-foundation includes:
+The minimum latent-space Replogle experiment, common transcriptomic comparisons,
+three-seed Stage 2 robustness evaluation, and validation-preregistered anchored revision
+are complete. The leakage-resistant data/split foundation includes:
 
 - 10,000-count normalization followed by `log1p`;
 - HVG fitting on an explicit training-visible mask;
@@ -242,6 +242,19 @@ direction is substantially lower. Exact metrics, checkpoint hash, condition-leve
 hashes, and confirmation that no sealed K562 or RPE1 perturbed outcome was read are frozen in
 [`manifests/anchored_dynamics_selection_v1.json`](manifests/anchored_dynamics_selection_v1.json).
 
+The subsequent sealed four-regime evaluation uses eight population repeats per target and
+does not alter that selection. The anchored model raises decoded all-gene Pearson over the
+primary from `0.081` to `0.161` (IID), `0.092` to `0.203` (perturbation-OOD), `-0.130` to
+`0.236` (context-OOD), and `-0.134` to `0.224` (double-OOD). It is tied with the frozen linear
+ESM anchor and ranks first on RPE1 all-gene Pearson, target-excluded Pearson, and pathway
+correlation among the 11 models with defined correlations. It also beats the direct-gene ESM
+baseline on RPE1 Pearson by `0.0088` and `0.0108` with target-level bootstrap intervals above
+zero. This is not uniform superiority: direct-gene ESM remains stronger on K562 direction,
+the anchored model ranks seventh on RPE1 magnitude error, and its centroid metrics are
+numerically identical to the linear anchor. The 292 cross-model paired comparisons, frozen
+artifact hashes, and conservative interpretation are in
+[`manifests/evaluation_anchored_v1.json`](manifests/evaluation_anchored_v1.json).
+
 ## Modern baseline feasibility
 
 The proposal asks for GEARS, CPA, CellOT, and State where feasible. Their official interfaces do
@@ -311,6 +324,9 @@ uv run python scripts/smoke_anchored_validation.py
 uv run python scripts/smoke_cuda_anchored_dynamics.py
 uv run python scripts/train_anchored_dynamics.py
 uv run python scripts/select_anchored_dynamics.py
+uv run python scripts/smoke_anchored_evaluation.py
+uv run python scripts/evaluate_anchored.py
+uv run python scripts/analyze_anchored_evaluation.py
 uv run ruff check .
 uv run pytest
 ```

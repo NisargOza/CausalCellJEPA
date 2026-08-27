@@ -126,3 +126,38 @@ The immutable decision, selected checkpoint SHA-256, condition-level artifact ha
 and explicit leakage report are in `manifests/anchored_dynamics_selection_v1.json`.
 Selection read exactly 100 K562 perturbation-OOD validation targets over eight fixed
 repeats. It did not read sealed K562 test or RPE1 perturbed outcomes.
+
+## Sealed evaluation result
+
+The selected `anchor_only` checkpoint was evaluated once at clean commit `a1550a4`
+over all four frozen regimes, eight independently sampled populations per target, and
+the common frozen transcriptomic readout. The statistical unit remains the perturbation
+condition. Neither this evaluation nor the reporting-only cross-baseline analysis can
+change the selected candidate.
+
+| Regime | All-gene Pearson | Target-excluded Pearson | Magnitude absolute error | DE AUPRC | Pathway Pearson |
+|---|---:|---:|---:|---:|---:|
+| IID | 0.1612 | 0.1615 | 4.2753 | 0.0496 | 0.2003 |
+| Perturbation OOD | 0.2030 | 0.2036 | 2.5808 | 0.1307 | 0.2572 |
+| Context OOD | **0.2365** | **0.2369** | 4.6977 | **0.2149** | **0.2734** |
+| Double OOD | **0.2244** | **0.2261** | 4.2796 | 0.1854 | **0.2727** |
+
+Across the 11 models with defined correlation metrics, the anchored model is tied with
+linear ESM for rank 1 on both RPE1 Pearson scopes and pathway agreement. Target-level
+paired comparisons against direct-gene ESM give context-OOD Pearson improvement `0.0088`
+(`95% CI [0.0059, 0.0115]`) and double-OOD improvement `0.0108`
+(`[0.0060, 0.0156]`). The corresponding pathway improvement is positive in context-OOD
+(`0.0036`, `[0.00002, 0.0070]`) and inconclusive in double-OOD.
+
+The revision is not uniformly superior. Direct-gene ESM is significantly better on IID
+and perturbation-OOD direction, DE recovery, pathway agreement, and magnitude error. The
+anchored model ranks seventh of 12 on RPE1 magnitude error and ninth on both K562 regimes.
+Its 28 selected gene-centroid comparisons are numerically tied with linear ESM within
+`2e-6`, as expected for the selected zero-correction candidate; the learned centered
+heterogeneity term changes population-distribution metrics but cannot improve the mean
+gene-effect prediction. In latent space it improves K562 Sinkhorn over linear ESM while
+worsening RPE1 Sinkhorn, so even the distributional contribution remains context-dependent.
+
+The complete 292 paired comparisons comprise 165 bootstrap-supported wins, 57
+inconclusive results, and 70 losses. Exact output hashes and the conservative result scope
+are frozen in `manifests/evaluation_anchored_v1.json`.
