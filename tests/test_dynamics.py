@@ -4,6 +4,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+import pytest
 import torch
 import yaml
 
@@ -11,6 +12,7 @@ from causalcelljepa.dynamics import (
     AnchoredPopulationDynamics,
     LatentPopulationDataset,
     PopulationDynamics,
+    anchored_selected_entry,
     dynamics_loss,
     dynamics_objective,
     dynamics_replication_configs,
@@ -20,6 +22,39 @@ from causalcelljepa.evaluation import (
     paired_model_comparisons,
     population_metrics,
 )
+
+
+def test_anchored_selection_entry_locks_candidate_without_test_leakage():
+    artifact = {"bytes": 7, "path": "best.pt", "sha256": "abc"}
+    run = {"best_validation_epoch": 4, "best_validation_loss": 0.25}
+    training = {
+        "protocol": {
+            "sealed_test_outcomes_used_for_fit_or_selection": False,
+            "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        },
+        "artifacts": {"candidates": {"anchor_only": {"best_checkpoint": artifact, "full_run": run}}},
+    }
+    selection = {
+        "leakage": {
+            "context": "K562",
+            "outcome_role": "perturbation_ood_validation",
+            "rpe1_outcomes_used": False,
+            "sealed_test_outcomes_used": False,
+        },
+        "selected": {
+            "candidate": "anchor_only",
+            "best_validation_epoch": 4,
+            "best_validation_loss": 0.25,
+            **artifact,
+        },
+    }
+    assert anchored_selected_entry(training, selection) == (
+        "anchor_only",
+        training["artifacts"]["candidates"]["anchor_only"],
+    )
+    selection["leakage"]["sealed_test_outcomes_used"] = True
+    with pytest.raises(AssertionError):
+        anchored_selected_entry(training, selection)
 
 
 def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_path):

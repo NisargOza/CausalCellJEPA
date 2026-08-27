@@ -707,6 +707,28 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
     return configs, specification
 
 
+def anchored_selected_entry(training_manifest, selection_manifest):
+    """Resolve the frozen candidate while proving selection preceded sealed evaluation."""
+    assert training_manifest["protocol"]["sealed_test_outcomes_used_for_fit_or_selection"] is False
+    assert training_manifest["protocol"]["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
+    assert selection_manifest["leakage"] == {
+        "context": "K562",
+        "outcome_role": "perturbation_ood_validation",
+        "rpe1_outcomes_used": False,
+        "sealed_test_outcomes_used": False,
+    }
+    selected = selection_manifest["selected"]
+    entry = training_manifest["artifacts"]["candidates"][selected["candidate"]]
+    assert entry["best_checkpoint"] == {
+        key: selected[key] for key in ("bytes", "path", "sha256")
+    }
+    assert (selected["best_validation_epoch"], selected["best_validation_loss"]) == (
+        entry["full_run"]["best_validation_epoch"],
+        entry["full_run"]["best_validation_loss"],
+    )
+    return selected["candidate"], entry
+
+
 def prepare_dynamics_manifest(config, config_path="configs/dynamics.yaml"):
     """Fit state-space statistics without reading validation, test, or RPE1 outcomes."""
     inputs, data, normalization = config["inputs"], config["data"], config["normalization"]
