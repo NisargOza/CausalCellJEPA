@@ -1,0 +1,16 @@
+# Calibrate an exploratory confidence gate from source controls only.
+# The gate never reads perturbation outcomes and never alters mean-effect predictions.
+seed: 20260827
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+calibration:
+  context: K562
+  role: control_train
+  population_size: 32
+  fit_populations: 3000
+  calibration_populations: 3000
+  threshold_quantile: 0.99
+  temperature_quantile: 0.95
+  score: mean_diagonal_standardized_squared_population_mean_distance
+output_path: artifacts/control_ood_residual_gate_v1.pt
+manifest_path: manifests/control_ood_residual_gate_v1.json

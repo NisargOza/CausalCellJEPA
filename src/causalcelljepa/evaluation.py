@@ -664,7 +664,8 @@ def run_ablation_evaluation(
         selected_candidate, selected_entry = anchored_selected_entry(
             model_manifest, selection_manifest
         )
-        assert config["models"] == ["anchored_selected"]
+        expected = "anchored_control_ood_gated" if "residual_gate" in config else "anchored_selected"
+        assert config["models"] == [expected]
     for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
         path = Path(inputs[f"{kind}_path"])
         assert path.stat().st_size == inputs[f"{kind}_bytes"]
@@ -734,6 +735,13 @@ def run_ablation_evaluation(
         assert checkpoint["provenance"]["git"]["dirty"] is False
         model = build_dynamics_model(checkpoint["configuration"]).eval()
         model.load_state_dict(checkpoint["model"])
+        if "residual_gate" in config:
+            gate = config["residual_gate"]
+            gate_path = Path(gate["path"])
+            assert (gate_path.stat().st_size, file_sha256(gate_path)) == (
+                gate["bytes"], gate["sha256"]
+            )
+            model.configure_residual_gate(torch.load(gate_path, map_location="cpu", weights_only=True))
         models[name] = model
         checkpoint_provenance[name] = checkpoint["provenance"]
 
@@ -772,6 +780,11 @@ def run_ablation_evaluation(
                     name: model(control, batch["action"], batch["action_known"])
                     for name, model in models.items()
                 }
+                confidences = {
+                    name: model.residual_gate_confidence(control)
+                    for name, model in models.items()
+                    if getattr(model, "residual_gate_threshold", None) is not None
+                }
                 assert all(predicted.dtype == observed.dtype for predicted in predictions.values())
                 true_effect = observed.mean(1) - control.mean(1)
                 for index, target in enumerate(batch["target"]):
@@ -802,6 +815,8 @@ def run_ablation_evaluation(
                         for metric, values in metrics.items():
                             value = float(values[index].detach())
                             record[metric] = value if np.isfinite(value) else None
+                        if name in confidences:
+                            record["residual_gate_confidence"] = float(confidences[name][index])
                         records.append(record)
                         key = (regime, name, target)
                         signatures[key][0] += 1
@@ -860,6 +875,8 @@ def run_ablation_evaluation(
         "git": _git_state(),
     }
     provenance[f"{manifest_kind}_manifest_sha256"] = model_manifest_sha256
+    if "residual_gate" in config:
+        provenance["file_sha256"]["residual_gate"] = config["residual_gate"]["sha256"]
     if selection_manifest_sha256 is not None:
         provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")

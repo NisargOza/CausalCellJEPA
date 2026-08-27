@@ -303,6 +303,26 @@ class AnchoredPopulationDynamics(PopulationDynamics):
         self.minimum_anchor_norm = float(
             effect_anchor["report"]["training_null_effect_threshold"]
         )
+        self.residual_gate_threshold = None
+
+    def configure_residual_gate(self, checkpoint):
+        """Attach a source-control-calibrated confidence gate without changing weights."""
+        assert checkpoint["format_version"] == 1
+        assert checkpoint["architecture"] == "control_population_residual_gate"
+        for name in ("center", "scale"):
+            value = checkpoint[name].detach().float()
+            assert value.shape == self.effect_anchor.y_mean.shape
+            self.register_buffer(f"residual_gate_{name}", value, persistent=False)
+        self.residual_gate_threshold = float(checkpoint["threshold"])
+        self.residual_gate_temperature = float(checkpoint["temperature"])
+        assert self.residual_gate_temperature > 0
+
+    def residual_gate_confidence(self, control):
+        """Return one smooth residual-retention confidence per control population."""
+        assert self.residual_gate_threshold is not None
+        score = ((control.mean(1) - self.residual_gate_center) / self.residual_gate_scale).square().mean(1)
+        excess = torch.relu(score - self.residual_gate_threshold)
+        return torch.exp(-excess / self.residual_gate_temperature)
 
     def _scaled_anchor(self, action, anchor):
         if self.anchor_gain_max == 1:
@@ -345,6 +365,8 @@ class AnchoredPopulationDynamics(PopulationDynamics):
             states = block(states, interaction)
         population_residual = self.delta(states)
         population_residual = population_residual - population_residual.mean(1, keepdim=True)
+        if self.residual_gate_threshold is not None:
+            population_residual *= self.residual_gate_confidence(control)[:, None, None]
         anchor = self._scaled_anchor(
             action, self.effect_anchor(action_embedding, action_known)
         )
