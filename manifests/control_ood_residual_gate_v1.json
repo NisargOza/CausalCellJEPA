@@ -1,0 +1,66 @@
+{
+  "architecture": "control_population_residual_gate",
+  "artifact": {
+    "bytes": 4301,
+    "path": "artifacts/control_ood_residual_gate_v1.pt",
+    "sha256": "3c238a040ab881aedff6815bd093808d01e5bc2c731db5ebf47828763a1329f9"
+  },
+  "calibration": {
+    "calibration_populations": 3000,
+    "context": "K562",
+    "control_cells": 10691,
+    "fit_populations": 3000,
+    "population_size": 32,
+    "role": "control_train",
+    "score": "mean_diagonal_standardized_squared_population_mean_distance",
+    "score_quantiles": {
+      "0.5": 0.9487885236740112,
+      "0.9": 1.5183755159378052,
+      "0.95": 1.7145559787750244,
+      "0.99": 2.1298928260803223
+    },
+    "temperature": 0.41533684730529785,
+    "temperature_quantile": 0.95,
+    "threshold": 2.1298928260803223,
+    "threshold_quantile": 0.99
+  },
+  "format_version": 1,
+  "leakage": {
+    "contexts_read": [
+      "K562"
+    ],
+    "perturbed_outcomes_used": false,
+    "roles_read": [
+      "control_train"
+    ],
+    "rpe1_cells_used": false
+  },
+  "manifest_sha256": "46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c",
+  "provenance": {
+    "git": {
+      "commit": "69b318fcc881db1041be9f958b749b0efc09cb15",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "37956cb2b7076a874dc0b654aec6a8662e2912fffc7751df55046db9032415d4"
+  },
+  "source": {
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "config_sha256": "3a703672f52a88b6b358d821a87b8bb86dca642e3ddf2499ead7902b4428a910",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+  }
+}

@@ -655,6 +655,19 @@ def run_ablation_evaluation(
         inputs[f"{manifest_kind}_manifest_path"],
         inputs[f"{manifest_kind}_manifest_sha256"],
     )
+    gate_manifest_sha256 = None
+    if "residual_gate" in config:
+        gate = config["residual_gate"]
+        gate_manifest, gate_manifest_sha256 = _self_hashed_manifest(
+            gate["manifest_path"], gate["manifest_sha256"]
+        )
+        assert gate_manifest["artifact"] == {
+            key: gate[key] for key in ("path", "bytes", "sha256")
+        }
+        assert gate_manifest["leakage"] == {
+            "roles_read": ["control_train"], "contexts_read": ["K562"],
+            "perturbed_outcomes_used": False, "rpe1_cells_used": False,
+        }
     selected_candidate = selected_entry = selection_manifest_sha256 = None
     if model_source == "anchored":
         selection_manifest, selection_manifest_sha256 = _self_hashed_manifest(
@@ -834,6 +847,15 @@ def run_ablation_evaluation(
         for line in Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
     ]
     assert len(base_records) == inputs["base_condition_metrics_records"]
+    reference_records = []
+    if "reference_condition_metrics_path" in inputs:
+        reference_path = Path(inputs["reference_condition_metrics_path"])
+        assert (reference_path.stat().st_size, file_sha256(reference_path)) == (
+            inputs["reference_condition_metrics_bytes"],
+            inputs["reference_condition_metrics_sha256"],
+        )
+        reference_records = [json.loads(line) for line in reference_path.read_text().splitlines()]
+        assert len(reference_records) == inputs["reference_condition_metrics_records"]
     base_summary = json.loads(Path(inputs["base_summary_path"]).read_text())
     summary = {
         "condition_metrics": sorted(
@@ -851,7 +873,7 @@ def run_ablation_evaluation(
         ),
     }
     comparisons = paired_model_comparisons(
-        base_records + records,
+        base_records + reference_records + records,
         config["comparisons"],
         base_config["metrics"]["bootstrap_resamples"],
         base_config["seed"],
@@ -877,6 +899,7 @@ def run_ablation_evaluation(
     provenance[f"{manifest_kind}_manifest_sha256"] = model_manifest_sha256
     if "residual_gate" in config:
         provenance["file_sha256"]["residual_gate"] = config["residual_gate"]["sha256"]
+        provenance["residual_gate_manifest_sha256"] = gate_manifest_sha256
     if selection_manifest_sha256 is not None:
         provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")

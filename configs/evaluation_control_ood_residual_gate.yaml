@@ -1,0 +1,55 @@
+# Evaluate the frozen v1 checkpoint with the frozen control-only residual gate.
+# Reuse frozen ungated records for paired comparisons; this experiment is post-hoc.
+base_evaluation_config_path: configs/evaluation.yaml
+base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+model_source: anchored
+inputs:
+  anchored_training_manifest_path: manifests/anchored_dynamics_training_v1.json
+  anchored_training_manifest_sha256: b38738e02f9ea39d732fd458cdef29f201b85874609905ad1663d91702bdd1c7
+  anchored_selection_manifest_path: manifests/anchored_dynamics_selection_v1.json
+  anchored_selection_manifest_sha256: 61f6a564986d793d3c88622b0397e004caad1664a2f6d3b194cdec16ea49a5e7
+  base_evaluation_manifest_path: manifests/evaluation_pseudo_v1.json
+  base_evaluation_manifest_sha256: 7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6
+  base_condition_metrics_path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+  base_condition_metrics_bytes: 37262909
+  base_condition_metrics_records: 71760
+  base_condition_metrics_sha256: d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50
+  base_summary_path: artifacts/evaluation_with_pseudo/summary.json
+  base_summary_bytes: 61457
+  base_summary_sha256: 677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b
+  base_provenance_path: artifacts/evaluation_with_pseudo/provenance.json
+  base_provenance_bytes: 6831
+  base_provenance_sha256: a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72
+  reference_condition_metrics_path: artifacts/evaluation_anchored/condition_metrics.jsonl
+  reference_condition_metrics_bytes: 7720647
+  reference_condition_metrics_records: 14352
+  reference_condition_metrics_sha256: ca3c367bffb65b7c1341057b2efead83a07d4375c6110c4d4abcb2e4a835df67
+models: [anchored_control_ood_gated]
+residual_gate:
+  path: artifacts/control_ood_residual_gate_v1.pt
+  bytes: 4301
+  sha256: 3c238a040ab881aedff6815bd093808d01e5bc2c731db5ebf47828763a1329f9
+  manifest_path: manifests/control_ood_residual_gate_v1.json
+  manifest_sha256: 46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c
+comparisons:
+  - candidate: anchored_control_ood_gated
+    reference: anchored_selected
+    hypothesis: control-OOD fallback improves distribution transfer over the ungated anchor
+  - candidate: anchored_control_ood_gated
+    reference: linear_esm
+    hypothesis: gated residuals retain useful source-context heterogeneity over the linear anchor
+  - candidate: anchored_control_ood_gated
+    reference: causalcelljepa
+    hypothesis: gated anchored dynamics improve distribution metrics over the primary model
+  - candidate: anchored_control_ood_gated
+    reference: no_change
+    hypothesis: gated anchored dynamics improve over predicting no perturbation
+  - candidate: anchored_control_ood_gated
+    reference: pseudo_paired
+    hypothesis: gated anchored dynamics improve over pseudo-paired training
+output_directory: artifacts/evaluation_control_ood_residual_gate
+cpu_smoke:
+  regimes: [perturbation_ood, context_ood]
+  repeats: 1
+  maximum_conditions_per_regime: 2
+  output_directory: artifacts/evaluation_control_ood_residual_gate_cpu_smoke
