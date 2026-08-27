@@ -35,3 +35,34 @@ This intervention is informed by unlabeled-target correlation alignment in
 [Deep CORAL](https://arxiv.org/abs/1607.01719) and the unpaired population-transfer
 framing of [CellOT](https://www.nature.com/articles/s41592-023-01969-x). It is not an
 implementation of either method.
+
+## Frozen exploratory results
+
+The complete four-regime, eight-repeat CPU evaluation was run from clean commit
+`05ae778`. K562 residual confidence averaged 0.9956 (IID) and 0.9980
+(perturbation OOD); RPE1 confidence was effectively zero in every population. The
+gate therefore preserved the learned v1 residual on source controls and made the
+predeclared linear-anchor fallback on shifted controls.
+
+Against ungated v1, the RPE1 context/double-OOD metrics changed as follows:
+
+| Metric (lower is better) | Context OOD | Double OOD |
+| --- | ---: | ---: |
+| Sinkhorn | 0.147121 → 0.125024 | 0.146503 → 0.122700 |
+| MMD | 0.023352 → 0.016732 | 0.023086 → 0.016472 |
+| Energy distance | 0.141909 → 0.071765 | 0.141144 → 0.070967 |
+| Covariance-shift error | 0.218772 → 0.162538 | 0.219849 → 0.159686 |
+
+All eight paired bootstrap intervals exclude zero in the beneficial direction after
+multiplicity correction. On K562, Sinkhorn worsened by only 0.000288 (IID) and
+0.000146 (perturbation OOD), while MMD and energy distance improved slightly. Mean
+effect Pearson, centroid error, and magnitude ratio remained invariant to numerical
+precision as required.
+
+The gated model beats the primary dynamics model on RPE1 Sinkhorn, MMD, energy
+distance, centroid error, and effect Pearson. It remains slightly worse on covariance
+error (0.162538 versus 0.160446; 0.159686 versus 0.157776). Because RPE1 confidence
+collapses to zero, the gated model is numerically tied with the linear ESM anchor on
+RPE1; this validates the fallback but does not demonstrate transferred learned
+heterogeneity. Results remain post-hoc and require a new untouched context or dataset
+for confirmation.
