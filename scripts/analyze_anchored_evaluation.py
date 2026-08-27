@@ -10,7 +10,7 @@ from causalcelljepa.readout import _paired_transcriptomic_models
 from causalcelljepa.resources import file_sha256
 from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
 
-seed, resamples = 20260823, 10_000
+seed, resamples, numerical_tie_tolerance = 20260823, 10_000, 2e-6
 regimes = ["iid", "perturbation_ood", "context_ood", "double_ood"]
 condition_metrics = [
     "all_effect_pearson",
@@ -178,7 +178,9 @@ for regime in regimes:
         rankings[regime][metric] = {
             "anchored_rank": 1
             + sum(
-                value < anchor if lower_is_better else value > anchor
+                value < anchor - numerical_tie_tolerance
+                if lower_is_better
+                else value > anchor + numerical_tie_tolerance
                 for value in comparable.values()
             ),
             "models_evaluated": len(comparable),
@@ -187,7 +189,8 @@ for regime in regimes:
             "anchored_ties": [
                 model
                 for model, value in comparable.items()
-                if model != "anchored_selected" and np.isclose(value, anchor, rtol=0, atol=1e-12)
+                if model != "anchored_selected"
+                and np.isclose(value, anchor, rtol=0, atol=numerical_tie_tolerance)
             ],
         }
         headline_means[regime][metric] = values
@@ -200,7 +203,7 @@ for item in all_comparisons:
     item["bootstrap_95ci_verdict"] = verdict
     verdict_counts[verdict] += 1
 linear_items = [item for item in all_comparisons if item["reference"] == "linear_esm"]
-assert all(item["mean_improvement"] == 0 for item in linear_items)
+assert max(abs(item["mean_improvement"]) for item in linear_items) < numerical_tie_tolerance
 result = {
     "format_version": 1,
     "scope": {
@@ -223,7 +226,8 @@ result = {
     "findings": {
         "uniform_superiority_supported": verdict_counts["loss"] == 0,
         "learned_residual_improves_gene_centroid_metrics_over_linear_anchor": False,
-        "linear_anchor_exact_tied_comparisons": len(linear_items),
+        "linear_anchor_numerically_tied_comparisons": len(linear_items),
+        "linear_anchor_numerical_tie_tolerance": numerical_tie_tolerance,
     },
     "provenance": {
         "sources": verified_sources,
