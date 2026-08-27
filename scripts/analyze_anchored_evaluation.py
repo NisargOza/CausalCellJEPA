@@ -137,8 +137,20 @@ pairs = [
 ]
 condition_comparisons = _paired_transcriptomic_models(condition_records, pairs, resamples, seed)
 pathway_comparisons = _paired_transcriptomic_models(pathway_records, pairs, resamples, seed)
-assert len(condition_comparisons) == len(regimes) * len(reference_models) * len(condition_metrics)
-assert len(pathway_comparisons) == len(regimes) * len(reference_models) * len(pathway_metrics)
+undefined_no_change = {
+    "condition": [
+        "all_effect_pearson",
+        "target_excluded_effect_pearson",
+        "retrospective_top50_effect_pearson",
+    ],
+    "pathway": ["pathway_nes_pearson"],
+}
+assert len(condition_comparisons) == len(regimes) * (
+    len(reference_models) * len(condition_metrics) - len(undefined_no_change["condition"])
+)
+assert len(pathway_comparisons) == len(regimes) * (
+    len(reference_models) * len(pathway_metrics) - len(undefined_no_change["pathway"])
+)
 
 models = ["anchored_selected", *reference_models]
 means = {}
@@ -154,25 +166,27 @@ for path, source_models in summary_sources:
                 and item["metric"] in condition_metrics + pathway_metrics
             ):
                 means[item["regime"], item["model"], item["metric"]] = item["mean"]
-assert len(means) == len(regimes) * len(models) * (len(condition_metrics) + len(pathway_metrics))
 headline_means, rankings = {}, {}
 for regime in regimes:
     headline_means[regime], rankings[regime] = {}, {}
     for metric in condition_metrics + pathway_metrics:
-        values = {model: means[regime, model, metric] for model in models}
+        values = {model: means.get((regime, model, metric)) for model in models}
+        comparable = {model: value for model, value in values.items() if value is not None}
         lower_is_better = metric.endswith(("absolute_error", "rmse"))
-        ordered = sorted(values, key=values.get, reverse=not lower_is_better)
+        ordered = sorted(comparable, key=comparable.get, reverse=not lower_is_better)
         anchor = values["anchored_selected"]
         rankings[regime][metric] = {
             "anchored_rank": 1
             + sum(
-                value < anchor if lower_is_better else value > anchor for value in values.values()
+                value < anchor if lower_is_better else value > anchor
+                for value in comparable.values()
             ),
-            "models": len(models),
+            "models_evaluated": len(comparable),
+            "models_undefined": sorted(set(models) - set(comparable)),
             "ordered_models": ordered,
             "anchored_ties": [
                 model
-                for model, value in values.items()
+                for model, value in comparable.items()
                 if model != "anchored_selected" and np.isclose(value, anchor, rtol=0, atol=1e-12)
             ],
         }
@@ -197,6 +211,7 @@ result = {
         "repeat_handling": "mean within target before paired comparison",
         "bootstrap_resamples": resamples,
         "target_gene_excluded": True,
+        "undefined_zero_effect_metrics": undefined_no_change,
     },
     "headline_means": headline_means,
     "rankings": rankings,
