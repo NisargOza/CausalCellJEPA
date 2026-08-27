@@ -55,9 +55,10 @@ for name, (manifest_path, root, models) in source_specs.items():
         declared
         == sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     )
+    artifact_entries = manifest["artifacts"].get("predictive_evaluation", manifest["artifacts"])
     artifacts = {}
     for kind, filename in artifact_names.items():
-        entry, path = manifest["artifacts"][kind], root / filename
+        entry, path = artifact_entries[kind], root / filename
         assert (path.stat().st_size, file_sha256(path)) == (entry["bytes"], entry["sha256"])
         artifacts[kind] = {"path": str(path), "bytes": entry["bytes"], "sha256": entry["sha256"]}
     verified_sources[name] = {
