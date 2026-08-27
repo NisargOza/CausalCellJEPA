@@ -13,7 +13,11 @@ from geomloss import SamplesLoss
 from scipy.stats import wilcoxon
 from torch.utils.data import DataLoader
 
-from causalcelljepa.dynamics import LatentPopulationDataset, build_dynamics_model
+from causalcelljepa.dynamics import (
+    LatentPopulationDataset,
+    anchored_selected_entry,
+    build_dynamics_model,
+)
 from causalcelljepa.resources import file_sha256
 from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
 
@@ -640,14 +644,27 @@ def run_ablation_evaluation(
         inputs["base_evaluation_manifest_sha256"],
     )
     model_source = config.get("model_source", "ablation")
-    assert model_source in {"ablation", "stage2_replication"}
-    manifest_kind = (
-        "ablation" if model_source == "ablation" else "replication_training"
-    )
+    manifest_kinds = {
+        "ablation": "ablation",
+        "stage2_replication": "replication_training",
+        "anchored": "anchored_training",
+    }
+    assert model_source in manifest_kinds
+    manifest_kind = manifest_kinds[model_source]
     model_manifest, model_manifest_sha256 = _self_hashed_manifest(
         inputs[f"{manifest_kind}_manifest_path"],
         inputs[f"{manifest_kind}_manifest_sha256"],
     )
+    selected_candidate = selected_entry = selection_manifest_sha256 = None
+    if model_source == "anchored":
+        selection_manifest, selection_manifest_sha256 = _self_hashed_manifest(
+            inputs["anchored_selection_manifest_path"],
+            inputs["anchored_selection_manifest_sha256"],
+        )
+        selected_candidate, selected_entry = anchored_selected_entry(
+            model_manifest, selection_manifest
+        )
+        assert config["models"] == ["anchored_selected"]
     for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
         path = Path(inputs[f"{kind}_path"])
         assert path.stat().st_size == inputs[f"{kind}_bytes"]
@@ -673,9 +690,11 @@ def run_ablation_evaluation(
     for name in config["models"]:
         if model_source == "ablation":
             entry = model_manifest["experiments"][name]
-        else:
+        elif model_source == "stage2_replication":
             seed = str(config["model_seeds"][name])
             entry = model_manifest["artifacts"]["seeds"][seed]
+        else:
+            entry = selected_entry
         artifact = entry["best_checkpoint"]
         checkpoint_path = Path(artifact["path"])
         assert checkpoint_path.stat().st_size == artifact["bytes"]
@@ -690,7 +709,7 @@ def run_ablation_evaluation(
                 float(checkpoint["configuration"]["loss"]["weights"]["direction"])
                 == entry["mechanism"]["direction_weight"]
             )
-        else:
+        elif model_source == "stage2_replication":
             assert checkpoint["configuration"]["seed"] == int(seed)
             assert checkpoint["configuration"]["replication"] == {
                 "model_and_sampling_seed": int(seed),
@@ -698,6 +717,14 @@ def run_ablation_evaluation(
                 "base_config_path": "configs/dynamics.yaml",
                 "base_config_sha256": model_manifest["source"]["base_config_sha256"],
             }
+            assert checkpoint["state"]["best_validation_epoch"] == entry["full_run"][
+                "best_validation_epoch"
+            ]
+            assert checkpoint["state"]["best_validation_loss"] == entry["full_run"][
+                "best_validation_loss"
+            ]
+        else:
+            assert checkpoint["configuration"]["revision"]["candidate"] == selected_candidate
             assert checkpoint["state"]["best_validation_epoch"] == entry["full_run"][
                 "best_validation_epoch"
             ]
@@ -833,6 +860,8 @@ def run_ablation_evaluation(
         "git": _git_state(),
     }
     provenance[f"{manifest_kind}_manifest_sha256"] = model_manifest_sha256
+    if selection_manifest_sha256 is not None:
+        provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     (output / "paired_comparisons.json").write_text(
         json.dumps(comparisons, indent=2, sort_keys=True) + "\n"
