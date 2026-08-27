@@ -268,6 +268,44 @@ def test_anchored_dynamics_preserves_mean_prior_and_bounds_action_correction():
     )
 
 
+def test_control_ood_gate_preserves_means_and_suppresses_only_ood_heterogeneity():
+    torch.manual_seed(13)
+    anchor = {
+        "format_version": 1,
+        "architecture": "esm2_low_rank_latent_effect_ridge",
+        "x_mean": torch.zeros(3),
+        "x_std": torch.ones(3),
+        "y_mean": torch.ones(4),
+        "components": torch.eye(4),
+        "weights": torch.zeros(3, 4),
+        "report": {"training_null_effect_threshold": 0.05},
+    }
+    model = AnchoredPopulationDynamics(
+        cell_dim=4, action_input_dim=3, action_dim=4, context_blocks=1,
+        transition_blocks=1, heads=2, ffn_dim=8, dropout=0.0, effect_anchor=anchor,
+    ).eval()
+    with torch.no_grad():
+        model.delta[-1].weight.normal_()
+    population = torch.tensor([
+        [-1.0, 1.0, -1.0, 1.0], [1.0, -1.0, 1.0, -1.0],
+        [-0.5, 0.5, -0.5, 0.5], [0.5, -0.5, 0.5, -0.5],
+    ])
+    control = torch.stack((population, population + 3))
+    action, known = torch.zeros(2, 3), torch.ones(2, dtype=torch.bool)
+    ungated = model(control, action, known)
+    model.configure_residual_gate({
+        "format_version": 1, "architecture": "control_population_residual_gate",
+        "center": torch.zeros(4), "scale": torch.ones(4), "threshold": 1.0,
+        "temperature": 0.5,
+    })
+    gated = model(control, action, known)
+    confidence = model.residual_gate_confidence(control)
+    assert torch.equal(confidence[0], torch.tensor(1.0)) and confidence[1] < 1e-6
+    assert torch.allclose(gated[0], ungated[0])
+    assert torch.allclose((gated - control).mean(1), (ungated - control).mean(1), atol=1e-6)
+    assert torch.linalg.vector_norm(gated[1] - control[1] - 1) < 1e-5
+
+
 def test_population_evaluation_metrics_are_exact_for_identical_populations():
     torch.manual_seed(9)
     control = torch.randn(2, 4, 8)

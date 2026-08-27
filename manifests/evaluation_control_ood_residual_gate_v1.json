@@ -1,0 +1,287 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 10140,
+      "path": "artifacts/evaluation_control_ood_residual_gate_analysis/analysis.json",
+      "sha256": "48df85c54bfc40ed851c604bd0597614ba3903bb661ac870f47e4ae847200385"
+    },
+    "condition_metrics": {
+      "bytes": 8460662,
+      "path": "artifacts/evaluation_control_ood_residual_gate/condition_metrics.jsonl",
+      "sha256": "b9019d12730c07a8c082d7b382e59c621cb3c64687e7d371cd14abb887e9748c"
+    },
+    "paired_comparisons": {
+      "bytes": 129939,
+      "path": "artifacts/evaluation_control_ood_residual_gate/paired_comparisons.json",
+      "sha256": "144ad76ea3df20222e884fc74a5c55c4eaf2bd02c338bbc58fa1978f3c0bb87f"
+    },
+    "provenance": {
+      "bytes": 9759,
+      "path": "artifacts/evaluation_control_ood_residual_gate/provenance.json",
+      "sha256": "9c59e51e5f8f8d358051c59cde7efd9d6e8b375d3cf2d2c35b8388873bcddd42"
+    },
+    "summary": {
+      "bytes": 76264,
+      "path": "artifacts/evaluation_control_ood_residual_gate/summary.json",
+      "sha256": "e9a32b60f6e8505246b3f06cd9855c1921b16b4c9464a040a8c6190bc4a59c4c"
+    }
+  },
+  "findings": {
+    "all_rpe1_distribution_metrics_improve_over_ungated": true,
+    "new_untouched_context_required_for_confirmation": true,
+    "rpe1_fallback_matches_linear_anchor": true,
+    "transferred_learned_heterogeneity_supported": false,
+    "uniform_superiority_supported": false
+  },
+  "format_version": 1,
+  "headline": {
+    "context_ood": {
+      "metrics": {
+        "covariance_shift_error": {
+          "benjamini_hochberg_q": 4.83567349656245e-103,
+          "gated": 0.16253764044498775,
+          "linear_anchor": 0.16253764046500183,
+          "paired_improvement_bootstrap_95ci": [
+            0.05343283495650944,
+            0.059012171948301266
+          ],
+          "paired_improvement_over_ungated": 0.056234408055237335,
+          "primary": 0.16044648088392052,
+          "ungated": 0.21877204850022508
+        },
+        "energy_distance": {
+          "benjamini_hochberg_q": 4.459630404700582e-115,
+          "gated": 0.07176458265600369,
+          "linear_anchor": 0.07176459007456173,
+          "paired_improvement_bootstrap_95ci": [
+            0.06952157469364924,
+            0.07076203705380033
+          ],
+          "paired_improvement_over_ungated": 0.07014401996759084,
+          "primary": 0.1230332271161257,
+          "ungated": 0.14190860262359453
+        },
+        "mmd": {
+          "benjamini_hochberg_q": 4.459630404700582e-115,
+          "gated": 0.01673152737511605,
+          "linear_anchor": 0.016731527311070943,
+          "paired_improvement_bootstrap_95ci": [
+            0.006527647527100193,
+            0.006714140002036675
+          ],
+          "paired_improvement_over_ungated": 0.006619992006815607,
+          "primary": 0.030417918326349176,
+          "ungated": 0.023351519381931654
+        },
+        "sinkhorn": {
+          "benjamini_hochberg_q": 3.7260585428867945e-100,
+          "gated": 0.12502444107992772,
+          "linear_anchor": 0.12502444095784174,
+          "paired_improvement_bootstrap_95ci": [
+            0.020920979183395378,
+            0.02327430760771447
+          ],
+          "paired_improvement_over_ungated": 0.022096993284897722,
+          "primary": 0.14022413801327135,
+          "ungated": 0.14712143436482544
+        }
+      },
+      "residual_gate_confidence": 1.2188889511027149e-20
+    },
+    "double_ood": {
+      "metrics": {
+        "covariance_shift_error": {
+          "benjamini_hochberg_q": 1.13901175441291e-32,
+          "gated": 0.1596864442125749,
+          "linear_anchor": 0.1596864442874551,
+          "paired_improvement_bootstrap_95ci": [
+            0.05541279496696436,
+            0.064910797335865
+          ],
+          "paired_improvement_over_ungated": 0.060162313883871436,
+          "primary": 0.15777628847758224,
+          "ungated": 0.21984875809644636
+        },
+        "energy_distance": {
+          "benjamini_hochberg_q": 4.78799672164177e-34,
+          "gated": 0.0709668779792498,
+          "linear_anchor": 0.07096687161443221,
+          "paired_improvement_bootstrap_95ci": [
+            0.06926735747774043,
+            0.07111698879986703
+          ],
+          "paired_improvement_over_ungated": 0.07017719880420359,
+          "primary": 0.11962006911260997,
+          "ungated": 0.1411440767834534
+        },
+        "mmd": {
+          "benjamini_hochberg_q": 4.78799672164177e-34,
+          "gated": 0.01647242117467238,
+          "linear_anchor": 0.016472420051469275,
+          "paired_improvement_bootstrap_95ci": [
+            0.006475988286898364,
+            0.0067521757834670525
+          ],
+          "paired_improvement_over_ungated": 0.006613144772735673,
+          "primary": 0.029435505220039408,
+          "ungated": 0.023085565947408054
+        },
+        "sinkhorn": {
+          "benjamini_hochberg_q": 4.247128411389842e-32,
+          "gated": 0.1227002284868653,
+          "linear_anchor": 0.12270022840262508,
+          "paired_improvement_bootstrap_95ci": [
+            0.021845543320552826,
+            0.02573246007004809
+          ],
+          "paired_improvement_over_ungated": 0.023803135375468874,
+          "primary": 0.13710351411870975,
+          "ungated": 0.14650336386233417
+        }
+      },
+      "residual_gate_confidence": 1.3805681944590167e-20
+    },
+    "iid": {
+      "metrics": {
+        "covariance_shift_error": {
+          "benjamini_hochberg_q": 0.6827901651975921,
+          "gated": 0.22452373228390785,
+          "linear_anchor": 0.2459862613276629,
+          "paired_improvement_bootstrap_95ci": [
+            -6.0648370179264974e-05,
+            1.3152578375956038e-05
+          ],
+          "paired_improvement_over_ungated": -2.384578067286308e-05,
+          "primary": 0.24110815884614828,
+          "ungated": 0.22449988650323496
+        },
+        "energy_distance": {
+          "benjamini_hochberg_q": 1.354317436378586e-10,
+          "gated": 0.1346335303689484,
+          "linear_anchor": 0.09374367881214038,
+          "paired_improvement_bootstrap_95ci": [
+            0.000180742553405912,
+            0.0003290527166643935
+          ],
+          "paired_improvement_over_ungated": 0.00025300807546407925,
+          "primary": 0.07985682670229827,
+          "ungated": 0.13488653844441248
+        },
+        "mmd": {
+          "benjamini_hochberg_q": 1.354317436378586e-10,
+          "gated": 0.03563201162739948,
+          "linear_anchor": 0.025881475077829934,
+          "paired_improvement_bootstrap_95ci": [
+            3.635917115091936e-05,
+            6.74405826367758e-05
+          ],
+          "paired_improvement_over_ungated": 5.1235700063514164e-05,
+          "primary": 0.01959075693329289,
+          "ungated": 0.03568324732746299
+        },
+        "sinkhorn": {
+          "benjamini_hochberg_q": 0.03908083630856901,
+          "gated": 0.2780708648307105,
+          "linear_anchor": 0.3880265920254853,
+          "paired_improvement_bootstrap_95ci": [
+            -0.00039341257782359436,
+            -0.00018978751902295053
+          ],
+          "paired_improvement_over_ungated": -0.0002880658911685206,
+          "primary": 0.36947149846884275,
+          "ungated": 0.27778279893954194
+        }
+      },
+      "residual_gate_confidence": 0.9955997020179636
+    },
+    "perturbation_ood": {
+      "metrics": {
+        "covariance_shift_error": {
+          "benjamini_hochberg_q": 0.509342593027998,
+          "gated": 0.22473144222369146,
+          "linear_anchor": 0.24647924311496505,
+          "paired_improvement_bootstrap_95ci": [
+            -1.8032317063841388e-05,
+            1.7261003195565546e-05
+          ],
+          "paired_improvement_over_ungated": 7.860643330530904e-07,
+          "primary": 0.24158837094940433,
+          "ungated": 0.22473222828802453
+        },
+        "energy_distance": {
+          "benjamini_hochberg_q": 0.0023980162883392143,
+          "gated": 0.1343132836285548,
+          "linear_anchor": 0.09346297720269342,
+          "paired_improvement_bootstrap_95ci": [
+            4.8293585154279394e-05,
+            0.00020724020935782234
+          ],
+          "paired_improvement_over_ungated": 0.00011864207198272399,
+          "primary": 0.07950919769217621,
+          "ungated": 0.13443192570053752
+        },
+        "mmd": {
+          "benjamini_hochberg_q": 0.0023980162883392143,
+          "gated": 0.03544934670529773,
+          "linear_anchor": 0.025710660833210202,
+          "paired_improvement_bootstrap_95ci": [
+            9.073975996755475e-06,
+            4.2451583036226236e-05
+          ],
+          "paired_improvement_over_ungated": 2.3333196663976315e-05,
+          "primary": 0.019399823929796268,
+          "ungated": 0.03547267990196171
+        },
+        "sinkhorn": {
+          "benjamini_hochberg_q": 0.011672111604083277,
+          "gated": 0.2777173667678132,
+          "linear_anchor": 0.3877427271337964,
+          "paired_improvement_bootstrap_95ci": [
+            -0.0003215027151713569,
+            -3.35577800495541e-05
+          ],
+          "paired_improvement_over_ungated": -0.00014599932161108334,
+          "primary": 0.36915366652997295,
+          "ungated": 0.27757136744620214
+        }
+      },
+      "residual_gate_confidence": 0.9979919259384948
+    }
+  },
+  "manifest_sha256": "cbd8daca9fd1cce2c24aa4e72e45c35a468dda8b790dd4bd2bd15b4b4b36b6a7",
+  "protocol": {
+    "bootstrap_resamples": 10000,
+    "decoded_mean_metrics_rerun": false,
+    "evaluation_repeats": 8,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "selection_used_sealed_outcomes": false,
+    "statistical_unit": "perturbation-condition",
+    "status": "post_hoc_exploratory"
+  },
+  "source": {
+    "evaluation_config_sha256": "9ee4507ad19781f2aa4a8c9ca50fdde68811db70bc3ff75df209ee425b162581",
+    "evaluation_git": {
+      "commit": "05ae778f7b8c05846bdad81b35af8e1048c70c65",
+      "dirty": false
+    },
+    "git": {
+      "commit": "47789250a499dfbad48c4eea28099b320a71cc55",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "c478e06ff377fe613ae731234757d46904ce97c1da4cb2a45f61450305a96fe1"
+  }
+}

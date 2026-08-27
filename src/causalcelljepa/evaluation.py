@@ -655,6 +655,19 @@ def run_ablation_evaluation(
         inputs[f"{manifest_kind}_manifest_path"],
         inputs[f"{manifest_kind}_manifest_sha256"],
     )
+    gate_manifest_sha256 = None
+    if "residual_gate" in config:
+        gate = config["residual_gate"]
+        gate_manifest, gate_manifest_sha256 = _self_hashed_manifest(
+            gate["manifest_path"], gate["manifest_sha256"]
+        )
+        assert gate_manifest["artifact"] == {
+            key: gate[key] for key in ("path", "bytes", "sha256")
+        }
+        assert gate_manifest["leakage"] == {
+            "roles_read": ["control_train"], "contexts_read": ["K562"],
+            "perturbed_outcomes_used": False, "rpe1_cells_used": False,
+        }
     selected_candidate = selected_entry = selection_manifest_sha256 = None
     if model_source == "anchored":
         selection_manifest, selection_manifest_sha256 = _self_hashed_manifest(
@@ -664,7 +677,8 @@ def run_ablation_evaluation(
         selected_candidate, selected_entry = anchored_selected_entry(
             model_manifest, selection_manifest
         )
-        assert config["models"] == ["anchored_selected"]
+        expected = "anchored_control_ood_gated" if "residual_gate" in config else "anchored_selected"
+        assert config["models"] == [expected]
     for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
         path = Path(inputs[f"{kind}_path"])
         assert path.stat().st_size == inputs[f"{kind}_bytes"]
@@ -734,6 +748,13 @@ def run_ablation_evaluation(
         assert checkpoint["provenance"]["git"]["dirty"] is False
         model = build_dynamics_model(checkpoint["configuration"]).eval()
         model.load_state_dict(checkpoint["model"])
+        if "residual_gate" in config:
+            gate = config["residual_gate"]
+            gate_path = Path(gate["path"])
+            assert (gate_path.stat().st_size, file_sha256(gate_path)) == (
+                gate["bytes"], gate["sha256"]
+            )
+            model.configure_residual_gate(torch.load(gate_path, map_location="cpu", weights_only=True))
         models[name] = model
         checkpoint_provenance[name] = checkpoint["provenance"]
 
@@ -772,6 +793,11 @@ def run_ablation_evaluation(
                     name: model(control, batch["action"], batch["action_known"])
                     for name, model in models.items()
                 }
+                confidences = {
+                    name: model.residual_gate_confidence(control)
+                    for name, model in models.items()
+                    if getattr(model, "residual_gate_threshold", None) is not None
+                }
                 assert all(predicted.dtype == observed.dtype for predicted in predictions.values())
                 true_effect = observed.mean(1) - control.mean(1)
                 for index, target in enumerate(batch["target"]):
@@ -802,6 +828,8 @@ def run_ablation_evaluation(
                         for metric, values in metrics.items():
                             value = float(values[index].detach())
                             record[metric] = value if np.isfinite(value) else None
+                        if name in confidences:
+                            record["residual_gate_confidence"] = float(confidences[name][index])
                         records.append(record)
                         key = (regime, name, target)
                         signatures[key][0] += 1
@@ -819,6 +847,15 @@ def run_ablation_evaluation(
         for line in Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
     ]
     assert len(base_records) == inputs["base_condition_metrics_records"]
+    reference_records = []
+    if "reference_condition_metrics_path" in inputs:
+        reference_path = Path(inputs["reference_condition_metrics_path"])
+        assert (reference_path.stat().st_size, file_sha256(reference_path)) == (
+            inputs["reference_condition_metrics_bytes"],
+            inputs["reference_condition_metrics_sha256"],
+        )
+        reference_records = [json.loads(line) for line in reference_path.read_text().splitlines()]
+        assert len(reference_records) == inputs["reference_condition_metrics_records"]
     base_summary = json.loads(Path(inputs["base_summary_path"]).read_text())
     summary = {
         "condition_metrics": sorted(
@@ -836,7 +873,7 @@ def run_ablation_evaluation(
         ),
     }
     comparisons = paired_model_comparisons(
-        base_records + records,
+        base_records + reference_records + records,
         config["comparisons"],
         base_config["metrics"]["bootstrap_resamples"],
         base_config["seed"],
@@ -860,6 +897,9 @@ def run_ablation_evaluation(
         "git": _git_state(),
     }
     provenance[f"{manifest_kind}_manifest_sha256"] = model_manifest_sha256
+    if "residual_gate" in config:
+        provenance["file_sha256"]["residual_gate"] = config["residual_gate"]["sha256"]
+        provenance["residual_gate_manifest_sha256"] = gate_manifest_sha256
     if selection_manifest_sha256 is not None:
         provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
