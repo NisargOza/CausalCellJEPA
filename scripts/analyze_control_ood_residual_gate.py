@@ -60,7 +60,7 @@ for regime in regimes:
 for regime in ("context_ood", "double_ood"):
     for metric in distribution_metrics:
         assert headline[regime]["metrics"][metric]["paired_improvement_bootstrap_95ci"][0] > 0
-        assert means[regime, gated, metric] == means[regime, "linear_esm", metric]
+        assert abs(means[regime, gated, metric] - means[regime, "linear_esm", metric]) < 1e-8
 assert max(abs(value) for item in invariance.values() for value in item.values()) < 1e-8
 assert min(headline[regime]["residual_gate_confidence"] for regime in regimes[:2]) > 0.99
 assert max(headline[regime]["residual_gate_confidence"] for regime in regimes[2:]) < 1e-15
