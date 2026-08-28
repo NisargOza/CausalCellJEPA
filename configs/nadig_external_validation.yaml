@@ -1,0 +1,58 @@
+# Freeze two untouched cross-context tests before downloading or reading expression outcomes.
+# Both datasets are test-only; no result may alter the model, gate, decoder, or protocol.
+seed: 20260828
+source:
+  article: Transcriptome-wide analysis of differential expression in perturbation atlases
+  doi: 10.1038/s41588-025-02169-3
+  processed_by: scPertEval
+  processed_release: "2026-06-15"
+  normalization: library_size_10000_log1p_sparse_float32
+  perturbation_column: perturbation
+  control_label: control
+  files:
+    HepG2:
+      url: https://storage.googleapis.com/scperteval/processed/nadig25hepg2_processed_complete.h5ad
+      filename: nadig25hepg2_processed_complete.h5ad
+      bytes: 1236448196
+      md5: 02681165b34557059b398959208f322f
+      expected_cells: 133757
+      expected_controls: 4976
+      expected_perturbations: 1818
+    Jurkat:
+      url: https://storage.googleapis.com/scperteval/processed/nadig25jurkat_processed_complete.h5ad
+      filename: nadig25jurkat_processed_complete.h5ad
+      bytes: 2004474709
+      md5: da5a6bba8ab2a9bb7ef610110107006e
+      expected_cells: 258202
+      expected_controls: 12013
+      expected_perturbations: 2137
+  raw_directory: data/external/nadig25
+  manifest_path: manifests/nadig_external_validation_v1.json
+protocol:
+  status: preregistered_external_confirmation
+  contexts: [HepG2, Jurkat]
+  role: external_test_only
+  eligibility: frozen_action_embedding_and_at_least_32_cells
+  controls: all_control_cells_within_context
+  population_size: 32
+  repeats: 8
+  batch_matching: unavailable_in_trimmed_source
+  statistical_unit: perturbation_condition
+  target_gene_excluded: true
+  no_model_selection_or_tuning: true
+  models:
+    - anchored_control_ood_gated
+    - anchored_selected
+    - causalcelljepa
+    - linear_esm
+    - no_change
+    - mean_effect
+  metrics:
+    latent: [effect_pearson, effect_spearman, direction_cosine, magnitude_ratio,
+             magnitude_absolute_error, sinkhorn, mmd, energy_distance,
+             centroid_shift_error, covariance_shift_error]
+    transcriptomic: [all_effect_pearson, target_excluded_effect_pearson,
+                     all_magnitude_absolute_error, deg_auprc, pathway_nes_pearson]
+cpu_smoke:
+  maximum_cells_per_context: 128
+  maximum_conditions_per_context: 2
