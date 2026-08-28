@@ -1848,7 +1848,7 @@
       "external_test"
     ]
   },
-  "manifest_sha256": "c0bb12ea99fdf90e7205bf4db2cec1018807c4c8812ad13d7dfdfb75167e0ca5",
+  "manifest_sha256": "fdd9a8a32ebea4c3e1f65a780423e12c532d1bd3a4c4dfa911e875d74cf927b3",
   "protocol": {
     "batch_matching": "unavailable_in_trimmed_source",
     "contexts": [
@@ -1896,7 +1896,7 @@
   },
   "provenance": {
     "git": {
-      "commit": "08ddb1afdb4fc0c436855a9920f44a5940d507d7",
+      "commit": "547f7294d64843e4d22f4ba9e1c1075e85d707ec",
       "dirty": false
     },
     "runtime_environment": {
@@ -1913,11 +1913,11 @@
       "python": "3.12.13",
       "torch_cuda": null
     },
-    "runtime_source_sha256": "a6ee8cbd7c88a7d4bfa211cd27acd9665cc77617d482a34be46fc6002a60db0e"
+    "runtime_source_sha256": "5889b95e5b755997e8ce26d89b1c579aa1c4bbf95bf813a38101c6043c2bee7b"
   },
   "source": {
     "action_cache_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
-    "config_sha256": "bba06e99f170df7a86f8c35f95ceb107aaae57b545e66b894cb55aff75a8c6e5",
+    "config_sha256": "9d85c3d11ea3bb7818d4d90f54c8a90c3e0811496cc82064d18e6024829efbe5",
     "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488"
   }
 }
