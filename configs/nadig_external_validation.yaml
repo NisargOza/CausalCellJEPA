@@ -28,6 +28,20 @@ source:
       expected_perturbations: 2137
   raw_directory: data/external/nadig25
   manifest_path: manifests/nadig_external_validation_v1.json
+inputs:
+  replogle_manifest_path: manifests/replogle_v1.json
+  replogle_manifest_sha256: 6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488
+  action_cache_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  action_cache_bytes: 1310981
+  action_cache_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+latent_cache:
+  teacher_path: artifacts/stage1_thunder_f1e5dce/stage1/canonical_ema_teacher.pt
+  teacher_sha256: 03924557312b4829716fe643fd6d6f9f0704acec470773094326ac1fb47c074f
+  output_path: artifacts/nadig_external_latents_v1.h5
+  batch_size: 128
+  chunk_cells: 1024
+  num_workers: 4
+  dtype: float32
 protocol:
   status: preregistered_external_confirmation
   contexts: [HepG2, Jurkat]
@@ -56,3 +70,4 @@ protocol:
 cpu_smoke:
   maximum_cells_per_context: 128
   maximum_conditions_per_context: 2
+  latent_cache_path: artifacts/nadig_external_latents_cpu_smoke.h5

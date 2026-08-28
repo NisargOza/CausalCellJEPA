@@ -12,6 +12,7 @@ from causalcelljepa.data import (
     required_embedding_mask,
     target_manifest,
 )
+from causalcelljepa.external import tokenize_normalized_cell
 
 
 def test_normalization_preserves_sparse_input_and_library_size():
@@ -19,6 +20,17 @@ def test_normalization_preserves_sparse_input_and_library_size():
     normalized = normalize_log1p(counts)
     assert sparse.isspmatrix_csr(normalized)
     np.testing.assert_allclose(np.expm1(normalized.toarray()).sum(axis=1), 10_000, rtol=1e-6)
+
+
+def test_external_normalized_tokenization_preserves_frozen_vocabulary_positions():
+    values = np.array([0.5, 3.0, 3.0, 0.0], dtype=np.float32)
+    positions = np.array([9, 7, 2, 4])
+    genes, expression, padding = tokenize_normalized_cell(
+        values, positions, vocab_size=10, max_tokens=3
+    )
+    assert genes.tolist() == [2, 7, 9]
+    assert expression.tolist() == [3.0, 3.0, 0.5]
+    assert not padding.any()
 
 
 def test_hvg_fit_does_not_see_heldout_outcome():
