@@ -195,7 +195,8 @@ class NadigExternalTokenDataset(Dataset):
         context, row, cell_id, role, target = self.samples[index]
         if context not in self._backed:
             self._backed[context] = ad.read_h5ad(self.paths[context], backed="r")
-        values = self._backed[context].X[row, self.source_columns[context]]
+        # Slice one backed CSR row first; mixed row/column indexing materializes the full matrix.
+        values = self._backed[context].X[row][:, self.source_columns[context]]
         values = values.toarray().ravel() if sparse.issparse(values) else np.asarray(values).ravel()
         gene_ids, expression, padding_mask = tokenize_normalized_cell(
             values, self.vocab_positions[context]
@@ -235,9 +236,10 @@ def write_nadig_latent_cache(
     assert file_sha256(teacher_path) == cache_config["teacher_sha256"]
     teacher, teacher_payload = load_frozen_teacher(teacher_path, 3000, device)
     workers = 0 if maximum_per_context is not None else cache_config["num_workers"]
+    batch_size = min(cache_config["batch_size"], 16) if maximum_per_context else cache_config["batch_size"]
     loader = DataLoader(
         dataset,
-        batch_size=cache_config["batch_size"],
+        batch_size=batch_size,
         shuffle=False,
         num_workers=workers,
         pin_memory=device.type == "cuda",

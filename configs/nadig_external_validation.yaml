@@ -68,6 +68,6 @@ protocol:
     transcriptomic: [all_effect_pearson, target_excluded_effect_pearson,
                      all_magnitude_absolute_error, deg_auprc, pathway_nes_pearson]
 cpu_smoke:
-  maximum_cells_per_context: 128
+  maximum_cells_per_context: 32
   maximum_conditions_per_context: 2
   latent_cache_path: artifacts/nadig_external_latents_cpu_smoke.h5

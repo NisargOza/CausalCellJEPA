@@ -1,4 +1,4 @@
-# Encode 128 controls/outcomes per external context through the frozen teacher on CPU.
+# Encode 32 controls/outcomes per external context through the frozen teacher on CPU.
 # This proves schema and token compatibility before any full GPU cache is authorized.
 import json
 from pathlib import Path
