@@ -43,26 +43,40 @@ class NadigLatentPopulationDataset(Dataset):
         self.population_size = population_size
         self.seed = seed
         self.epoch = 0
+        manifest = json.loads(Path(dynamics_manifest_path).read_text())
+        normalization = manifest["normalization"]
+        self.mean = np.asarray(normalization["latent_mean"], dtype=np.float32)
+        self.scale = np.asarray(normalization["latent_std"], dtype=np.float32) * normalization[
+            "dimension_scale"
+        ]
+        assert self.mean.shape == self.scale.shape and np.all(self.scale > 0)
         with h5py.File(self.cache_path, "r") as cache:
             roles = cache["role"].asstr()[:]
             contexts = cache["context"].asstr()[:]
             targets = cache["target"].asstr()[:]
             batches = cache["source_batch"].asstr()[:]
             cell_ids = cache["cell_id"].asstr()[:]
+            context_indices = np.flatnonzero(contexts == context)
+            self.latent = (
+                cache["latent"][context_indices] - self.mean
+            ) / self.scale
+        local_index = np.full(len(contexts), -1, dtype=np.int64)
+        local_index[context_indices] = np.arange(len(context_indices))
         selected_context = contexts == context
-        control_indices = np.flatnonzero(selected_context & (roles == "external_control"))
-        outcome_indices = np.flatnonzero(selected_context & (roles == "external_test"))
-        assert len(control_indices) >= population_size and len(outcome_indices)
-        assert set(batches[np.concatenate((control_indices, outcome_indices))]) == {"unavailable"}
-        assert len(np.unique(cell_ids[np.concatenate((control_indices, outcome_indices))])) == (
-            len(control_indices) + len(outcome_indices)
+        control_global = np.flatnonzero(selected_context & (roles == "external_control"))
+        outcome_global = np.flatnonzero(selected_context & (roles == "external_test"))
+        admitted_global = np.concatenate((control_global, outcome_global))
+        assert len(control_global) >= population_size and len(outcome_global)
+        assert set(batches[admitted_global]) == {"unavailable"}
+        assert len(np.unique(cell_ids[admitted_global])) == (
+            len(control_global) + len(outcome_global)
         )
-        self.controls = control_indices
-        self.condition_targets = sorted(set(targets[outcome_indices]))
+        self.controls = local_index[control_global]
+        self.condition_targets = sorted(set(targets[outcome_global]))
         if expected_targets is not None:
             assert self.condition_targets == sorted(expected_targets)
         self.outcomes = {
-            target: outcome_indices[targets[outcome_indices] == target]
+            target: local_index[outcome_global[targets[outcome_global] == target]]
             for target in self.condition_targets
         }
         assert all(len(indices) >= population_size for indices in self.outcomes.values())
@@ -77,15 +91,6 @@ class NadigLatentPopulationDataset(Dataset):
             for target in self.condition_targets
         }
         assert all(bool(known) for _embedding, known in self.action.values())
-
-        manifest = json.loads(Path(dynamics_manifest_path).read_text())
-        normalization = manifest["normalization"]
-        self.mean = np.asarray(normalization["latent_mean"], dtype=np.float32)
-        self.scale = np.asarray(normalization["latent_std"], dtype=np.float32) * normalization[
-            "dimension_scale"
-        ]
-        assert self.mean.shape == self.scale.shape and np.all(self.scale > 0)
-        self._cache = None
 
     def __len__(self):
         return len(self.condition_targets)
@@ -107,30 +112,18 @@ class NadigLatentPopulationDataset(Dataset):
         return controls, outcomes, target
 
     def __getitem__(self, index):
-        if self._cache is None:
-            self._cache = h5py.File(self.cache_path, "r")
         controls, outcomes, target = self.sample_indices(index)
-        populations = []
-        for indices in (controls, outcomes):
-            order = np.argsort(indices)
-            latent = self._cache["latent"][indices[order]][np.argsort(order)]
-            populations.append(torch.from_numpy((latent - self.mean) / self.scale))
         action, known = self.action[target]
         return {
-            "control": populations[0],
-            "perturbed": populations[1],
+            "control": torch.from_numpy(self.latent[controls]),
+            "perturbed": torch.from_numpy(self.latent[outcomes]),
             "action": action,
             "action_known": known,
             "target": target,
         }
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["_cache"] = None
-        return state
 
-
-def _load_external_models(config, base_config):
+def _load_external_models(config, base_config, device):
     inputs = config["inputs"]
     primary_path = Path(inputs["primary_checkpoint_path"])
     assert (primary_path.stat().st_size, file_sha256(primary_path)) == (
@@ -138,7 +131,7 @@ def _load_external_models(config, base_config):
         inputs["primary_checkpoint_sha256"],
     )
     primary_checkpoint = torch.load(primary_path, map_location="cpu", weights_only=False)
-    primary = build_dynamics_model(primary_checkpoint["configuration"]).eval()
+    primary = build_dynamics_model(primary_checkpoint["configuration"]).to(device).eval()
     primary.load_state_dict(primary_checkpoint["model"])
 
     training, training_sha256 = _self_hashed_manifest(
@@ -159,7 +152,7 @@ def _load_external_models(config, base_config):
     anchored_checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     assert anchored_checkpoint["configuration"]["revision"]["candidate"] == selected_candidate
 
-    anchored = build_dynamics_model(anchored_checkpoint["configuration"]).eval()
+    anchored = build_dynamics_model(anchored_checkpoint["configuration"]).to(device).eval()
     anchored.load_state_dict(anchored_checkpoint["model"])
     gated = build_dynamics_model(anchored_checkpoint["configuration"]).eval()
     gated.load_state_dict(anchored_checkpoint["model"])
@@ -180,6 +173,7 @@ def _load_external_models(config, base_config):
         gate_artifact["sha256"],
     )
     gated.configure_residual_gate(torch.load(gate_path, map_location="cpu", weights_only=True))
+    gated.to(device)
 
     linear_effect, mean_effect, baseline_report = fit_linear_baseline(base_config)
     return (
@@ -226,10 +220,14 @@ def run_nadig_external_latent_evaluation(
     repeats=None,
     maximum_conditions=None,
     output_directory=None,
+    device="cpu",
 ):
     """Evaluate all frozen models without fitting or selecting on external outcomes."""
     config_path = Path(config_path)
     config = yaml.safe_load(config_path.read_text())
+    device = torch.device(device)
+    if device.type == "mps":
+        assert torch.backends.mps.is_available()
     inputs = config["inputs"]
     assert file_sha256(inputs["preregistered_config_path"]) == inputs[
         "preregistered_config_sha256"
@@ -269,7 +267,7 @@ def run_nadig_external_latent_evaluation(
     assert config["latent_metrics"] == preregistered["protocol"]["metrics"]["latent"]
 
     models, linear_effect, mean_effect, baseline_report, model_provenance = (
-        _load_external_models(config, base_config)
+        _load_external_models(config, base_config, device)
     )
     dynamics_manifest = json.loads(Path(base_config["inputs"]["dynamics_manifest_path"]).read_text())
     median_distance = dynamics_manifest["normalization"]["median_training_latent_distance"]
@@ -302,22 +300,25 @@ def run_nadig_external_latent_evaluation(
                 num_workers=config["num_workers"],
             )
             for batch in loader:
-                control, observed = batch["control"], batch["perturbed"]
+                control = batch["control"].to(device)
+                observed = batch["perturbed"].to(device)
+                action = batch["action"].to(device)
+                action_known = batch["action_known"].to(device)
                 learned = {
-                    name: model(control, batch["action"], batch["action_known"])
+                    name: model(control, action, action_known)
                     for name, model in models.items()
                 }
                 confidence = models["anchored_control_ood_gated"].residual_gate_confidence(
                     control
                 )
-                gate_confidences[context].extend(confidence.tolist())
+                gate_confidences[context].extend(confidence.cpu().tolist())
                 predictions = {
                     **learned,
                     "linear_esm": control
                     + torch.from_numpy(
                         np.stack([linear_effect[target] for target in batch["target"]])
-                    )[:, None],
-                    "mean_effect": control + torch.from_numpy(mean_effect)[None, None],
+                    ).to(device)[:, None],
+                    "mean_effect": control + torch.from_numpy(mean_effect).to(device)[None, None],
                     "no_change": control,
                 }
                 assert set(predictions) == set(config["models"])
@@ -326,7 +327,7 @@ def run_nadig_external_latent_evaluation(
                 for index, target in enumerate(batch["target"]):
                     key = (context, "true", target)
                     signatures[key][0] += 1
-                    value = true_effect[index].numpy()
+                    value = true_effect[index].cpu().numpy()
                     signatures[key][1] = (
                         value if signatures[key][1] is None else signatures[key][1] + value
                     )
@@ -350,12 +351,12 @@ def run_nadig_external_latent_evaluation(
                             "model": name,
                         }
                         for metric, values in metrics.items():
-                            value = float(values[index])
+                            value = float(values[index].cpu())
                             record[metric] = value if np.isfinite(value) else None
                         records.append(record)
                         key = (context, name, target)
                         signatures[key][0] += 1
-                        value = predicted_effect[index].numpy()
+                        value = predicted_effect[index].cpu().numpy()
                         signatures[key][1] = (
                             value if signatures[key][1] is None else signatures[key][1] + value
                         )
@@ -384,6 +385,7 @@ def run_nadig_external_latent_evaluation(
         "preregistered_config": deepcopy(preregistered),
         "executed_contexts": contexts,
         "executed_repeats": repeats,
+        "device": str(device),
         "maximum_conditions_per_context": maximum_conditions,
         "statistical_unit": "perturbation_condition",
         "batch_matching": "unavailable_in_trimmed_source",
