@@ -273,7 +273,7 @@ def write_nadig_latent_cache(
             "latent",
             (len(dataset), teacher_payload["cell_dim"]),
             dtype="f4",
-            chunks=(cache_config["chunk_cells"], teacher_payload["cell_dim"]),
+            chunks=(min(cache_config["chunk_cells"], len(dataset)), teacher_payload["cell_dim"]),
         )
         metadata = {
             name: cache.create_dataset(name, (len(dataset),), dtype=string)
