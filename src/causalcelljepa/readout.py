@@ -981,6 +981,22 @@ def run_remaining_comparator_evaluation(
     ]
     base_provenance = json.loads(Path(inputs["base_provenance_path"]).read_text())
     assert base_provenance["config"] == base_config and base_provenance["git"]["dirty"] is False
+    reference_models = set(config.get("reference_models", []))
+    reference_summary = {"condition_metrics": [], "pathway_metrics": [], "retrieval": []}
+    if reference_models:
+        for name in ("condition_metrics", "pathway_metrics", "summary"):
+            path = Path(inputs[f"reference_{name}_path"])
+            assert (path.stat().st_size, file_sha256(path)) == (
+                inputs[f"reference_{name}_bytes"],
+                inputs[f"reference_{name}_sha256"],
+            )
+        assert len(
+            Path(inputs["reference_condition_metrics_path"]).read_text().splitlines()
+        ) == inputs["reference_condition_metrics_records"]
+        assert len(
+            Path(inputs["reference_pathway_metrics_path"]).read_text().splitlines()
+        ) == inputs["reference_pathway_metrics_records"]
+        reference_summary = json.loads(Path(inputs["reference_summary_path"]).read_text())
     for kind in ("latent_cache", "expression_cache", "readout_checkpoint", "go_gmt"):
         assert file_sha256(base_config["inputs"][f"{kind}_path"]) == base_config["inputs"][
             f"{kind}_sha256"
@@ -1231,16 +1247,32 @@ def run_remaining_comparator_evaluation(
     summary = {
         "condition_metrics": sorted(
             base_summary["condition_metrics"]
+            + [
+                item
+                for item in reference_summary["condition_metrics"]
+                if item["model"] in reference_models
+            ]
             + _condition_summary(records, resamples, base_config["seed"]),
             key=lambda item: (item["regime"], item["model"], item["metric"]),
         ),
         "pathway_metrics": sorted(
             base_summary["pathway_metrics"]
+            + [
+                item
+                for item in reference_summary["pathway_metrics"]
+                if item["model"] in reference_models
+            ]
             + _condition_summary(pathway_records, resamples, base_config["seed"]),
             key=lambda item: (item["regime"], item["model"], item["metric"]),
         ),
         "retrieval": sorted(
-            base_summary["retrieval"] + retrieval,
+            base_summary["retrieval"]
+            + [
+                item
+                for item in reference_summary["retrieval"]
+                if item["model"] in reference_models
+            ]
+            + retrieval,
             key=lambda item: (item["regime"], item["model"]),
         ),
     }
@@ -1252,6 +1284,8 @@ def run_remaining_comparator_evaluation(
     }
     base_condition_lines = Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
     assert len(base_condition_lines) == inputs["base_condition_metrics_records"]
+    if reference_models:
+        base_condition_lines += Path(inputs["reference_condition_metrics_path"]).read_text().splitlines()
     base_records = []
     for line in base_condition_lines:
         record = json.loads(line)
@@ -1259,6 +1293,8 @@ def run_remaining_comparator_evaluation(
             base_records.append(record)
     base_pathway_lines = Path(inputs["base_pathway_metrics_path"]).read_text().splitlines()
     assert len(base_pathway_lines) == inputs["base_pathway_metrics_records"]
+    if reference_models:
+        base_pathway_lines += Path(inputs["reference_pathway_metrics_path"]).read_text().splitlines()
     base_pathway_records = []
     for line in base_pathway_lines:
         record = json.loads(line)
@@ -1297,6 +1333,11 @@ def run_remaining_comparator_evaluation(
     ]
     if selection_manifest_sha256 is not None:
         provenance[f"{model_source}_selection_manifest_sha256"] = selection_manifest_sha256
+    if reference_models:
+        provenance["reference_artifact_sha256"] = {
+            name: inputs[f"reference_{name}_sha256"]
+            for name in ("condition_metrics", "pathway_metrics", "summary")
+        }
     expected_records = repeats * len(models) * sum(item["targets"] for item in truth_report.values())
     assert len(records) == expected_records
     assert all(

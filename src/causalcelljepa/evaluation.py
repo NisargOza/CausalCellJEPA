@@ -867,7 +867,10 @@ def run_ablation_evaluation(
     ]
     assert len(base_records) == inputs["base_condition_metrics_records"]
     reference_records = []
+    reference_summary = {"condition_metrics": [], "retrieval": []}
+    reference_models = set(config.get("reference_models", []))
     if "reference_condition_metrics_path" in inputs:
+        assert reference_models
         reference_path = Path(inputs["reference_condition_metrics_path"])
         assert (reference_path.stat().st_size, file_sha256(reference_path)) == (
             inputs["reference_condition_metrics_bytes"],
@@ -875,10 +878,21 @@ def run_ablation_evaluation(
         )
         reference_records = [json.loads(line) for line in reference_path.read_text().splitlines()]
         assert len(reference_records) == inputs["reference_condition_metrics_records"]
+        reference_summary_path = Path(inputs["reference_summary_path"])
+        assert (reference_summary_path.stat().st_size, file_sha256(reference_summary_path)) == (
+            inputs["reference_summary_bytes"],
+            inputs["reference_summary_sha256"],
+        )
+        reference_summary = json.loads(reference_summary_path.read_text())
     base_summary = json.loads(Path(inputs["base_summary_path"]).read_text())
     summary = {
         "condition_metrics": sorted(
             base_summary["condition_metrics"]
+            + [
+                item
+                for item in reference_summary["condition_metrics"]
+                if item["model"] in reference_models
+            ]
             + _condition_metric_summaries(
                 records,
                 base_config["metrics"]["bootstrap_resamples"],
@@ -887,7 +901,13 @@ def run_ablation_evaluation(
             key=lambda item: (item["regime"], item["model"], item["metric"]),
         ),
         "retrieval": sorted(
-            base_summary["retrieval"] + _retrieval_summaries(signatures, regimes, models),
+            base_summary["retrieval"]
+            + [
+                item
+                for item in reference_summary["retrieval"]
+                if item["model"] in reference_models
+            ]
+            + _retrieval_summaries(signatures, regimes, models),
             key=lambda item: (item["regime"], item["model"]),
         ),
     }
@@ -921,6 +941,11 @@ def run_ablation_evaluation(
         provenance["residual_gate_manifest_sha256"] = gate_manifest_sha256
     if selection_manifest_sha256 is not None:
         provenance[f"{model_source}_selection_manifest_sha256"] = selection_manifest_sha256
+    if reference_records:
+        provenance["file_sha256"]["reference_condition_metrics"] = inputs[
+            "reference_condition_metrics_sha256"
+        ]
+        provenance["file_sha256"]["reference_summary"] = inputs["reference_summary_sha256"]
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     (output / "paired_comparisons.json").write_text(
         json.dumps(comparisons, indent=2, sort_keys=True) + "\n"
