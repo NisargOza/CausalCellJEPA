@@ -1,0 +1,53 @@
+# Freeze the ProtJEPA-inspired ESM+GO action revision before any model training.
+seed: 20260829
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+action_manifest_path: manifests/multiteacher_action_v1.json
+action_manifest_sha256: b93d9903cda6f69a14eef3779ab6f9ecddb741d09ba2ff62baf09be05d5b1d24
+revision:
+  name: protjepa_inspired_multiteacher_action_v3
+  status: post_primary_exploratory
+  rationale_path: docs/architecture_revision_v3_exploratory.md
+  outcome_selection_boundary: k562_perturbation_ood_validation_only
+  confirmatory_reuse_of_viewed_tests: false
+effect_anchor:
+  architecture: multiteacher_low_rank_ridge
+  checkpoint_architecture: multiteacher_low_rank_latent_effect_ridge
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  rank: 64
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+  output_path: artifacts/multiteacher_effect_anchor_v1.pt
+  output_bytes: PENDING
+  output_sha256: PENDING
+  manifest_path: manifests/multiteacher_effect_anchor_v1.json
+  manifest_sha256: PENDING
+experiments:
+  attention_full:
+    anchor_gain_max: 1.0
+    mean_residual_max_ratio: 0.0
+    action_modality_dropout: 0.0
+    output_directory: artifacts/multiteacher_dynamics/attention_full
+  attention_dropout_025:
+    anchor_gain_max: 1.0
+    mean_residual_max_ratio: 0.0
+    action_modality_dropout: 0.25
+    output_directory: artifacts/multiteacher_dynamics/attention_dropout_025
+selection:
+  context: K562
+  outcome_role: perturbation_ood_validation
+  checkpoint_rule: minimum_original_latent_validation_loss
+  dropout_minimum_loss_improvement: 0.005
+  fallback_candidate: attention_full
+  viewed_test_outcomes_used: false
+cpu_smoke:
+  batch_size: 2
+  steps: 2
+  checkpoint_step: 1
+  output_directory: artifacts/multiteacher_dynamics_cpu_smoke
+cuda_smoke:
+  batch_size: 16
+  steps: 64
+  checkpoint_step: 16
+  validation_batches: 2
+  output_directory: artifacts/multiteacher_dynamics_cuda_smoke

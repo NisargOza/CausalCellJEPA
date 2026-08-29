@@ -296,7 +296,10 @@ class FrozenLowRankEffectAnchor(nn.Module):
     def __init__(self, checkpoint):
         super().__init__()
         assert checkpoint["format_version"] == 1
-        assert checkpoint["architecture"] == "esm2_low_rank_latent_effect_ridge"
+        assert checkpoint["architecture"] in {
+            "esm2_low_rank_latent_effect_ridge",
+            "multiteacher_low_rank_latent_effect_ridge",
+        }
         for name in ("x_mean", "x_std", "y_mean", "components", "weights"):
             value = checkpoint[name].detach().float()
             assert torch.isfinite(value).all()
@@ -621,13 +624,40 @@ def _normalized_role_effects(base, roles):
     return effects, target_ids, manifest
 
 
+def _action_overridden_config(base, specification):
+    """Replace only the frozen action input from a self-hashed cache manifest."""
+    if "action_manifest_path" not in specification:
+        return base
+    manifest = json.loads(Path(specification["action_manifest_path"]).read_text())
+    declared = manifest.pop("manifest_sha256")
+    assert declared == specification["action_manifest_sha256"] == sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    artifact = manifest["artifact"]
+    assert (Path(artifact["path"]).stat().st_size, file_sha256(artifact["path"])) == (
+        artifact["bytes"], artifact["sha256"]
+    )
+    base["inputs"].update(
+        {
+            "action_cache_path": artifact["path"],
+            "action_cache_bytes": artifact["bytes"],
+            "action_cache_sha256": artifact["sha256"],
+            "action_manifest_path": specification["action_manifest_path"],
+            "action_manifest_sha256": declared,
+        }
+    )
+    base["model"]["action_input_dim"] = artifact["input_dim"]
+    base["model"]["action_modalities"] = artifact["modality_dims"]
+    return base
+
+
 def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     """Fit the frozen ESM-to-latent anchor without test or RPE1 outcomes."""
     path = Path(path)
     specification = yaml.safe_load(path.read_text())
     base_path = Path(specification["base_config_path"])
     assert file_sha256(base_path) == specification["base_config_sha256"]
-    base = yaml.safe_load(base_path.read_text())
+    base = _action_overridden_config(yaml.safe_load(base_path.read_text()), specification)
     anchor = specification["effect_anchor"]
     roles = (anchor["fit_outcome_role"], anchor["selection_outcome_role"])
     assert roles == ("dynamics_train", "perturbation_ood_validation")
@@ -702,7 +732,9 @@ def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     }
     checkpoint = {
         "format_version": 1,
-        "architecture": "esm2_low_rank_latent_effect_ridge",
+        "architecture": anchor.get(
+            "checkpoint_architecture", "esm2_low_rank_latent_effect_ridge"
+        ),
         "x_mean": torch.from_numpy(x_mean.astype(np.float32)),
         "x_std": torch.from_numpy(x_std.astype(np.float32)),
         "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
@@ -740,7 +772,7 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
     specification = yaml.safe_load(path.read_text())
     base_path = Path(specification["base_config_path"])
     assert file_sha256(base_path) == specification["base_config_sha256"]
-    base = yaml.safe_load(base_path.read_text())
+    base = _action_overridden_config(yaml.safe_load(base_path.read_text()), specification)
     anchor = specification["effect_anchor"]
     assert anchor["output_sha256"] != "PENDING" and anchor["manifest_sha256"] != "PENDING"
     artifact_path = Path(anchor["output_path"])
@@ -763,6 +795,9 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
         config["model"]["mean_residual_max_ratio"] = experiment[
             "mean_residual_max_ratio"
         ]
+        config["model"]["action_modality_dropout"] = experiment.get(
+            "action_modality_dropout", 0.0
+        )
         config["training"]["output_directory"] = experiment["output_directory"]
         config["training"]["resume_from"] = None
         config["revision"] = {
@@ -770,6 +805,7 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
             "candidate": name,
             "anchor_gain_max": experiment["anchor_gain_max"],
             "mean_residual_max_ratio": experiment["mean_residual_max_ratio"],
+            "action_modality_dropout": experiment.get("action_modality_dropout", 0.0),
             "target_split_seed": base["seed"],
         }
         configs[name] = config
@@ -1048,6 +1084,8 @@ def dynamics_provenance(config, config_path="configs/dynamics.yaml"):
         assert declared == sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        if f"{kind}_manifest_sha256" in inputs:
+            assert declared == inputs[f"{kind}_manifest_sha256"]
         manifests[kind] = declared
     if "latent_manifest_path" in inputs:
         payload = json.loads(Path(inputs["latent_manifest_path"]).read_text())
