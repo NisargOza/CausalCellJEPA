@@ -5,7 +5,9 @@ from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
+import torch
 
+from causalcelljepa.dynamics import build_dynamics_model
 from causalcelljepa.readout import _paired_transcriptomic_models
 from causalcelljepa.resources import file_sha256
 from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
@@ -104,10 +106,58 @@ assert candidate_provenance["git"]["dirty"] is False
 assert candidate_provenance["executed_repeats"] == 8
 assert candidate_provenance["maximum_conditions_per_regime"] is None
 assert list(candidate_provenance["executed_regimes"]) == sorted(regimes)
+multiteacher_manifests = {}
 for kind in ("training", "selection"):
     manifest_path = Path(f"manifests/multiteacher_dynamics_{kind}_v1.json")
-    _, declared = self_hashed_manifest(manifest_path)
+    payload, declared = self_hashed_manifest(manifest_path)
     assert declared == candidate_provenance[f"multiteacher_{kind}_manifest_sha256"]
+    multiteacher_manifests[kind] = payload
+
+selected = multiteacher_manifests["selection"]["selected"]
+checkpoint_path = Path(selected["path"])
+assert (checkpoint_path.stat().st_size, file_sha256(checkpoint_path)) == (
+    selected["bytes"],
+    selected["sha256"],
+)
+checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+model = build_dynamics_model(checkpoint["configuration"]).eval()
+model.load_state_dict(checkpoint["model"])
+action_path = Path(checkpoint["configuration"]["inputs"]["action_cache_path"])
+assert file_sha256(action_path) == checkpoint["provenance"]["cache_sha256"]["action"]
+action = torch.load(action_path, map_location="cpu", weights_only=True)
+projection = model.action_projection
+with torch.no_grad():
+    blocks = action["embedding"].split(projection.modality_dims, 1)
+    projected = torch.stack(
+        [layer(block) for layer, block in zip(projection.projectors, blocks, strict=True)],
+        1,
+    )
+    scores = (torch.tanh(projected) * projection.query).sum(2) / np.sqrt(projected.shape[2])
+    attention = scores.softmax(1)
+_, inverse, counts = torch.unique(
+    action["embedding"][:, action["modality_dims"][0] :],
+    dim=0,
+    return_inverse=True,
+    return_counts=True,
+)
+unannotated = inverse == counts.argmax()
+action_manifest, _ = self_hashed_manifest(Path("manifests/multiteacher_action_v1.json"))
+assert int(unannotated.sum()) == len(action["targets"]) - action_manifest["report"]["targets_with_go"]
+attention_audit = {
+    "targets": len(action["targets"]),
+    "annotated_targets": int((~unannotated).sum()),
+    "unannotated_targets": int(unannotated.sum()),
+    "annotated_mean_weights": {
+        name: float(attention[~unannotated, index].mean())
+        for index, name in enumerate(action["modalities"])
+    },
+    "unannotated_mean_weights": {
+        name: float(attention[unannotated, index].mean())
+        for index, name in enumerate(action["modalities"])
+    },
+    "score_difference_standard_deviation": float((scores[:, 0] - scores[:, 1]).std()),
+    "outcomes_read": False,
+}
 
 record_fields = {"regime", "model", "target", "repeat"}
 condition_records, pathway_records = [], []
@@ -253,6 +303,7 @@ analysis = {
         "uniform_superiority_supported": verdict_counts["loss"] == 0,
         "models_compared": len(models),
         "reference_models": reference_models,
+        "attention_audit": attention_audit,
     },
     "provenance": {
         "sources": verified_sources,
@@ -314,6 +365,7 @@ manifest = {
         "uniform_superiority_supported": False,
         "bootstrap_95ci_verdict_counts": verdict_counts,
         "benjamini_hochberg_q05_counts": significant_counts,
+        "attention_audit": attention_audit,
     },
     "provenance": {
         "evaluation_git": candidate_provenance["git"],
