@@ -1,0 +1,109 @@
+# Reporting-only evaluation of the validation-frozen multimodal selection.
+latent:
+  base_evaluation_config_path: configs/evaluation.yaml
+  base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+  model_source: multiteacher
+  inputs:
+    multiteacher_training_manifest_path: manifests/multiteacher_dynamics_training_v1.json
+    multiteacher_training_manifest_sha256: 22a7c0859ce21e45e42514d529c65e5d82e029a96483d447c1bfb632ce903b99
+    multiteacher_selection_manifest_path: manifests/multiteacher_dynamics_selection_v1.json
+    multiteacher_selection_manifest_sha256: a62e1f78be37ddee7ebcd1fb924f74e3df626bc87317fa06db060707bcafbdbd
+    base_evaluation_manifest_path: manifests/evaluation_pseudo_v1.json
+    base_evaluation_manifest_sha256: 7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6
+    base_condition_metrics_path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+    base_condition_metrics_bytes: 37262909
+    base_condition_metrics_records: 71760
+    base_condition_metrics_sha256: d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50
+    base_summary_path: artifacts/evaluation_with_pseudo/summary.json
+    base_summary_bytes: 61457
+    base_summary_sha256: 677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b
+    base_provenance_path: artifacts/evaluation_with_pseudo/provenance.json
+    base_provenance_bytes: 6831
+    base_provenance_sha256: a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72
+    reference_condition_metrics_path: artifacts/evaluation_anchored/condition_metrics.jsonl
+    reference_condition_metrics_bytes: 7720647
+    reference_condition_metrics_records: 14352
+    reference_condition_metrics_sha256: ca3c367bffb65b7c1341057b2efead83a07d4375c6110c4d4abcb2e4a835df67
+    reference_summary_path: artifacts/evaluation_anchored/summary.json
+    reference_summary_bytes: 74610
+    reference_summary_sha256: 849ef9d7f5756a16f195524d2e3673fab6d054c6ea61f6c325fb42ca3b7934f9
+  models: [multiteacher_selected]
+  reference_models: [anchored_selected]
+  comparisons:
+    - candidate: multiteacher_selected
+      reference: anchored_selected
+      hypothesis: multimodal action teachers change performance relative to the prior frozen revision
+    - candidate: multiteacher_selected
+      reference: causalcelljepa
+      hypothesis: multimodal action teachers change performance relative to the primary model
+    - candidate: multiteacher_selected
+      reference: no_change
+      hypothesis: the multimodal revision improves over predicting no perturbation
+    - candidate: multiteacher_selected
+      reference: linear_esm
+      hypothesis: multimodal teacher fusion changes performance relative to frozen linear ESM
+  output_directory: artifacts/evaluation_multiteacher
+  cpu_smoke:
+    regimes: [perturbation_ood, context_ood]
+    repeats: 1
+    maximum_conditions_per_regime: 2
+    output_directory: artifacts/evaluation_multiteacher_cpu_smoke
+
+transcriptomic:
+  base_transcriptomics_config_path: configs/transcriptomics.yaml
+  base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+  model_source: multiteacher
+  inputs:
+    multiteacher_training_manifest_path: manifests/multiteacher_dynamics_training_v1.json
+    multiteacher_training_manifest_sha256: 22a7c0859ce21e45e42514d529c65e5d82e029a96483d447c1bfb632ce903b99
+    multiteacher_selection_manifest_path: manifests/multiteacher_dynamics_selection_v1.json
+    multiteacher_selection_manifest_sha256: a62e1f78be37ddee7ebcd1fb924f74e3df626bc87317fa06db060707bcafbdbd
+    base_manifest_path: manifests/transcriptomics_v1.json
+    base_manifest_sha256: 06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af
+    base_condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+    base_condition_metrics_bytes: 89852133
+    base_condition_metrics_records: 71760
+    base_condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+    base_pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+    base_pathway_metrics_bytes: 4088543
+    base_pathway_metrics_records: 8970
+    base_pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+    base_summary_path: artifacts/transcriptomic_evaluation/summary.json
+    base_summary_bytes: 154198
+    base_summary_sha256: abb6de6c086707355eacb8272891de88284113c93bf9c429bcb0a19de02fb288
+    base_provenance_path: artifacts/transcriptomic_evaluation/provenance.json
+    base_provenance_bytes: 8535
+    base_provenance_sha256: 6c1faeb43786afa0dd0f48b364b4120d7e626aaf7b3448e259a933e6da76fec6
+    reference_condition_metrics_path: artifacts/evaluation_anchored_transcriptomics/condition_metrics.jsonl
+    reference_condition_metrics_bytes: 18689061
+    reference_condition_metrics_records: 14352
+    reference_condition_metrics_sha256: 712dd42d1f2ff89801450bf9538c6df7be38b254bdf4426d8adbf1ee90100a1e
+    reference_pathway_metrics_path: artifacts/evaluation_anchored_transcriptomics/pathway_metrics.jsonl
+    reference_pathway_metrics_bytes: 850122
+    reference_pathway_metrics_records: 1794
+    reference_pathway_metrics_sha256: e89c792da695f3b309a3aee749bc16146e2a3f7b8b771cdfa88b78226835ba9d
+    reference_summary_path: artifacts/evaluation_anchored_transcriptomics/summary.json
+    reference_summary_bytes: 189951
+    reference_summary_sha256: 942811ba55a2e35ba894459c39ca0886d05cee74ba14aa45ba211c506efd44e6
+  models:
+    multiteacher_selected: attention_dropout_025
+  reference_models: [anchored_selected]
+  comparisons:
+    - candidate: multiteacher_selected
+      reference: anchored_selected
+      hypothesis: multimodal action teachers change decoded performance relative to the prior frozen revision
+    - candidate: multiteacher_selected
+      reference: causalcelljepa
+      hypothesis: multimodal action teachers change decoded performance relative to the primary model
+    - candidate: multiteacher_selected
+      reference: no_change
+      hypothesis: the multimodal revision improves over no change after decoding
+    - candidate: multiteacher_selected
+      reference: linear_esm
+      hypothesis: multimodal fusion changes decoded performance relative to frozen linear ESM
+  output_directory: artifacts/evaluation_multiteacher_transcriptomics
+  cpu_smoke:
+    regimes: [perturbation_ood, context_ood]
+    repeats: 1
+    maximum_conditions_per_regime: 2
+    output_directory: artifacts/evaluation_multiteacher_transcriptomics_cpu_smoke

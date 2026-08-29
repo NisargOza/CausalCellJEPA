@@ -935,6 +935,7 @@ def run_remaining_comparator_evaluation(
         "comparator": "comparator",
         "stage2_replication": "replication_training",
         "anchored": "anchored_training",
+        "multiteacher": "multiteacher_training",
     }
     assert model_source in manifest_kinds
     model_manifest_kind = manifest_kinds[model_source]
@@ -947,16 +948,23 @@ def run_remaining_comparator_evaluation(
         ).hexdigest()
         manifests[name] = payload
     selected_candidate = selected_entry = selection_manifest_sha256 = None
-    if model_source == "anchored":
-        selection = json.loads(Path(inputs["anchored_selection_manifest_path"]).read_text())
+    frozen_selection_sources = {"anchored", "multiteacher"}
+    if model_source in frozen_selection_sources:
+        selection = json.loads(
+            Path(inputs[f"{model_source}_selection_manifest_path"]).read_text()
+        )
         selection_manifest_sha256 = selection.pop("manifest_sha256")
-        assert selection_manifest_sha256 == inputs["anchored_selection_manifest_sha256"] == sha256(
-            json.dumps(selection, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        assert (
+            selection_manifest_sha256
+            == inputs[f"{model_source}_selection_manifest_sha256"]
+            == sha256(
+                json.dumps(selection, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         selected_candidate, selected_entry = anchored_selected_entry(
             manifests[model_manifest_kind], selection
         )
-        assert config["models"] == {"anchored_selected": selected_candidate}
+        assert config["models"] == {f"{model_source}_selected": selected_candidate}
     base_artifacts = manifests["base"]["artifacts"]["predictive_evaluation"]
     for name in ("condition_metrics", "pathway_metrics", "summary", "provenance"):
         path = Path(inputs[f"base_{name}_path"])
@@ -973,6 +981,22 @@ def run_remaining_comparator_evaluation(
     ]
     base_provenance = json.loads(Path(inputs["base_provenance_path"]).read_text())
     assert base_provenance["config"] == base_config and base_provenance["git"]["dirty"] is False
+    reference_models = set(config.get("reference_models", []))
+    reference_summary = {"condition_metrics": [], "pathway_metrics": [], "retrieval": []}
+    if reference_models:
+        for name in ("condition_metrics", "pathway_metrics", "summary"):
+            path = Path(inputs[f"reference_{name}_path"])
+            assert (path.stat().st_size, file_sha256(path)) == (
+                inputs[f"reference_{name}_bytes"],
+                inputs[f"reference_{name}_sha256"],
+            )
+        assert len(
+            Path(inputs["reference_condition_metrics_path"]).read_text().splitlines()
+        ) == inputs["reference_condition_metrics_records"]
+        assert len(
+            Path(inputs["reference_pathway_metrics_path"]).read_text().splitlines()
+        ) == inputs["reference_pathway_metrics_records"]
+        reference_summary = json.loads(Path(inputs["reference_summary_path"]).read_text())
     for kind in ("latent_cache", "expression_cache", "readout_checkpoint", "go_gmt"):
         assert file_sha256(base_config["inputs"][f"{kind}_path"]) == base_config["inputs"][
             f"{kind}_sha256"
@@ -995,7 +1019,7 @@ def run_remaining_comparator_evaluation(
         if model_source == "stage2_replication":
             entry = model_manifest["artifacts"]["seeds"][str(path)]["best_checkpoint"]
             decoder = {"kind": "jepa_linear", "checkpoint": readout}
-        elif model_source == "anchored":
+        elif model_source in frozen_selection_sources:
             entry = selected_entry["best_checkpoint"]
             decoder = {"kind": "jepa_linear", "checkpoint": readout}
         elif name == "learned_target_id":
@@ -1068,7 +1092,7 @@ def run_remaining_comparator_evaluation(
             assert checkpoint["state"]["best_validation_epoch"] == model_manifest["artifacts"][
                 "seeds"
             ][str(path)]["full_run"]["best_validation_epoch"]
-        elif model_source == "anchored":
+        elif model_source in frozen_selection_sources:
             model_config = checkpoint["configuration"]
             assert model_config["revision"]["candidate"] == path == selected_candidate
             assert checkpoint["state"]["best_validation_epoch"] == selected_entry["full_run"][
@@ -1223,16 +1247,32 @@ def run_remaining_comparator_evaluation(
     summary = {
         "condition_metrics": sorted(
             base_summary["condition_metrics"]
+            + [
+                item
+                for item in reference_summary["condition_metrics"]
+                if item["model"] in reference_models
+            ]
             + _condition_summary(records, resamples, base_config["seed"]),
             key=lambda item: (item["regime"], item["model"], item["metric"]),
         ),
         "pathway_metrics": sorted(
             base_summary["pathway_metrics"]
+            + [
+                item
+                for item in reference_summary["pathway_metrics"]
+                if item["model"] in reference_models
+            ]
             + _condition_summary(pathway_records, resamples, base_config["seed"]),
             key=lambda item: (item["regime"], item["model"], item["metric"]),
         ),
         "retrieval": sorted(
-            base_summary["retrieval"] + retrieval,
+            base_summary["retrieval"]
+            + [
+                item
+                for item in reference_summary["retrieval"]
+                if item["model"] in reference_models
+            ]
+            + retrieval,
             key=lambda item: (item["regime"], item["model"]),
         ),
     }
@@ -1244,6 +1284,8 @@ def run_remaining_comparator_evaluation(
     }
     base_condition_lines = Path(inputs["base_condition_metrics_path"]).read_text().splitlines()
     assert len(base_condition_lines) == inputs["base_condition_metrics_records"]
+    if reference_models:
+        base_condition_lines += Path(inputs["reference_condition_metrics_path"]).read_text().splitlines()
     base_records = []
     for line in base_condition_lines:
         record = json.loads(line)
@@ -1251,6 +1293,8 @@ def run_remaining_comparator_evaluation(
             base_records.append(record)
     base_pathway_lines = Path(inputs["base_pathway_metrics_path"]).read_text().splitlines()
     assert len(base_pathway_lines) == inputs["base_pathway_metrics_records"]
+    if reference_models:
+        base_pathway_lines += Path(inputs["reference_pathway_metrics_path"]).read_text().splitlines()
     base_pathway_records = []
     for line in base_pathway_lines:
         record = json.loads(line)
@@ -1288,7 +1332,12 @@ def run_remaining_comparator_evaluation(
         f"{model_manifest_kind}_manifest_sha256"
     ]
     if selection_manifest_sha256 is not None:
-        provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
+        provenance[f"{model_source}_selection_manifest_sha256"] = selection_manifest_sha256
+    if reference_models:
+        provenance["reference_artifact_sha256"] = {
+            name: inputs[f"reference_{name}_sha256"]
+            for name in ("condition_metrics", "pathway_metrics", "summary")
+        }
     expected_records = repeats * len(models) * sum(item["targets"] for item in truth_report.values())
     assert len(records) == expected_records
     assert all(
