@@ -204,6 +204,55 @@ class ModalityAttentiveActionProjection(nn.Module):
         return self.output((weights.unsqueeze(2) * projected).sum(1))
 
 
+class ContextConditionedModalityProjection(nn.Module):
+    """Fuse available action teachers using an identity-free control-state query."""
+
+    def __init__(self, modality_dims, output_dim, modality_dropout=0.0):
+        super().__init__()
+        assert sum(modality_dims) > 0 and 0 <= modality_dropout < 1
+        self.modality_dims = tuple(modality_dims)
+        self.modality_dropout = modality_dropout
+        self.projectors = nn.ModuleList(
+            nn.Sequential(nn.LayerNorm(width), nn.Linear(width, output_dim))
+            for width in modality_dims
+        )
+        self.query = nn.Parameter(torch.randn(output_dim) * 0.02)
+        self.context_query = nn.Sequential(nn.LayerNorm(output_dim), nn.Linear(output_dim, output_dim))
+        nn.init.zeros_(self.context_query[-1].weight)
+        nn.init.zeros_(self.context_query[-1].bias)
+        self.output = nn.LayerNorm(output_dim)
+
+    def projected_and_weights(self, action, context):
+        feature_width = sum(self.modality_dims)
+        assert action.shape[1] == feature_width + len(self.modality_dims)
+        blocks = action[:, :feature_width].split(self.modality_dims, 1)
+        availability = action[:, feature_width:].bool()
+        projected = torch.stack(
+            [
+                projector(block)
+                for projector, block in zip(self.projectors, blocks, strict=True)
+            ],
+            1,
+        )
+        query = self.query.unsqueeze(0) + self.context_query(context)
+        scores = (torch.tanh(projected) * query.unsqueeze(1)).sum(2) / math.sqrt(
+            projected.shape[2]
+        )
+        visible = availability.clone()
+        if self.training and self.modality_dropout:
+            visible &= torch.rand_like(scores) >= self.modality_dropout
+        missing = ~visible.any(1)
+        if missing.any():
+            fallback = availability.float().argmax(1)
+            visible[missing, fallback[missing]] = True
+        weights = scores.masked_fill(~visible, -torch.inf).softmax(1)
+        return projected, weights
+
+    def forward(self, action, context):
+        projected, weights = self.projected_and_weights(action, context)
+        return self.output((weights.unsqueeze(2) * projected).sum(1))
+
+
 class PopulationDynamics(nn.Module):
     """Permutation-equivariant residual dynamics conditioned on baseline context and action."""
 
@@ -220,11 +269,16 @@ class PopulationDynamics(nn.Module):
         context_mode="set_transformer",
         action_modalities=None,
         action_modality_dropout=0.0,
+        action_context_conditioned=False,
+        action_modality_availability=False,
     ):
         super().__init__()
         assert context_mode in {"set_transformer", "mean", "none"}
-        assert action_modalities is None or sum(action_modalities) == action_input_dim
+        availability_width = len(action_modalities or ()) if action_modality_availability else 0
+        assert action_modalities is None or sum(action_modalities) + availability_width == action_input_dim
+        assert not action_context_conditioned or action_modality_availability
         self.context_mode = context_mode
+        self.action_context_conditioned = action_context_conditioned
         context_layer = nn.TransformerEncoderLayer(
             cell_dim,
             heads,
@@ -243,15 +297,18 @@ class PopulationDynamics(nn.Module):
         self.pool_query = nn.Parameter(torch.randn(1, cell_dim) * 0.02)
         self.pool = nn.MultiheadAttention(cell_dim, heads, dropout=dropout, batch_first=True)
         self.context_output = nn.LayerNorm(cell_dim)
-        self.action_projection = (
-            ModalityAttentiveActionProjection(
+        if action_context_conditioned:
+            self.action_projection = ContextConditionedModalityProjection(
                 action_modalities, action_dim, action_modality_dropout
             )
-            if action_modalities
-            else nn.Sequential(
+        elif action_modalities:
+            self.action_projection = ModalityAttentiveActionProjection(
+                action_modalities, action_dim, action_modality_dropout
+            )
+        else:
+            self.action_projection = nn.Sequential(
                 nn.LayerNorm(action_input_dim), nn.Linear(action_input_dim, action_dim)
             )
-        )
         self.unknown_action = nn.Parameter(torch.randn(action_dim) * 0.02)
         self.interaction = nn.Sequential(
             nn.LayerNorm(4 * cell_dim),
@@ -277,7 +334,11 @@ class PopulationDynamics(nn.Module):
             context = self.context_output(control.mean(1))
         else:
             context = torch.zeros_like(control[:, 0])
-        projected = self.action_projection(action_embedding)
+        projected = (
+            self.action_projection(action_embedding, context)
+            if self.action_context_conditioned
+            else self.action_projection(action_embedding)
+        )
         action = torch.where(
             action_known.unsqueeze(1), projected, self.unknown_action.unsqueeze(0)
         )
@@ -398,7 +459,11 @@ class AnchoredPopulationDynamics(PopulationDynamics):
             context = self.context_output(control.mean(1))
         else:
             context = torch.zeros_like(control[:, 0])
-        projected = self.action_projection(action_embedding)
+        projected = (
+            self.action_projection(action_embedding, context)
+            if self.action_context_conditioned
+            else self.action_projection(action_embedding)
+        )
         action = torch.where(
             action_known.unsqueeze(1), projected, self.unknown_action.unsqueeze(0)
         )
@@ -506,6 +571,8 @@ def build_dynamics_model(config):
     fusion = {
         "action_modalities": model.get("action_modalities"),
         "action_modality_dropout": model.get("action_modality_dropout", 0.0),
+        "action_context_conditioned": model.get("action_context_conditioned", False),
+        "action_modality_availability": model.get("action_modality_availability", False),
     }
     architecture = model.get("architecture", "population_dynamics")
     if architecture == "population_dynamics":
@@ -648,6 +715,9 @@ def _action_overridden_config(base, specification):
     )
     base["model"]["action_input_dim"] = artifact["input_dim"]
     base["model"]["action_modalities"] = artifact["modality_dims"]
+    base["model"]["action_modality_availability"] = artifact.get(
+        "modality_availability", False
+    )
     return base
 
 
@@ -798,6 +868,9 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
         config["model"]["action_modality_dropout"] = experiment.get(
             "action_modality_dropout", 0.0
         )
+        config["model"]["action_context_conditioned"] = experiment.get(
+            "action_context_conditioned", False
+        )
         config["training"]["output_directory"] = experiment["output_directory"]
         config["training"]["resume_from"] = None
         config["revision"] = {
@@ -806,6 +879,7 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
             "anchor_gain_max": experiment["anchor_gain_max"],
             "mean_residual_max_ratio": experiment["mean_residual_max_ratio"],
             "action_modality_dropout": experiment.get("action_modality_dropout", 0.0),
+            "action_context_conditioned": experiment.get("action_context_conditioned", False),
             "target_split_seed": base["seed"],
         }
         configs[name] = config
