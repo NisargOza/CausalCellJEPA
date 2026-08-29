@@ -935,6 +935,7 @@ def run_remaining_comparator_evaluation(
         "comparator": "comparator",
         "stage2_replication": "replication_training",
         "anchored": "anchored_training",
+        "multiteacher": "multiteacher_training",
     }
     assert model_source in manifest_kinds
     model_manifest_kind = manifest_kinds[model_source]
@@ -947,16 +948,23 @@ def run_remaining_comparator_evaluation(
         ).hexdigest()
         manifests[name] = payload
     selected_candidate = selected_entry = selection_manifest_sha256 = None
-    if model_source == "anchored":
-        selection = json.loads(Path(inputs["anchored_selection_manifest_path"]).read_text())
+    frozen_selection_sources = {"anchored", "multiteacher"}
+    if model_source in frozen_selection_sources:
+        selection = json.loads(
+            Path(inputs[f"{model_source}_selection_manifest_path"]).read_text()
+        )
         selection_manifest_sha256 = selection.pop("manifest_sha256")
-        assert selection_manifest_sha256 == inputs["anchored_selection_manifest_sha256"] == sha256(
-            json.dumps(selection, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        assert (
+            selection_manifest_sha256
+            == inputs[f"{model_source}_selection_manifest_sha256"]
+            == sha256(
+                json.dumps(selection, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         selected_candidate, selected_entry = anchored_selected_entry(
             manifests[model_manifest_kind], selection
         )
-        assert config["models"] == {"anchored_selected": selected_candidate}
+        assert config["models"] == {f"{model_source}_selected": selected_candidate}
     base_artifacts = manifests["base"]["artifacts"]["predictive_evaluation"]
     for name in ("condition_metrics", "pathway_metrics", "summary", "provenance"):
         path = Path(inputs[f"base_{name}_path"])
@@ -995,7 +1003,7 @@ def run_remaining_comparator_evaluation(
         if model_source == "stage2_replication":
             entry = model_manifest["artifacts"]["seeds"][str(path)]["best_checkpoint"]
             decoder = {"kind": "jepa_linear", "checkpoint": readout}
-        elif model_source == "anchored":
+        elif model_source in frozen_selection_sources:
             entry = selected_entry["best_checkpoint"]
             decoder = {"kind": "jepa_linear", "checkpoint": readout}
         elif name == "learned_target_id":
@@ -1068,7 +1076,7 @@ def run_remaining_comparator_evaluation(
             assert checkpoint["state"]["best_validation_epoch"] == model_manifest["artifacts"][
                 "seeds"
             ][str(path)]["full_run"]["best_validation_epoch"]
-        elif model_source == "anchored":
+        elif model_source in frozen_selection_sources:
             model_config = checkpoint["configuration"]
             assert model_config["revision"]["candidate"] == path == selected_candidate
             assert checkpoint["state"]["best_validation_epoch"] == selected_entry["full_run"][
@@ -1288,7 +1296,7 @@ def run_remaining_comparator_evaluation(
         f"{model_manifest_kind}_manifest_sha256"
     ]
     if selection_manifest_sha256 is not None:
-        provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
+        provenance[f"{model_source}_selection_manifest_sha256"] = selection_manifest_sha256
     expected_records = repeats * len(models) * sum(item["targets"] for item in truth_report.values())
     assert len(records) == expected_records
     assert all(

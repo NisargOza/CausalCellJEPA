@@ -648,6 +648,7 @@ def run_ablation_evaluation(
         "ablation": "ablation",
         "stage2_replication": "replication_training",
         "anchored": "anchored_training",
+        "multiteacher": "multiteacher_training",
     }
     assert model_source in manifest_kinds
     manifest_kind = manifest_kinds[model_source]
@@ -669,15 +670,20 @@ def run_ablation_evaluation(
             "perturbed_outcomes_used": False, "rpe1_cells_used": False,
         }
     selected_candidate = selected_entry = selection_manifest_sha256 = None
-    if model_source == "anchored":
+    frozen_selection_sources = {"anchored", "multiteacher"}
+    if model_source in frozen_selection_sources:
         selection_manifest, selection_manifest_sha256 = _self_hashed_manifest(
-            inputs["anchored_selection_manifest_path"],
-            inputs["anchored_selection_manifest_sha256"],
+            inputs[f"{model_source}_selection_manifest_path"],
+            inputs[f"{model_source}_selection_manifest_sha256"],
         )
         selected_candidate, selected_entry = anchored_selected_entry(
             model_manifest, selection_manifest
         )
-        expected = "anchored_control_ood_gated" if "residual_gate" in config else "anchored_selected"
+        expected = (
+            "anchored_control_ood_gated"
+            if "residual_gate" in config
+            else f"{model_source}_selected"
+        )
         assert config["models"] == [expected]
     for kind in ("base_condition_metrics", "base_summary", "base_provenance"):
         path = Path(inputs[f"{kind}_path"])
@@ -700,7 +706,7 @@ def run_ablation_evaluation(
     assert base_provenance["config"] == base_config
     assert base_provenance["git"]["dirty"] is False
 
-    models, checkpoint_provenance = {}, {}
+    models, model_configs, checkpoint_provenance = {}, {}, {}
     for name in config["models"]:
         if model_source == "ablation":
             entry = model_manifest["experiments"][name]
@@ -756,6 +762,7 @@ def run_ablation_evaluation(
             )
             model.configure_residual_gate(torch.load(gate_path, map_location="cpu", weights_only=True))
         models[name] = model
+        model_configs[name] = checkpoint["configuration"]
         checkpoint_provenance[name] = checkpoint["provenance"]
 
     dynamics_manifest = json.loads(Path(base_config["inputs"]["dynamics_manifest_path"]).read_text())
@@ -766,11 +773,23 @@ def run_ablation_evaluation(
     assert not output.exists()
     output.mkdir(parents=True)
     records, signatures = [], defaultdict(lambda: [0, None])
+    model_input_paths = {
+        (
+            item["inputs"]["latent_cache_path"],
+            item["inputs"]["action_cache_path"],
+            item["inputs"]["dynamics_manifest_path"],
+        )
+        for item in model_configs.values()
+    }
+    assert len(model_input_paths) == 1
+    latent_cache_path, action_cache_path, dynamics_manifest_path = model_input_paths.pop()
+    assert latent_cache_path == base_config["inputs"]["latent_cache_path"]
+    assert dynamics_manifest_path == base_config["inputs"]["dynamics_manifest_path"]
     for regime, specification in regimes.items():
         dataset = LatentPopulationDataset(
-            base_config["inputs"]["latent_cache_path"],
-            base_config["inputs"]["action_cache_path"],
-            base_config["inputs"]["dynamics_manifest_path"],
+            latent_cache_path,
+            action_cache_path,
+            dynamics_manifest_path,
             regime,
             base_config["sampling"]["population_size"],
             base_config["seed"],
@@ -901,7 +920,7 @@ def run_ablation_evaluation(
         provenance["file_sha256"]["residual_gate"] = config["residual_gate"]["sha256"]
         provenance["residual_gate_manifest_sha256"] = gate_manifest_sha256
     if selection_manifest_sha256 is not None:
-        provenance["anchored_selection_manifest_sha256"] = selection_manifest_sha256
+        provenance[f"{model_source}_selection_manifest_sha256"] = selection_manifest_sha256
     (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     (output / "paired_comparisons.json").write_text(
         json.dumps(comparisons, indent=2, sort_keys=True) + "\n"
