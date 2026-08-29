@@ -171,6 +171,39 @@ class ConditionalTransitionBlock(nn.Module):
         return states + self.ffn(self.ffn_norm(states + condition))
 
 
+class ModalityAttentiveActionProjection(nn.Module):
+    """Project frozen action teachers and fuse them with sample-specific attention."""
+
+    def __init__(self, modality_dims, output_dim, modality_dropout=0.0):
+        super().__init__()
+        assert sum(modality_dims) > 0 and 0 <= modality_dropout < 1
+        self.modality_dims = tuple(modality_dims)
+        self.modality_dropout = modality_dropout
+        self.projectors = nn.ModuleList(
+            nn.Sequential(nn.LayerNorm(width), nn.Linear(width, output_dim))
+            for width in modality_dims
+        )
+        self.query = nn.Parameter(torch.randn(output_dim) * 0.02)
+        self.output = nn.LayerNorm(output_dim)
+
+    def forward(self, action):
+        blocks = action.split(self.modality_dims, 1)
+        projected = torch.stack(
+            [
+                projector(block)
+                for projector, block in zip(self.projectors, blocks, strict=True)
+            ],
+            1,
+        )
+        scores = (torch.tanh(projected) * self.query).sum(2) / math.sqrt(projected.shape[2])
+        if self.training and self.modality_dropout:
+            dropped = torch.rand_like(scores) < self.modality_dropout
+            dropped[:, 0] &= ~dropped.all(1)
+            scores = scores.masked_fill(dropped, -torch.inf)
+        weights = scores.softmax(1)
+        return self.output((weights.unsqueeze(2) * projected).sum(1))
+
+
 class PopulationDynamics(nn.Module):
     """Permutation-equivariant residual dynamics conditioned on baseline context and action."""
 
@@ -185,9 +218,12 @@ class PopulationDynamics(nn.Module):
         ffn_dim=1024,
         dropout=0.1,
         context_mode="set_transformer",
+        action_modalities=None,
+        action_modality_dropout=0.0,
     ):
         super().__init__()
         assert context_mode in {"set_transformer", "mean", "none"}
+        assert action_modalities is None or sum(action_modalities) == action_input_dim
         self.context_mode = context_mode
         context_layer = nn.TransformerEncoderLayer(
             cell_dim,
@@ -207,8 +243,14 @@ class PopulationDynamics(nn.Module):
         self.pool_query = nn.Parameter(torch.randn(1, cell_dim) * 0.02)
         self.pool = nn.MultiheadAttention(cell_dim, heads, dropout=dropout, batch_first=True)
         self.context_output = nn.LayerNorm(cell_dim)
-        self.action_projection = nn.Sequential(
-            nn.LayerNorm(action_input_dim), nn.Linear(action_input_dim, action_dim)
+        self.action_projection = (
+            ModalityAttentiveActionProjection(
+                action_modalities, action_dim, action_modality_dropout
+            )
+            if action_modalities
+            else nn.Sequential(
+                nn.LayerNorm(action_input_dim), nn.Linear(action_input_dim, action_dim)
+            )
         )
         self.unknown_action = nn.Parameter(torch.randn(action_dim) * 0.02)
         self.interaction = nn.Sequential(
@@ -254,7 +296,10 @@ class FrozenLowRankEffectAnchor(nn.Module):
     def __init__(self, checkpoint):
         super().__init__()
         assert checkpoint["format_version"] == 1
-        assert checkpoint["architecture"] == "esm2_low_rank_latent_effect_ridge"
+        assert checkpoint["architecture"] in {
+            "esm2_low_rank_latent_effect_ridge",
+            "multiteacher_low_rank_latent_effect_ridge",
+        }
         for name in ("x_mean", "x_std", "y_mean", "components", "weights"):
             value = checkpoint[name].detach().float()
             assert torch.isfinite(value).all()
@@ -458,9 +503,13 @@ def build_dynamics_model(config):
         model["dropout"],
         model.get("context_mode", "set_transformer"),
     )
+    fusion = {
+        "action_modalities": model.get("action_modalities"),
+        "action_modality_dropout": model.get("action_modality_dropout", 0.0),
+    }
     architecture = model.get("architecture", "population_dynamics")
     if architecture == "population_dynamics":
-        return PopulationDynamics(*arguments)
+        return PopulationDynamics(*arguments, **fusion)
     assert architecture == "anchored_decomposed_population_dynamics"
     anchor = config["effect_anchor"]
     path = Path(anchor["output_path"])
@@ -480,6 +529,7 @@ def build_dynamics_model(config):
         effect_anchor=checkpoint,
         anchor_gain_max=model["anchor_gain_max"],
         mean_residual_max_ratio=model["mean_residual_max_ratio"],
+        **fusion,
     )
 
 
@@ -574,13 +624,40 @@ def _normalized_role_effects(base, roles):
     return effects, target_ids, manifest
 
 
+def _action_overridden_config(base, specification):
+    """Replace only the frozen action input from a self-hashed cache manifest."""
+    if "action_manifest_path" not in specification:
+        return base
+    manifest = json.loads(Path(specification["action_manifest_path"]).read_text())
+    declared = manifest.pop("manifest_sha256")
+    assert declared == specification["action_manifest_sha256"] == sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    artifact = manifest["artifact"]
+    assert (Path(artifact["path"]).stat().st_size, file_sha256(artifact["path"])) == (
+        artifact["bytes"], artifact["sha256"]
+    )
+    base["inputs"].update(
+        {
+            "action_cache_path": artifact["path"],
+            "action_cache_bytes": artifact["bytes"],
+            "action_cache_sha256": artifact["sha256"],
+            "action_manifest_path": specification["action_manifest_path"],
+            "action_manifest_sha256": declared,
+        }
+    )
+    base["model"]["action_input_dim"] = artifact["input_dim"]
+    base["model"]["action_modalities"] = artifact["modality_dims"]
+    return base
+
+
 def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     """Fit the frozen ESM-to-latent anchor without test or RPE1 outcomes."""
     path = Path(path)
     specification = yaml.safe_load(path.read_text())
     base_path = Path(specification["base_config_path"])
     assert file_sha256(base_path) == specification["base_config_sha256"]
-    base = yaml.safe_load(base_path.read_text())
+    base = _action_overridden_config(yaml.safe_load(base_path.read_text()), specification)
     anchor = specification["effect_anchor"]
     roles = (anchor["fit_outcome_role"], anchor["selection_outcome_role"])
     assert roles == ("dynamics_train", "perturbation_ood_validation")
@@ -655,7 +732,9 @@ def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     }
     checkpoint = {
         "format_version": 1,
-        "architecture": "esm2_low_rank_latent_effect_ridge",
+        "architecture": anchor.get(
+            "checkpoint_architecture", "esm2_low_rank_latent_effect_ridge"
+        ),
         "x_mean": torch.from_numpy(x_mean.astype(np.float32)),
         "x_std": torch.from_numpy(x_std.astype(np.float32)),
         "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
@@ -693,7 +772,7 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
     specification = yaml.safe_load(path.read_text())
     base_path = Path(specification["base_config_path"])
     assert file_sha256(base_path) == specification["base_config_sha256"]
-    base = yaml.safe_load(base_path.read_text())
+    base = _action_overridden_config(yaml.safe_load(base_path.read_text()), specification)
     anchor = specification["effect_anchor"]
     assert anchor["output_sha256"] != "PENDING" and anchor["manifest_sha256"] != "PENDING"
     artifact_path = Path(anchor["output_path"])
@@ -716,6 +795,9 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
         config["model"]["mean_residual_max_ratio"] = experiment[
             "mean_residual_max_ratio"
         ]
+        config["model"]["action_modality_dropout"] = experiment.get(
+            "action_modality_dropout", 0.0
+        )
         config["training"]["output_directory"] = experiment["output_directory"]
         config["training"]["resume_from"] = None
         config["revision"] = {
@@ -723,6 +805,7 @@ def anchored_dynamics_configs(path="configs/anchored_dynamics.yaml"):
             "candidate": name,
             "anchor_gain_max": experiment["anchor_gain_max"],
             "mean_residual_max_ratio": experiment["mean_residual_max_ratio"],
+            "action_modality_dropout": experiment.get("action_modality_dropout", 0.0),
             "target_split_seed": base["seed"],
         }
         configs[name] = config
@@ -749,6 +832,35 @@ def anchored_selected_entry(training_manifest, selection_manifest):
         entry["full_run"]["best_validation_loss"],
     )
     return selected["candidate"], entry
+
+
+def select_multiteacher_candidate(training_manifest, specification):
+    """Apply the frozen validation-loss margin without consulting test outcomes."""
+    protocol = training_manifest["protocol"]
+    assert protocol["sealed_test_outcomes_used_for_fit_or_selection"] is False
+    assert protocol["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
+    rule = specification["selection"]
+    assert rule["viewed_test_outcomes_used"] is False
+    assert rule["checkpoint_rule"] == "minimum_original_latent_validation_loss"
+    fallback = rule["fallback_candidate"]
+    candidates = training_manifest["artifacts"]["candidates"]
+    assert fallback in candidates
+    alternatives = [
+        name
+        for name, experiment in specification["experiments"].items()
+        if experiment.get("action_modality_dropout", 0.0) > 0
+    ]
+    assert len(alternatives) == 1 and alternatives[0] in candidates
+    alternative = alternatives[0]
+    fallback_loss = candidates[fallback]["full_run"]["best_validation_loss"]
+    alternative_loss = candidates[alternative]["full_run"]["best_validation_loss"]
+    improvement = fallback_loss - alternative_loss
+    selected = (
+        alternative
+        if improvement >= rule["dropout_minimum_loss_improvement"]
+        else fallback
+    )
+    return selected, improvement
 
 
 def prepare_dynamics_manifest(config, config_path="configs/dynamics.yaml"):
@@ -1001,6 +1113,8 @@ def dynamics_provenance(config, config_path="configs/dynamics.yaml"):
         assert declared == sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        if f"{kind}_manifest_sha256" in inputs:
+            assert declared == inputs[f"{kind}_manifest_sha256"]
         manifests[kind] = declared
     if "latent_manifest_path" in inputs:
         payload = json.loads(Path(inputs["latent_manifest_path"]).read_text())

@@ -1,0 +1,63 @@
+{
+  "architecture": "multiteacher_low_rank_latent_effect_ridge",
+  "artifact": {
+    "bytes": 171915,
+    "path": "artifacts/multiteacher_effect_anchor_v1.pt",
+    "sha256": "40bc050f9fb29080c67542544aa3a8b56648ff233b172853a3139d155fe98596"
+  },
+  "fit": {
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets": 698,
+    "fit_targets_with_known_action": 696,
+    "leakage": {
+      "contexts": [
+        "K562"
+      ],
+      "rpe1_outcomes_used": false,
+      "sealed_test_outcomes_used": false
+    },
+    "rank": 64,
+    "ridge_candidates": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0,
+      1000000.0
+    ],
+    "ridge_validation_mse": [
+      0.00022819156224633856,
+      0.00022225905864052076,
+      0.00018584878312142563,
+      0.00011781695963001441,
+      7.7089217621925e-05,
+      6.283886191445249e-05,
+      6.671556034866291e-05,
+      6.916889160620614e-05,
+      6.969821012891574e-05
+    ],
+    "selected_ridge": 1000.0,
+    "selection_mean_effect_pearson": 0.29165107536832663,
+    "selection_mean_magnitude_absolute_error": 0.06109752995530405,
+    "selection_mse": 6.283886191445249e-05,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100,
+    "target_sha256": {
+      "dynamics_train": "d1dab0a7c3f251499b3c578ad9249da00277710985652623eb7a494b7a9f1e3f",
+      "perturbation_ood_validation": "adc33ed12cb9310529f1ac630fa4a681afd7f1b97522ca9b3eef7201b76526f4"
+    },
+    "training_null_effect_threshold": 0.07555224110714999
+  },
+  "format_version": 1,
+  "manifest_sha256": "d9f2199007023d77edc33d57f8a005d5aef320aa8f40447be4b283cfc569ccec",
+  "source": {
+    "action_cache_sha256": "6eb452fd9a2c102b6af15a74322bac024621eff9fcb9c64338bd942407d1d8e9",
+    "base_config_path": "configs/dynamics.yaml",
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+  }
+}

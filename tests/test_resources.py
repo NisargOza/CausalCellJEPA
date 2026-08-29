@@ -1,6 +1,13 @@
 import gzip
 
-from causalcelljepa.actions import learned_target_id_payload, map_targets, protein_symbols
+import torch
+
+from causalcelljepa.actions import (
+    learned_target_id_payload,
+    map_targets,
+    multiteacher_action_payload,
+    protein_symbols,
+)
 from causalcelljepa.resources import (
     derive_hvg_programs,
     load_gmt_gene_indices,
@@ -55,6 +62,21 @@ def test_learned_target_ids_encode_only_training_vocabulary():
         [1.0, 0.0],
         [0.0, 0.0],
     ]
+
+
+def test_multiteacher_action_is_deterministic_and_preserves_unknown_policy():
+    action = {
+        "targets": ["A", "B", "C", "D"],
+        "embedding": torch.arange(12, dtype=torch.float32).reshape(4, 3),
+        "known": torch.tensor([True, True, False, True]),
+    }
+    programs = {"GO:1": ("A", "B"), "GO:2": ("B", "C"), "GO:3": ("A", "D")}
+    first, report = multiteacher_action_payload(action, programs, rank=2)
+    second, _ = multiteacher_action_payload(action, programs, rank=2)
+    assert torch.equal(first["embedding"], second["embedding"])
+    assert first["modality_dims"] == [3, 2]
+    assert torch.equal(first["known"], action["known"])
+    assert report["targets_with_go"] == 4 and report["target_coverage"] == 1
 
 
 def test_go_parsing_propagation_and_gmt_are_deterministic(tmp_path):

@@ -1,0 +1,19 @@
+# Build a frozen ESM+GO action ablation without reading any perturbation outcome.
+seed: 20260829
+source_action:
+  path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  bytes: 1310981
+  sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+  manifest_path: manifests/action_v1.json
+  manifest_sha256: 5d3bd9217b4a5781725562044306bc31f2be8d4cf211b9eca3ded0eadb4c1b85
+go_teacher:
+  ontology_path: data/resources/go/2026-08-05/go-basic.obo
+  ontology_sha256: b08d45b268b8c24ccb2513dbbbc7d4df9f6521c099b413f79eb31e06e0fa3bcc
+  annotations_path: data/resources/go/2026-08-05/HUMAN-uniprot.gaf.gz
+  annotations_sha256: a0afba19dfb1f8fa996bc1bdcd61fd0c9bd4cf0d2bf2509d09ac86993c0e70a2
+  excluded_evidence_codes: [ND, RCA]
+  minimum_targets: 3
+  maximum_targets: 500
+  rank: 64
+output_path: artifacts/replogle_actions_esm2_go_v1.pt
+manifest_path: manifests/multiteacher_action_v1.json

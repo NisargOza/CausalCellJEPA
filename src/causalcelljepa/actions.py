@@ -1,9 +1,22 @@
 # Deterministic target-to-protein mapping and frozen ESM-2 mean pooling.
 # Resource acquisition remains in scripts/action_resources.py, separate from model inference.
+import json
 import re
 from collections import defaultdict
+from hashlib import sha256
+from pathlib import Path
 
+import numpy as np
 import torch
+import yaml
+
+from causalcelljepa.resources import (
+    derive_hvg_programs,
+    file_sha256,
+    parse_go_basic,
+    parse_human_bp_annotations,
+)
+from causalcelljepa.training import _git_state, _runtime_environment, _runtime_source_hash
 
 
 def learned_target_id_payload(targets, training_targets):
@@ -20,6 +33,92 @@ def learned_target_id_payload(targets, training_targets):
         known[row] = True
         embedding[row, identity] = 1.0
     return known, embedding
+
+
+def multiteacher_action_payload(action, programs, rank=64):
+    """Fuse frozen ESM vectors with a canonically oriented low-rank GO teacher."""
+    targets = list(action["targets"])
+    target_index = {target: index for index, target in enumerate(targets)}
+    go_ids = sorted(programs)
+    membership = np.zeros((len(targets), len(go_ids)), dtype=np.float32)
+    for column, go_id in enumerate(go_ids):
+        for target in programs[go_id]:
+            membership[target_index[target], column] = 1
+    centered = membership - membership.mean(0)
+    _, _, components = np.linalg.svd(centered, full_matrices=False)
+    components = components[:rank]
+    anchors = np.abs(components).argmax(1)
+    components *= np.where(components[np.arange(rank), anchors] < 0, -1, 1)[:, None]
+    go_embedding = centered @ components.T
+    embedding = torch.cat((action["embedding"].float(), torch.from_numpy(go_embedding)), 1)
+    return {
+        "targets": targets,
+        "embedding": embedding,
+        "known": action["known"].bool(),
+        "modality_dims": [action["embedding"].shape[1], rank],
+        "modalities": ["esm2_t6_8M_UR50D", "go_bp_lsa"],
+    }, {
+        "go_terms": len(go_ids),
+        "go_rank": rank,
+        "targets_with_go": int((membership.sum(1) > 0).sum()),
+        "target_coverage": float((membership.sum(1) > 0).mean()),
+        "go_term_sha256": sha256("\n".join(go_ids).encode()).hexdigest(),
+    }
+
+
+def prepare_multiteacher_action(config_path="configs/multiteacher_action.yaml"):
+    """Build the checksum-pinned ESM+GO action cache without reading outcomes."""
+    config_path = Path(config_path)
+    config = yaml.safe_load(config_path.read_text())
+    source, go = config["source_action"], config["go_teacher"]
+    assert file_sha256(source["path"]) == source["sha256"]
+    action = torch.load(source["path"], map_location="cpu", weights_only=True)
+    assert file_sha256(go["ontology_path"]) == go["ontology_sha256"]
+    assert file_sha256(go["annotations_path"]) == go["annotations_sha256"]
+    _, terms, aliases = parse_go_basic(go["ontology_path"])
+    _, annotations, stats = parse_human_bp_annotations(
+        go["annotations_path"], terms, aliases, excluded_evidence=go["excluded_evidence_codes"]
+    )
+    programs = derive_hvg_programs(
+        terms,
+        annotations,
+        action["targets"],
+        go["minimum_targets"],
+        go["maximum_targets"],
+    )
+    payload, report = multiteacher_action_payload(action, programs, go["rank"])
+    output = Path(config["output_path"])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(payload, output)
+    manifest = {
+        "format_version": 1,
+        "architecture": "frozen_esm_go_multiteacher_action",
+        "artifact": {
+            "path": str(output),
+            "bytes": output.stat().st_size,
+            "sha256": file_sha256(output),
+            "input_dim": payload["embedding"].shape[1],
+            "modality_dims": payload["modality_dims"],
+        },
+        "report": {**report, "annotation_stats": stats},
+        "source": {
+            "config_sha256": file_sha256(config_path),
+            "action_sha256": source["sha256"],
+            "ontology_sha256": go["ontology_sha256"],
+            "annotations_sha256": go["annotations_sha256"],
+            "outcomes_read": False,
+        },
+        "provenance": {
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+    manifest["manifest_sha256"] = sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    Path(config["manifest_path"]).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    return manifest
 
 
 def protein_symbols(value):

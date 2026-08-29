@@ -1,0 +1,128 @@
+{
+  "artifacts": {
+    "candidates": {
+      "attention_dropout_025": {
+        "best_checkpoint": {
+          "bytes": 73117397,
+          "path": "artifacts/multiteacher_dynamics/attention_dropout_025/best.pt",
+          "sha256": "2204a06506f387af1fb1a3a2e1f3fa35d31ebec28c98e072d43166ae05d4f74c"
+        },
+        "full_run": {
+          "best_validation_epoch": 162,
+          "best_validation_loss": 0.6847986912727356,
+          "best_validation_metrics": {
+            "direction": 0.8645338106155396,
+            "direction_active": 1.0,
+            "magnitude": 0.022066237032413484,
+            "mmd": 0.03560951828956604,
+            "sinkhorn": 0.24142277598381043
+          },
+          "completion_reason": "early_stopping",
+          "elapsed_seconds": 1656.5400716857985,
+          "epochs": 178,
+          "epochs_without_improvement": 15,
+          "global_steps": 7832,
+          "peak_cuda_memory_bytes": 330237952
+        },
+        "latest_checkpoint": {
+          "bytes": 73118795,
+          "path": "artifacts/multiteacher_dynamics/attention_dropout_025/latest.pt",
+          "sha256": "365e136843f3d4aa917488fb11c754fdc74dd19b058e30982da4bec1586404b3"
+        },
+        "training_log": {
+          "bytes": 2668938,
+          "path": "artifacts/multiteacher_dynamics/attention_dropout_025/training.jsonl",
+          "records": 8010,
+          "sha256": "3e42ec1f01839653eec4dec344a10241cb347a1d44b25d3a8a7366b366bc32c0"
+        }
+      },
+      "attention_full": {
+        "best_checkpoint": {
+          "bytes": 73117333,
+          "path": "artifacts/multiteacher_dynamics/attention_full/best.pt",
+          "sha256": "25811b8d3b42cccf6e9a9cc59a0c23e820d241b72f8944af8693e702ec1b054d"
+        },
+        "full_run": {
+          "best_validation_epoch": 98,
+          "best_validation_loss": 0.690050699710846,
+          "best_validation_metrics": {
+            "direction": 0.8645338153839112,
+            "direction_active": 1.0,
+            "magnitude": 0.022066237553954125,
+            "mmd": 0.035886898040771484,
+            "sinkhorn": 0.24660543084144593
+          },
+          "completion_reason": "early_stopping",
+          "elapsed_seconds": 1036.774940018542,
+          "epochs": 114,
+          "epochs_without_improvement": 15,
+          "global_steps": 5016,
+          "peak_cuda_memory_bytes": 280827392
+        },
+        "latest_checkpoint": {
+          "bytes": 73118795,
+          "path": "artifacts/multiteacher_dynamics/attention_full/latest.pt",
+          "sha256": "0d8423e37b729fc6acf4979b40e498702a1102bdfc11c3a8c78ed698574e1817"
+        },
+        "training_log": {
+          "bytes": 1706049,
+          "path": "artifacts/multiteacher_dynamics/attention_full/training.jsonl",
+          "records": 5130,
+          "sha256": "e55ef8b490453c69d9c1d0cb9e331bd48d3b698829bf34e1d051467e558dbe24"
+        }
+      }
+    },
+    "console_log": {
+      "bytes": 1351,
+      "path": "artifacts/multiteacher_training_console.log",
+      "sha256": "4b139c587cc0467ec4b68533b8cc88a8e2895bd8c7f2795f95d1814a2ded5873"
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "22a7c0859ce21e45e42514d529c65e5d82e029a96483d447c1bfb632ce903b99",
+  "protocol": {
+    "checkpoint_selection": "minimum original latent loss on frozen K562 perturbation-OOD validation",
+    "context": "K562",
+    "dropout_minimum_loss_improvement": 0.005,
+    "fit_outcome_role": "dynamics_train",
+    "model_and_sampling_seed": 20260829,
+    "population_size": 32,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "statistical_unit": "perturbation-condition",
+    "target_split_seed": 20260823
+  },
+  "runtime": {
+    "cuda": "13.0",
+    "gpu": "NVIDIA RTX A6000",
+    "gpu_capability": [
+      8,
+      6
+    ],
+    "gpu_total_memory_bytes": 50896568320,
+    "python": "3.12.13",
+    "torch": "2.12.1"
+  },
+  "source": {
+    "action_cache_sha256": "6eb452fd9a2c102b6af15a74322bac024621eff9fcb9c64338bd942407d1d8e9",
+    "config_sha256": "9b98eb5fd905f7cca65e5f00700728db6e3710848b6a18445ef9a5d317e6aad5",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "effect_anchor_manifest_sha256": "d9f2199007023d77edc33d57f8a005d5aef320aa8f40447be4b283cfc569ccec",
+    "effect_anchor_sha256": "40bc050f9fb29080c67542544aa3a8b56648ff233b172853a3139d155fe98596",
+    "git_commit": "7274762b47c3d14589dd127888bd08b2820d2e19",
+    "git_dirty": false,
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "runtime_source_sha256": "de034680545d40172f039106c6951396e284f3e62020aa0525a39f3ccbcffef8"
+  },
+  "validation": {
+    "all_checkpoint_model_tensors_finite": true,
+    "all_log_numeric_values_finite": true,
+    "best_checkpoint_matches_logged_minimum": true,
+    "checkpoint_provenance_matches_clean_commit": true,
+    "cpu_checkpoint_resume_exactness_passed": true,
+    "cuda_checkpoint_resume_smoke_passed": true,
+    "local_transfer_sha256_matches_remote": true,
+    "optimizer_steps_contiguous": true
+  }
+}
