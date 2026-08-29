@@ -1,0 +1,83 @@
+# Execute the separately preregistered test-only HepG2/Jurkat latent evaluation.
+inputs:
+  preregistered_config_path: configs/nadig_external_validation.yaml
+  preregistered_config_sha256: 9d85c3d11ea3bb7818d4d90f54c8a90c3e0811496cc82064d18e6024829efbe5
+  external_manifest_path: manifests/nadig_external_validation_v1.json
+  external_manifest_sha256: fdd9a8a32ebea4c3e1f65a780423e12c532d1bd3a4c4dfa911e875d74cf927b3
+  external_latent_cache_path: artifacts/nadig_external_latents_v1.h5
+  external_latent_cache_bytes: 279934864
+  external_latent_cache_sha256: 6cdd0d2cb62f5bff4674c4a8a1b34071524f38cd121e97755deb174362aed64e
+  base_evaluation_config_path: configs/evaluation.yaml
+  base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+  base_transcriptomics_config_path: configs/transcriptomics.yaml
+  base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+  action_cache_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  action_cache_bytes: 1310981
+  action_cache_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+  primary_checkpoint_path: artifacts/dynamics_selected_0810656.pt
+  primary_checkpoint_bytes: 70615403
+  primary_checkpoint_sha256: d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4
+  anchored_training_manifest_path: manifests/anchored_dynamics_training_v1.json
+  anchored_training_manifest_sha256: b38738e02f9ea39d732fd458cdef29f201b85874609905ad1663d91702bdd1c7
+  anchored_selection_manifest_path: manifests/anchored_dynamics_selection_v1.json
+  anchored_selection_manifest_sha256: 61f6a564986d793d3c88622b0397e004caad1664a2f6d3b194cdec16ea49a5e7
+  residual_gate_path: artifacts/control_ood_residual_gate_v1.pt
+  residual_gate_bytes: 4301
+  residual_gate_sha256: 3c238a040ab881aedff6815bd093808d01e5bc2c731db5ebf47828763a1329f9
+  residual_gate_manifest_path: manifests/control_ood_residual_gate_v1.json
+  residual_gate_manifest_sha256: 46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c
+models:
+  - anchored_control_ood_gated
+  - anchored_selected
+  - causalcelljepa
+  - linear_esm
+  - no_change
+  - mean_effect
+latent_metrics:
+  - effect_pearson
+  - effect_spearman
+  - direction_cosine
+  - magnitude_ratio
+  - magnitude_absolute_error
+  - sinkhorn
+  - mmd
+  - energy_distance
+  - centroid_shift_error
+  - covariance_shift_error
+transcriptomic_metrics:
+  - all_effect_pearson
+  - target_excluded_effect_pearson
+  - all_magnitude_absolute_error
+  - deg_auprc
+  - pathway_nes_pearson
+comparisons:
+  - candidate: anchored_control_ood_gated
+    reference: anchored_selected
+    hypothesis: the frozen control-OOD gate improves transfer over the ungated anchor
+  - candidate: anchored_control_ood_gated
+    reference: linear_esm
+    hypothesis: the gated model retains useful population heterogeneity beyond its mean anchor
+  - candidate: anchored_control_ood_gated
+    reference: causalcelljepa
+    hypothesis: the revised architecture improves external transfer over the primary model
+  - candidate: anchored_control_ood_gated
+    reference: no_change
+    hypothesis: the revised architecture improves over no perturbation
+  - candidate: anchored_control_ood_gated
+    reference: mean_effect
+    hypothesis: the revised architecture improves over the average K562 perturbation effect
+  - candidate: anchored_selected
+    reference: linear_esm
+    hypothesis: the ungated learned population residual transfers beyond the linear anchor
+  - candidate: causalcelljepa
+    reference: linear_esm
+    hypothesis: the primary learned dynamics transfer beyond the linear baseline
+batch_size: 16
+num_workers: 0
+output_directory: artifacts/nadig_external_latent_evaluation_v1
+transcriptomic_output_directory: artifacts/nadig_external_transcriptomic_evaluation_v1
+cpu_smoke:
+  repeats: 1
+  maximum_conditions_per_context: 2
+  output_directory: artifacts/nadig_external_latent_evaluation_cpu_smoke
+  transcriptomic_output_directory: artifacts/nadig_external_transcriptomic_evaluation_cpu_smoke

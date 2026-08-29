@@ -1,0 +1,82 @@
+{
+  "artifacts": {
+    "latent": {
+      "baseline_report": {
+        "path": "artifacts/nadig_external_latent_evaluation_v1/baseline_report.json",
+        "sha256": "65411068560e11f2ea73ebf4835b90f21f1146c225ab18d6ba98b246f8891b41"
+      },
+      "condition_metrics": {
+        "path": "artifacts/nadig_external_latent_evaluation_v1/condition_metrics.jsonl",
+        "sha256": "f0d4ae5b45a4bc5e96331ae7dc33bae68c6114323a5aeec9ebf04ea9f8697a86"
+      },
+      "paired_comparisons": {
+        "path": "artifacts/nadig_external_latent_evaluation_v1/paired_comparisons.json",
+        "sha256": "05b18ce17437ea7c6d9b77f10b176a5e16894bbc451331fd4b00fa8546c7aa85"
+      },
+      "provenance": {
+        "path": "artifacts/nadig_external_latent_evaluation_v1/provenance.json",
+        "sha256": "62497935efb46c247c8115717aff487a850f2d45885533274c8f7e31de3573f6"
+      },
+      "summary": {
+        "path": "artifacts/nadig_external_latent_evaluation_v1/summary.json",
+        "sha256": "b290dd3d38df18c4a1dd55e0fe27e928748aefcf637d586640fa455ecab26072"
+      }
+    },
+    "transcriptomic": {
+      "baseline_report": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/baseline_report.json",
+        "sha256": "65411068560e11f2ea73ebf4835b90f21f1146c225ab18d6ba98b246f8891b41"
+      },
+      "condition_metrics": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/condition_metrics.jsonl",
+        "sha256": "e44fb1e07fa81d9be13cca1e96f799a7c7e029b02f14ce30b3b31b1a8114fb28"
+      },
+      "paired_comparisons": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/paired_comparisons.json",
+        "sha256": "1733199ace6c9bda6afa6f242710fe55801404c585dbc9b5b79c3dd937b1cce3"
+      },
+      "pathway_metrics": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/pathway_metrics.jsonl",
+        "sha256": "d39681b0fa900f5f366a1f457416fae1889dc427a20454f6e6b98d222033a2e1"
+      },
+      "provenance": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/provenance.json",
+        "sha256": "fcc55f4727bf48e2bb7402adc6574e3ef705647f20cf0d1e1fd95790e0875ee9"
+      },
+      "summary": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/summary.json",
+        "sha256": "0459c0499b0370b4b4c01baf1dcde0c36414e21c25dd5939b01be8e8baf54c76"
+      },
+      "truth_report": {
+        "path": "artifacts/nadig_external_transcriptomic_evaluation_v1/truth_report.json",
+        "sha256": "a4ce90afb6fa1d5abb17577b7952cfd5de8924c90ee11a4c0a8e8005eae89a37"
+      }
+    }
+  },
+  "execution": {
+    "conditions": {
+      "HepG2": 827,
+      "Jurkat": 952
+    },
+    "latent_git_commit": "e5f41c87ada631a9a4e571eea22b8614843e23b6",
+    "models": 6,
+    "repeats": 8,
+    "statistical_unit": "perturbation_condition",
+    "transcriptomic_git_commit": "12a0ed30ae2d17f62b9e03af0c4b8ad1c9ac67a4"
+  },
+  "format_version": 1,
+  "interpretation": {
+    "confirmatory_reuse": false,
+    "negative_results_preserved": true,
+    "result": "no_uniform_winner",
+    "revision_informed_by_these_results_is_exploratory": true
+  },
+  "leakage": {
+    "batch_matching": "unavailable_in_trimmed_source",
+    "cell_pairing_constructed": false,
+    "external_cells_used_for_fit_or_selection": false,
+    "transcriptomic_de_limitation": "cell_level_welch_labels_without_experimental_batches"
+  },
+  "protocol_manifest_sha256": "fdd9a8a32ebea4c3e1f65a780423e12c532d1bd3a4c4dfa911e875d74cf927b3",
+  "manifest_sha256": "dfe73a3ba933e2e41888806e25a3d45d1b15dd73dd237070e750ee45a3a8bf27"
+}
