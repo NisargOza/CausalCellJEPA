@@ -108,4 +108,7 @@ of uniform superiority.
 Exact checkpoints, logs, validation metrics, transfer hashes, and the locked decision
 are frozen in `manifests/multiteacher_dynamics_training_v1.json` and
 `manifests/multiteacher_dynamics_selection_v1.json`. Reporting-only evaluation on the
-already-viewed contexts is the next step and cannot alter this selection.
+already-viewed contexts cannot alter this selection. The completed evaluation,
+including its RPE1 regressions and weak retrieval, is documented in
+`docs/multiteacher_evaluation_v1.md` and frozen in
+`manifests/evaluation_multiteacher_v1.json`.

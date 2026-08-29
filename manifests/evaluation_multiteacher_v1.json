@@ -1,0 +1,117 @@
+{
+  "artifacts": {
+    "cross_baseline_analysis": {
+      "bytes": 350349,
+      "path": "artifacts/evaluation_multiteacher_analysis/analysis.json",
+      "sha256": "cc80267354191a50e0b16af54e94d97b8bcaf695baabd490ed904651f02c834e"
+    },
+    "latent_evaluation": {
+      "condition_metrics.jsonl": {
+        "bytes": 7777164,
+        "path": "artifacts/evaluation_multiteacher/condition_metrics.jsonl",
+        "records": 14352,
+        "sha256": "7179623974c0f9e8688cab99cdf6cf4ac9840b6044fd3801fef339cb0a2ba853"
+      },
+      "paired_comparisons.json": {
+        "bytes": 103839,
+        "path": "artifacts/evaluation_multiteacher/paired_comparisons.json",
+        "sha256": "b771ad029295c6802c87d154d5a79fb1228856665d87382672e4d6a202ea30e7"
+      },
+      "provenance.json": {
+        "bytes": 9485,
+        "path": "artifacts/evaluation_multiteacher/provenance.json",
+        "sha256": "cff3fd87489dd16c91c7ea087b2c795699bc5603433faf3f4a5f915308d4703f"
+      },
+      "summary.json": {
+        "bytes": 87904,
+        "path": "artifacts/evaluation_multiteacher/summary.json",
+        "sha256": "de14ca996335d3f057968fc929e82bf9027490bc4de400c380f0628dcad39856"
+      }
+    },
+    "transcriptomic_evaluation": {
+      "condition_metrics.jsonl": {
+        "bytes": 18747997,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/condition_metrics.jsonl",
+        "records": 14352,
+        "sha256": "84ce96c18e6ebf257fca2330ea0892203b98b385df9135c22ee952882112db49"
+      },
+      "paired_comparisons.json": {
+        "bytes": 277775,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/paired_comparisons.json",
+        "sha256": "1edccff038f8b9ca84b2ec1d8a94b6fe264c15ebfeeeed463b1d9dd5f5f246c9"
+      },
+      "pathway_metrics.jsonl": {
+        "bytes": 856234,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/pathway_metrics.jsonl",
+        "records": 1794,
+        "sha256": "982740e27855b714199be448ef14806a180d662331f9a4e56991b71164ad86ea"
+      },
+      "provenance.json": {
+        "bytes": 12005,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/provenance.json",
+        "sha256": "09b103ca62abd480857d3b7c83a5fa19b3e79b679af6caa54c14c05e49d484af"
+      },
+      "summary.json": {
+        "bytes": 226175,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/summary.json",
+        "sha256": "68c857adb0a16be039b0aea6ad2f5269144c00bccddc7262de713f83f5f3438e"
+      },
+      "truth_report.json": {
+        "bytes": 560,
+        "path": "artifacts/evaluation_multiteacher_transcriptomics/truth_report.json",
+        "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+      }
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "8301697281c09aea51a694e4b3301d08e9a3d00098b7fe7d55501859b5abff99",
+  "protocol": {
+    "candidate": "multiteacher_selected",
+    "evaluation_repeats": 8,
+    "reporting_only": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "statistical_unit": "perturbation-condition"
+  },
+  "provenance": {
+    "analysis_git": {
+      "commit": "edbcb9c541e26f9ce588a7e654a2eaf51e81d1f0",
+      "dirty": false
+    },
+    "evaluation_config_sha256": "301dc0291a8f12c30122187e08a85408859eaa4042d03c8864452c4a0052dc71",
+    "evaluation_git": {
+      "commit": "e73996bdc683108d64b5ad00fd0f21d903491a37",
+      "dirty": false
+    },
+    "multiteacher_selection_manifest_sha256": "a62e1f78be37ddee7ebcd1fb924f74e3df626bc87317fa06db060707bcafbdbd",
+    "multiteacher_training_manifest_sha256": "22a7c0859ce21e45e42514d529c65e5d82e029a96483d447c1bfb632ce903b99"
+  },
+  "result": {
+    "attention_audit": {
+      "annotated_mean_weights": {
+        "esm2_t6_8M_UR50D": 0.5077524781227112,
+        "go_bp_lsa": 0.49224749207496643
+      },
+      "annotated_targets": 929,
+      "outcomes_read": false,
+      "score_difference_standard_deviation": 0.0719754695892334,
+      "targets": 997,
+      "unannotated_mean_weights": {
+        "esm2_t6_8M_UR50D": 0.5484294891357422,
+        "go_bp_lsa": 0.4515705704689026
+      },
+      "unannotated_targets": 68
+    },
+    "benjamini_hochberg_q05_counts": {
+      "loss": 62,
+      "win": 185
+    },
+    "bootstrap_95ci_verdict_counts": {
+      "inconclusive": 47,
+      "loss": 77,
+      "win": 196
+    },
+    "models_compared": 13,
+    "uniform_superiority_supported": false
+  }
+}
