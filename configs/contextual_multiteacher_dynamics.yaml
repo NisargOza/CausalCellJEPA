@@ -1,0 +1,64 @@
+# Freeze control-conditioned teacher fusion before anchor fitting or dynamics training.
+seed: 20260830
+base_config_path: configs/dynamics.yaml
+base_config_sha256: c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b
+action_manifest_path: manifests/contextual_multiteacher_action_v1.json
+action_manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+revision:
+  name: control_conditioned_multiteacher_action_v4
+  status: post_primary_exploratory
+  rationale_path: docs/architecture_revision_v4_exploratory.md
+  outcome_selection_boundary: k562_perturbation_ood_validation_only
+  confirmatory_reuse_of_viewed_tests: false
+effect_anchor:
+  architecture: contextual_multiteacher_low_rank_ridge
+  checkpoint_architecture: multiteacher_low_rank_latent_effect_ridge
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  rank: 64
+  ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+  output_path: artifacts/contextual_multiteacher_effect_anchor_v1.pt
+  output_bytes: PENDING
+  output_sha256: PENDING
+  manifest_path: manifests/contextual_multiteacher_effect_anchor_v1.json
+  manifest_sha256: PENDING
+experiments:
+  availability_static:
+    anchor_gain_max: 1.0
+    mean_residual_max_ratio: 0.0
+    action_modality_dropout: 0.25
+    action_context_conditioned: false
+    output_directory: artifacts/contextual_multiteacher_dynamics/availability_static
+  context_query:
+    anchor_gain_max: 1.0
+    mean_residual_max_ratio: 0.0
+    action_modality_dropout: 0.25
+    action_context_conditioned: true
+    output_directory: artifacts/contextual_multiteacher_dynamics/context_query
+selection:
+  context: K562
+  outcome_role: perturbation_ood_validation
+  checkpoint_rule: minimum_original_latent_validation_loss
+  context_minimum_loss_improvement: 0.003
+  fallback_candidate: availability_static
+  prior_v3_validation_loss: 0.6847986912727356
+  replacement_requires_lower_loss: true
+  viewed_test_outcomes_used: false
+anchor_gate:
+  reference_manifest_path: manifests/multiteacher_effect_anchor_v1.json
+  reference_manifest_sha256: d9f2199007023d77edc33d57f8a005d5aef320aa8f40447be4b283cfc569ccec
+  reference_validation_pearson: 0.29165107508440913
+  reference_validation_mse: 0.00006283886193234995
+  maximum_pearson_regression: 0.002
+  maximum_mse_ratio: 1.02
+cpu_smoke:
+  batch_size: 2
+  steps: 2
+  checkpoint_step: 1
+  output_directory: artifacts/contextual_multiteacher_dynamics_cpu_smoke
+cuda_smoke:
+  batch_size: 16
+  steps: 64
+  checkpoint_step: 16
+  validation_batches: 2
+  output_directory: artifacts/contextual_multiteacher_dynamics_cuda_smoke
