@@ -24,7 +24,7 @@ whitening is not added.
 A GO Biological Process teacher covers 92.3% of eligible Replogle targets. A
 validation-only ridge probe improved mean latent-effect Pearson from `0.2522` for the
 frozen ESM anchor to `0.2917` with ESM plus rank-64 GO, while MSE decreased from
-`6.845e-5` to approximately `6.283e-5`. This probe motivates the revision but makes the
+`6.845e-5` to `6.284e-5`. This probe motivates the revision but makes the
 result exploratory rather than prospective confirmation.
 
 ## Frozen action construction
@@ -68,6 +68,12 @@ settings match revision v1.
 The multimodal anchor must improve K562 validation latent-effect Pearson by at least
 `0.02` over the frozen ESM anchor and have lower MSE. Otherwise the experiment stops
 before GPU training.
+
+The frozen anchor passed this gate on CPU. It selected ridge `1000`, improved Pearson
+by `0.0395`, reduced MSE by 8.2%, and reduced mean magnitude absolute error from
+`0.0706` to `0.0611`. The action and anchor artifacts are pinned in
+`manifests/multiteacher_action_v1.json` and
+`manifests/multiteacher_effect_anchor_v1.json`.
 
 If the anchor passes, both attention candidates receive the same CPU replay and bounded
 CUDA smoke gates used previously, then full training. Checkpoints are selected by the

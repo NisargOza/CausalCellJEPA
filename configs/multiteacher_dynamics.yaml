@@ -18,10 +18,10 @@ effect_anchor:
   rank: 64
   ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
   output_path: artifacts/multiteacher_effect_anchor_v1.pt
-  output_bytes: PENDING
-  output_sha256: PENDING
+  output_bytes: 171915
+  output_sha256: 40bc050f9fb29080c67542544aa3a8b56648ff233b172853a3139d155fe98596
   manifest_path: manifests/multiteacher_effect_anchor_v1.json
-  manifest_sha256: PENDING
+  manifest_sha256: d9f2199007023d77edc33d57f8a005d5aef320aa8f40447be4b283cfc569ccec
 experiments:
   attention_full:
     anchor_gain_max: 1.0
