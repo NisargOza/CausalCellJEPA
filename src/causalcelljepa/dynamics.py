@@ -174,11 +174,18 @@ class ConditionalTransitionBlock(nn.Module):
 class ModalityAttentiveActionProjection(nn.Module):
     """Project frozen action teachers and fuse them with sample-specific attention."""
 
-    def __init__(self, modality_dims, output_dim, modality_dropout=0.0):
+    def __init__(
+        self,
+        modality_dims,
+        output_dim,
+        modality_dropout=0.0,
+        modality_availability=False,
+    ):
         super().__init__()
         assert sum(modality_dims) > 0 and 0 <= modality_dropout < 1
         self.modality_dims = tuple(modality_dims)
         self.modality_dropout = modality_dropout
+        self.modality_availability = modality_availability
         self.projectors = nn.ModuleList(
             nn.Sequential(nn.LayerNorm(width), nn.Linear(width, output_dim))
             for width in modality_dims
@@ -186,8 +193,13 @@ class ModalityAttentiveActionProjection(nn.Module):
         self.query = nn.Parameter(torch.randn(output_dim) * 0.02)
         self.output = nn.LayerNorm(output_dim)
 
-    def forward(self, action):
-        blocks = action.split(self.modality_dims, 1)
+    def projected_and_weights(self, action):
+        feature_width = sum(self.modality_dims)
+        expected_width = feature_width + (
+            len(self.modality_dims) if self.modality_availability else 0
+        )
+        assert action.shape[1] == expected_width
+        blocks = action[:, :feature_width].split(self.modality_dims, 1)
         projected = torch.stack(
             [
                 projector(block)
@@ -196,11 +208,27 @@ class ModalityAttentiveActionProjection(nn.Module):
             1,
         )
         scores = (torch.tanh(projected) * self.query).sum(2) / math.sqrt(projected.shape[2])
+        visible = (
+            action[:, feature_width:].bool()
+            if self.modality_availability
+            else torch.ones_like(scores, dtype=torch.bool)
+        )
         if self.training and self.modality_dropout:
-            dropped = torch.rand_like(scores) < self.modality_dropout
-            dropped[:, 0] &= ~dropped.all(1)
-            scores = scores.masked_fill(dropped, -torch.inf)
-        weights = scores.softmax(1)
+            visible &= torch.rand_like(scores) >= self.modality_dropout
+        missing = ~visible.any(1)
+        if missing.any():
+            available = (
+                action[:, feature_width:].bool()
+                if self.modality_availability
+                else torch.ones_like(visible)
+            )
+            fallback = available.float().argmax(1)
+            visible[missing, fallback[missing]] = True
+        weights = scores.masked_fill(~visible, -torch.inf).softmax(1)
+        return projected, weights
+
+    def forward(self, action):
+        projected, weights = self.projected_and_weights(action)
         return self.output((weights.unsqueeze(2) * projected).sum(1))
 
 
@@ -303,7 +331,10 @@ class PopulationDynamics(nn.Module):
             )
         elif action_modalities:
             self.action_projection = ModalityAttentiveActionProjection(
-                action_modalities, action_dim, action_modality_dropout
+                action_modalities,
+                action_dim,
+                action_modality_dropout,
+                action_modality_availability,
             )
         else:
             self.action_projection = nn.Sequential(

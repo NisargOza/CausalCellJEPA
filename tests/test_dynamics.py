@@ -36,6 +36,14 @@ def test_modality_attention_fuses_all_teachers_and_dropout_keeps_one_visible():
     assert train.shape == evaluation.shape == (16, 4)
     assert torch.isfinite(train).all() and torch.isfinite(evaluation).all()
 
+    masked = ModalityAttentiveActionProjection(
+        [3, 2], 4, modality_dropout=0.9, modality_availability=True
+    ).eval()
+    availability = torch.tensor([[1, 0], [0, 1]])
+    masked_action = torch.cat((action[:2], availability), 1)
+    _, weights = masked.projected_and_weights(masked_action)
+    assert weights.tolist() == [[1.0, 0.0], [0.0, 1.0]]
+
 
 def test_context_conditioned_attention_masks_missing_teachers_and_uses_control_state():
     torch.manual_seed(7)

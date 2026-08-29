@@ -18,10 +18,10 @@ effect_anchor:
   rank: 64
   ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
   output_path: artifacts/contextual_multiteacher_effect_anchor_v1.pt
-  output_bytes: PENDING
-  output_sha256: PENDING
+  output_bytes: 172548
+  output_sha256: 295ac6efd8c1bd58caeabf33604a571ed7e0391eacd0c745cd9b9ca5e690541d
   manifest_path: manifests/contextual_multiteacher_effect_anchor_v1.json
-  manifest_sha256: PENDING
+  manifest_sha256: 53fe191077727d9921fa0995c3783b225bd40d369b0d014cbd256247c4dbef8a
 experiments:
   availability_static:
     anchor_gain_max: 1.0
