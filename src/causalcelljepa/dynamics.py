@@ -834,6 +834,35 @@ def anchored_selected_entry(training_manifest, selection_manifest):
     return selected["candidate"], entry
 
 
+def select_multiteacher_candidate(training_manifest, specification):
+    """Apply the frozen validation-loss margin without consulting test outcomes."""
+    protocol = training_manifest["protocol"]
+    assert protocol["sealed_test_outcomes_used_for_fit_or_selection"] is False
+    assert protocol["rpe1_perturbed_outcomes_used_for_fit_or_selection"] is False
+    rule = specification["selection"]
+    assert rule["viewed_test_outcomes_used"] is False
+    assert rule["checkpoint_rule"] == "minimum_original_latent_validation_loss"
+    fallback = rule["fallback_candidate"]
+    candidates = training_manifest["artifacts"]["candidates"]
+    assert fallback in candidates
+    alternatives = [
+        name
+        for name, experiment in specification["experiments"].items()
+        if experiment.get("action_modality_dropout", 0.0) > 0
+    ]
+    assert len(alternatives) == 1 and alternatives[0] in candidates
+    alternative = alternatives[0]
+    fallback_loss = candidates[fallback]["full_run"]["best_validation_loss"]
+    alternative_loss = candidates[alternative]["full_run"]["best_validation_loss"]
+    improvement = fallback_loss - alternative_loss
+    selected = (
+        alternative
+        if improvement >= rule["dropout_minimum_loss_improvement"]
+        else fallback
+    )
+    return selected, improvement
+
+
 def prepare_dynamics_manifest(config, config_path="configs/dynamics.yaml"):
     """Fit state-space statistics without reading validation, test, or RPE1 outcomes."""
     inputs, data, normalization = config["inputs"], config["data"], config["normalization"]

@@ -1,0 +1,60 @@
+{
+  "candidate_summaries": {
+    "attention_dropout_025": {
+      "action_modality_dropout": 0.25,
+      "best_validation_loss": 0.6847986912727356,
+      "direction": 0.8645338106155396,
+      "direction_active": 1.0,
+      "magnitude": 0.022066237032413484,
+      "mmd": 0.03560951828956604,
+      "sinkhorn": 0.24142277598381043
+    },
+    "attention_full": {
+      "action_modality_dropout": 0.0,
+      "best_validation_loss": 0.690050699710846,
+      "direction": 0.8645338153839112,
+      "direction_active": 1.0,
+      "magnitude": 0.022066237553954125,
+      "mmd": 0.035886898040771484,
+      "sinkhorn": 0.24660543084144593
+    }
+  },
+  "format_version": 1,
+  "leakage": {
+    "context": "K562",
+    "outcome_role": "perturbation_ood_validation",
+    "rpe1_outcomes_used": false,
+    "sealed_test_outcomes_used": false
+  },
+  "manifest_sha256": "a62e1f78be37ddee7ebcd1fb924f74e3df626bc87317fa06db060707bcafbdbd",
+  "provenance": {
+    "config_sha256": "9b98eb5fd905f7cca65e5f00700728db6e3710848b6a18445ef9a5d317e6aad5",
+    "training_manifest_sha256": "22a7c0859ce21e45e42514d529c65e5d82e029a96483d447c1bfb632ce903b99"
+  },
+  "revision": {
+    "confirmatory_reuse_of_viewed_tests": false,
+    "name": "protjepa_inspired_multiteacher_action_v3",
+    "outcome_selection_boundary": "k562_perturbation_ood_validation_only",
+    "rationale_path": "docs/architecture_revision_v3_exploratory.md",
+    "status": "post_primary_exploratory"
+  },
+  "selected": {
+    "action_modality_dropout": 0.25,
+    "best_validation_epoch": 162,
+    "best_validation_loss": 0.6847986912727356,
+    "bytes": 73117397,
+    "candidate": "attention_dropout_025",
+    "path": "artifacts/multiteacher_dynamics/attention_dropout_025/best.pt",
+    "sha256": "2204a06506f387af1fb1a3a2e1f3fa35d31ebec28c98e072d43166ae05d4f74c"
+  },
+  "selection_rule": {
+    "checkpoint_rule": "minimum_original_latent_validation_loss",
+    "context": "K562",
+    "dropout_displaced_fallback": true,
+    "dropout_minimum_loss_improvement": 0.005,
+    "fallback_candidate": "attention_full",
+    "observed_dropout_loss_improvement": 0.005252008438110356,
+    "outcome_role": "perturbation_ood_validation",
+    "viewed_test_outcomes_used": false
+  }
+}

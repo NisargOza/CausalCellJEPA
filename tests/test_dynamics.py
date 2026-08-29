@@ -17,6 +17,7 @@ from causalcelljepa.dynamics import (
     dynamics_loss,
     dynamics_objective,
     dynamics_replication_configs,
+    select_multiteacher_candidate,
 )
 from causalcelljepa.evaluation import (
     paired_condition_comparisons,
@@ -66,6 +67,42 @@ def test_anchored_selection_entry_locks_candidate_without_test_leakage():
     selection["leakage"]["sealed_test_outcomes_used"] = True
     with pytest.raises(AssertionError):
         anchored_selected_entry(training, selection)
+
+
+def test_multiteacher_selection_requires_frozen_dropout_margin():
+    training = {
+        "protocol": {
+            "sealed_test_outcomes_used_for_fit_or_selection": False,
+            "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        },
+        "artifacts": {
+            "candidates": {
+                "attention_full": {"full_run": {"best_validation_loss": 0.690}},
+                "attention_dropout_025": {"full_run": {"best_validation_loss": 0.6849}},
+            }
+        },
+    }
+    specification = {
+        "experiments": {
+            "attention_full": {"action_modality_dropout": 0.0},
+            "attention_dropout_025": {"action_modality_dropout": 0.25},
+        },
+        "selection": {
+            "checkpoint_rule": "minimum_original_latent_validation_loss",
+            "dropout_minimum_loss_improvement": 0.005,
+            "fallback_candidate": "attention_full",
+            "viewed_test_outcomes_used": False,
+        },
+    }
+    selected, improvement = select_multiteacher_candidate(training, specification)
+    assert selected == "attention_dropout_025"
+    assert improvement == pytest.approx(0.0051)
+    training["artifacts"]["candidates"]["attention_dropout_025"]["full_run"][
+        "best_validation_loss"
+    ] = 0.6851
+    selected, improvement = select_multiteacher_candidate(training, specification)
+    assert selected == "attention_full"
+    assert improvement == pytest.approx(0.0049)
 
 
 def test_population_sampling_is_independent_deterministic_and_batch_matched(tmp_path):

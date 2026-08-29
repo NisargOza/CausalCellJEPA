@@ -86,3 +86,26 @@ The final exploratory report must preserve all negative results. Success require
 Pareto improvement rather than a single favorable metric: better mean-effect transfer
 from the multimodal anchor without material degradation of Sinkhorn, MMD, energy,
 magnitude, or covariance relative to the relevant frozen references.
+
+## Frozen training result
+
+Both candidates passed exact CPU checkpoint/replay and bounded CUDA checkpoint/resume
+smokes before full training on one RTX A6000. Both full runs stopped under the frozen
+15-epoch patience rule. `attention_full` reached minimum validation loss `0.690051` at
+epoch 98. `attention_dropout_025` reached `0.684799` at epoch 162, an absolute
+improvement of `0.005252`. This narrowly exceeds the preregistered `0.005` displacement
+margin, so `attention_dropout_025` is selected without consulting any test or external
+outcome.
+
+Relative to the prior selected ESM-only anchored model (`0.697403`), the multimodal
+selection improves the same validation objective by 1.81%. At the selected epochs,
+direction loss improves from `0.900377` to `0.864534` and magnitude loss from
+`0.023692` to `0.022066`. The tradeoff is a 2.31% higher Sinkhorn term (`0.241423`
+versus `0.235977`) and a 0.38% higher MMD term (`0.035610` versus `0.035475`). These
+are modest but real degradations, so training loss alone is not presented as evidence
+of uniform superiority.
+
+Exact checkpoints, logs, validation metrics, transfer hashes, and the locked decision
+are frozen in `manifests/multiteacher_dynamics_training_v1.json` and
+`manifests/multiteacher_dynamics_selection_v1.json`. Reporting-only evaluation on the
+already-viewed contexts is the next step and cannot alter this selection.
