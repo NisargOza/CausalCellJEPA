@@ -171,6 +171,39 @@ class ConditionalTransitionBlock(nn.Module):
         return states + self.ffn(self.ffn_norm(states + condition))
 
 
+class ModalityAttentiveActionProjection(nn.Module):
+    """Project frozen action teachers and fuse them with sample-specific attention."""
+
+    def __init__(self, modality_dims, output_dim, modality_dropout=0.0):
+        super().__init__()
+        assert sum(modality_dims) > 0 and 0 <= modality_dropout < 1
+        self.modality_dims = tuple(modality_dims)
+        self.modality_dropout = modality_dropout
+        self.projectors = nn.ModuleList(
+            nn.Sequential(nn.LayerNorm(width), nn.Linear(width, output_dim))
+            for width in modality_dims
+        )
+        self.query = nn.Parameter(torch.randn(output_dim) * 0.02)
+        self.output = nn.LayerNorm(output_dim)
+
+    def forward(self, action):
+        blocks = action.split(self.modality_dims, 1)
+        projected = torch.stack(
+            [
+                projector(block)
+                for projector, block in zip(self.projectors, blocks, strict=True)
+            ],
+            1,
+        )
+        scores = (torch.tanh(projected) * self.query).sum(2) / math.sqrt(projected.shape[2])
+        if self.training and self.modality_dropout:
+            dropped = torch.rand_like(scores) < self.modality_dropout
+            dropped[:, 0] &= ~dropped.all(1)
+            scores = scores.masked_fill(dropped, -torch.inf)
+        weights = scores.softmax(1)
+        return self.output((weights.unsqueeze(2) * projected).sum(1))
+
+
 class PopulationDynamics(nn.Module):
     """Permutation-equivariant residual dynamics conditioned on baseline context and action."""
 
@@ -185,9 +218,12 @@ class PopulationDynamics(nn.Module):
         ffn_dim=1024,
         dropout=0.1,
         context_mode="set_transformer",
+        action_modalities=None,
+        action_modality_dropout=0.0,
     ):
         super().__init__()
         assert context_mode in {"set_transformer", "mean", "none"}
+        assert action_modalities is None or sum(action_modalities) == action_input_dim
         self.context_mode = context_mode
         context_layer = nn.TransformerEncoderLayer(
             cell_dim,
@@ -207,8 +243,14 @@ class PopulationDynamics(nn.Module):
         self.pool_query = nn.Parameter(torch.randn(1, cell_dim) * 0.02)
         self.pool = nn.MultiheadAttention(cell_dim, heads, dropout=dropout, batch_first=True)
         self.context_output = nn.LayerNorm(cell_dim)
-        self.action_projection = nn.Sequential(
-            nn.LayerNorm(action_input_dim), nn.Linear(action_input_dim, action_dim)
+        self.action_projection = (
+            ModalityAttentiveActionProjection(
+                action_modalities, action_dim, action_modality_dropout
+            )
+            if action_modalities
+            else nn.Sequential(
+                nn.LayerNorm(action_input_dim), nn.Linear(action_input_dim, action_dim)
+            )
         )
         self.unknown_action = nn.Parameter(torch.randn(action_dim) * 0.02)
         self.interaction = nn.Sequential(
@@ -458,9 +500,13 @@ def build_dynamics_model(config):
         model["dropout"],
         model.get("context_mode", "set_transformer"),
     )
+    fusion = {
+        "action_modalities": model.get("action_modalities"),
+        "action_modality_dropout": model.get("action_modality_dropout", 0.0),
+    }
     architecture = model.get("architecture", "population_dynamics")
     if architecture == "population_dynamics":
-        return PopulationDynamics(*arguments)
+        return PopulationDynamics(*arguments, **fusion)
     assert architecture == "anchored_decomposed_population_dynamics"
     anchor = config["effect_anchor"]
     path = Path(anchor["output_path"])
@@ -480,6 +526,7 @@ def build_dynamics_model(config):
         effect_anchor=checkpoint,
         anchor_gain_max=model["anchor_gain_max"],
         mean_residual_max_ratio=model["mean_residual_max_ratio"],
+        **fusion,
     )
 
 

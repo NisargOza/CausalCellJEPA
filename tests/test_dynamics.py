@@ -11,6 +11,7 @@ import yaml
 from causalcelljepa.dynamics import (
     AnchoredPopulationDynamics,
     LatentPopulationDataset,
+    ModalityAttentiveActionProjection,
     PopulationDynamics,
     anchored_selected_entry,
     dynamics_loss,
@@ -22,6 +23,16 @@ from causalcelljepa.evaluation import (
     paired_model_comparisons,
     population_metrics,
 )
+
+
+def test_modality_attention_fuses_all_teachers_and_dropout_keeps_one_visible():
+    torch.manual_seed(5)
+    projection = ModalityAttentiveActionProjection([3, 2], 4, modality_dropout=0.9)
+    action = torch.randn(16, 5)
+    train = projection.train()(action)
+    evaluation = projection.eval()(action)
+    assert train.shape == evaluation.shape == (16, 4)
+    assert torch.isfinite(train).all() and torch.isfinite(evaluation).all()
 
 
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():
