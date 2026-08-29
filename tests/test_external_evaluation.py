@@ -3,8 +3,12 @@ import json
 import h5py
 import numpy as np
 import torch
+from scipy import sparse
 
-from causalcelljepa.external_evaluation import NadigLatentPopulationDataset
+from causalcelljepa.external_evaluation import (
+    NadigLatentPopulationDataset,
+    grouped_expression_moments,
+)
 
 
 def test_external_population_sampling_is_deterministic_and_unpaired(tmp_path):
@@ -92,3 +96,15 @@ def test_external_population_sampling_is_deterministic_and_unpaired(tmp_path):
     item = dataset[0]
     assert item["control"].shape == item["perturbed"].shape == (16, 4)
     assert item["target"] == "A" and bool(item["action_known"])
+
+
+def test_external_expression_moments_stream_sparse_unpaired_groups():
+    matrix = sparse.csr_matrix(
+        np.asarray([[1, 2, 8], [3, 4, 9], [5, 6, 7], [7, 8, 6]], dtype=np.float32)
+    )
+    means, variances, counts = grouped_expression_moments(
+        matrix, np.asarray(["control", "A", "ignored", "A"]), ["control", "A"], [0, 1], 2
+    )
+    assert np.array_equal(counts, [1, 2])
+    assert np.array_equal(means, [[1, 2], [5, 6]])
+    assert np.array_equal(variances[1], [8, 8])

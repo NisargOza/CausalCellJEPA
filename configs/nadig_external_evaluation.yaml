@@ -9,6 +9,8 @@ inputs:
   external_latent_cache_sha256: 6cdd0d2cb62f5bff4674c4a8a1b34071524f38cd121e97755deb174362aed64e
   base_evaluation_config_path: configs/evaluation.yaml
   base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+  base_transcriptomics_config_path: configs/transcriptomics.yaml
+  base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
   action_cache_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
   action_cache_bytes: 1310981
   action_cache_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
@@ -42,6 +44,12 @@ latent_metrics:
   - energy_distance
   - centroid_shift_error
   - covariance_shift_error
+transcriptomic_metrics:
+  - all_effect_pearson
+  - target_excluded_effect_pearson
+  - all_magnitude_absolute_error
+  - deg_auprc
+  - pathway_nes_pearson
 comparisons:
   - candidate: anchored_control_ood_gated
     reference: anchored_selected
@@ -67,7 +75,9 @@ comparisons:
 batch_size: 16
 num_workers: 0
 output_directory: artifacts/nadig_external_latent_evaluation_v1
+transcriptomic_output_directory: artifacts/nadig_external_transcriptomic_evaluation_v1
 cpu_smoke:
   repeats: 1
   maximum_conditions_per_context: 2
   output_directory: artifacts/nadig_external_latent_evaluation_cpu_smoke
+  transcriptomic_output_directory: artifacts/nadig_external_transcriptomic_evaluation_cpu_smoke
