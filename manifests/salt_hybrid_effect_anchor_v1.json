@@ -1,0 +1,69 @@
+{
+  "architecture": "multiteacher_low_rank_latent_effect_ridge",
+  "artifact": {
+    "bytes": 175953,
+    "path": "artifacts/salt_hybrid_effect_anchor_v1.pt",
+    "sha256": "a2b0b093dd7fda9458934150d01ab88bfea91ea6d0526cc2ebfb0f72733fc2a9"
+  },
+  "fit": {
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets": 698,
+    "fit_targets_with_known_action": 697,
+    "input_dimensions": 386,
+    "input_indices_sha256": "3423a15e89d2631d98e1fcb8ae69a7d0c958df8eb48f0ddc0bddbcf633a22699",
+    "input_modalities": [
+      "esm2_t6_8M_UR50D",
+      "go_biological_process_svd"
+    ],
+    "leakage": {
+      "contexts": [
+        "K562"
+      ],
+      "rpe1_outcomes_used": false,
+      "sealed_test_outcomes_used": false
+    },
+    "rank": 64,
+    "ridge_candidates": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0,
+      1000000.0
+    ],
+    "ridge_validation_mse": [
+      0.000228812197657279,
+      0.00022280782662147217,
+      0.00018609338632843086,
+      0.00011782050590433354,
+      7.704372166709952e-05,
+      6.29025970513245e-05,
+      6.674675408358831e-05,
+      6.918613485931998e-05,
+      6.971356966837417e-05
+    ],
+    "selected_ridge": 1000.0,
+    "selection_mean_effect_pearson": 0.2909798668364124,
+    "selection_mean_magnitude_absolute_error": 0.06120229213209427,
+    "selection_mse": 6.29025970513245e-05,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100,
+    "target_sha256": {
+      "dynamics_train": "d1dab0a7c3f251499b3c578ad9249da00277710985652623eb7a494b7a9f1e3f",
+      "perturbation_ood_validation": "adc33ed12cb9310529f1ac630fa4a681afd7f1b97522ca9b3eef7201b76526f4"
+    },
+    "training_null_effect_threshold": 0.07555224110714999
+  },
+  "format_version": 1,
+  "manifest_sha256": "c8a40023df9eac7824a54c9927477a826496503345758de46755e463e96f994c",
+  "source": {
+    "action_cache_sha256": "0589ddafc15624e3a6c9ba29e032bb22f6d733542410bc0ec076905053cc6b14",
+    "base_config_path": "configs/dynamics.yaml",
+    "base_config_sha256": "c9348c19a2d9e964fc10160946c51767ed8ca33c67e4defd6dd0d1b6d74c8c8b",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "latent_cache_sha256": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+  }
+}

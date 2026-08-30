@@ -19,10 +19,10 @@ effect_anchor:
   rank: 64
   ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
   output_path: artifacts/salt_hybrid_effect_anchor_v1.pt
-  output_bytes: PENDING
-  output_sha256: PENDING
+  output_bytes: 175953
+  output_sha256: a2b0b093dd7fda9458934150d01ab88bfea91ea6d0526cc2ebfb0f72733fc2a9
   manifest_path: manifests/salt_hybrid_effect_anchor_v1.json
-  manifest_sha256: PENDING
+  manifest_sha256: c8a40023df9eac7824a54c9927477a826496503345758de46755e463e96f994c
 experiments:
   salt_hybrid_static:
     anchor_gain_max: 1.0
@@ -51,6 +51,7 @@ cpu_smoke:
   steps: 2
   checkpoint_step: 1
   output_directory: artifacts/salt_hybrid_dynamics_cpu_smoke
+  manifest_path: manifests/salt_hybrid_dynamics_cpu_smoke_v1.json
 cuda_smoke:
   batch_size: 16
   steps: 64
