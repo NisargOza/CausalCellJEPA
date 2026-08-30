@@ -272,6 +272,8 @@ def main():
             "bytes": action_path.stat().st_size,
             "sha256": file_sha256(action_path),
             "modality_dims": action_output["modality_dims"],
+            "input_dim": action_output["embedding"].shape[1],
+            "modality_availability": action_output["modality_availability"],
             "known_targets": int(esm_known.sum()),
             "eligible_for_downstream_anchor": gate_report["passed"],
         },
