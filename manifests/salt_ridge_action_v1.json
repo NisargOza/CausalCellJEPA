@@ -3,7 +3,9 @@
   "artifact": {
     "bytes": 2323965,
     "eligible_for_downstream_anchor": true,
+    "input_dim": 578,
     "known_targets": 995,
+    "modality_availability": true,
     "modality_dims": [
       320,
       256
@@ -14,14 +16,14 @@
   "checkpoint": {
     "bytes": 338246,
     "path": "artifacts/salt_ridge_action/ridge_student.pt",
-    "sha256": "0bc5f7b4026c22b38803ed9e52afd79123caf7c546eb2d0d818df49124e2fa60"
+    "sha256": "bce20c2647c0ebf86e9e54013013b8041188efe9480f0ac78af208211b066cc8"
   },
   "format_version": 1,
-  "manifest_sha256": "8345aea444d0d7d608a9e8e1d75d39dc87c9f6e2255b179b9fa32d519412da81",
+  "manifest_sha256": "a3a012739386c667e990d56a68e6d65e4cb429d1eac118f9aa808aa9f9c59b68",
   "provenance": {
     "config_sha256": "52f6daab095f6d6495714863de8d70e48e51a0f998b2734990374d7f80d150b9",
     "git": {
-      "commit": "c293e0b915d31a1f97fb1c8f4f3f65e1ac2174b5",
+      "commit": "10dadf4f982da54effd6a0d0aab331fdbc6a16c6",
       "dirty": false
     },
     "runtime_environment": {
@@ -38,7 +40,7 @@
       "python": "3.12.13",
       "torch_cuda": null
     },
-    "runtime_source_sha256": "26cbeddc327214a400c0f808434567e2917201a470386d0ca72ea1e671df6191",
+    "runtime_source_sha256": "19912f76c93a07fb0b9d709b42f6327ad066b66aac620eefefec7c6d057ebc70",
     "source_action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
     "source_manifest_sha256": "2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde",
     "source_run_manifest_sha256": "d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3",
