@@ -5,6 +5,8 @@ import torch
 from causalcelljepa.action_student import (
     MaskedTeacherFusion,
     SaltActionStudent,
+    apply_ridge_student,
+    fit_ridge_student,
     representation_stable_rank,
     salt_public_split,
     teacher_neighbor_overlap,
@@ -114,6 +116,15 @@ def test_salt_action_student_split_fusion_and_geometry_are_finite():
     assert joint.shape == prediction.shape == state.shape == (6, 4)
     assert torch.isfinite(joint).all() and representation_stable_rank(state) > 1
     assert teacher_neighbor_overlap(state, state, state, state, k=2) == 1
+
+
+def test_ridge_student_fits_an_affine_public_teacher_target():
+    inputs = torch.tensor([[-2.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [2.0, 3.0]])
+    targets = torch.stack((2 * inputs[:, 0] - inputs[:, 1] + 3, inputs[:, 1] - 4), 1)
+    weights = fit_ridge_student(inputs, targets, 1e-6)
+    prediction = apply_ridge_student(inputs, weights)
+    assert weights.shape == (3, 2)
+    assert torch.allclose(prediction, targets, atol=1e-5)
 
 
 def test_go_parsing_propagation_and_gmt_are_deterministic(tmp_path):
