@@ -255,6 +255,19 @@ numerically identical to the linear anchor. The 292 cross-model paired compariso
 artifact hashes, and conservative interpretation are in
 [`manifests/evaluation_anchored_v1.json`](manifests/evaluation_anchored_v1.json).
 
+The later ESM+GO multiteacher revisions are reporting-only extensions of that frozen
+primary analysis. Validation selected v4 `availability_static`: the proposed
+control-conditioned teacher query did not clear its fixed complexity margin. In the full
+four-regime report, v4 ranks second of 13 defined models on K562 perturbation-OOD effect
+Pearson (`0.2053`) and second of 14 on DE AUPRC (`0.1340`), but only fourth to fifth on
+RPE1 effect endpoints and seventh on RPE1 magnitude error. Relative to v3, decoded effect
+changes are at most `0.00031`; magnitude calibration improves slightly, while latent MMD,
+Sinkhorn, and energy distance worsen in every regime. This mixed result does not support
+uniform superiority or a state-of-the-art claim. The complete 14-model comparison is frozen
+in [`manifests/evaluation_contextual_multiteacher_v1.json`](manifests/evaluation_contextual_multiteacher_v1.json)
+and interpreted in
+[`docs/contextual_multiteacher_evaluation_v1.md`](docs/contextual_multiteacher_evaluation_v1.md).
+
 ## Modern baseline feasibility
 
 The proposal asks for GEARS, CPA, CellOT, and State where feasible. Their official interfaces do
