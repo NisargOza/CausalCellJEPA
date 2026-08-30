@@ -53,3 +53,18 @@ This weaker held-out geometry is a material limitation and is retained in the ma
 but it cannot change or tune a revision whose test split was already viewed. The next
 authorized selection boundary remains the pre-existing K562 perturbation-OOD validation
 protocol; no claim of broad superiority follows from this CPU result.
+
+## K562 anchor gate result
+
+The outcome-restricted CPU anchor used 696 known dynamics-training targets and selected
+ridge `10000.0` on the 100 K562 perturbation-OOD validation targets. It achieved mean
+effect Pearson `0.260840` and MSE `0.0000675451`. This improves modestly over the frozen
+ESM-only anchor (`0.252168`, `0.0000684503`), showing that public-teacher distillation
+does transfer some useful structure.
+
+It nevertheless fails the v4-relative gate: direct ESM+GO v4 achieved Pearson
+`0.290980` and MSE `0.0000629026`. The ridge-only distilled representation is lower by
+`0.030140` Pearson and has `7.38%` higher MSE, beyond the frozen tolerances. This result
+is consistent with the fact that an affine ESM-only student cannot recover GO variation
+not identifiable from sequence. The ridge-only revision is rejected before GPU
+dynamics training, and v4 remains selected.
