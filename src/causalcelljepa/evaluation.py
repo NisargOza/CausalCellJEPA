@@ -649,6 +649,7 @@ def run_ablation_evaluation(
         "stage2_replication": "replication_training",
         "anchored": "anchored_training",
         "multiteacher": "multiteacher_training",
+        "contextual_multiteacher": "contextual_multiteacher_training",
     }
     assert model_source in manifest_kinds
     manifest_kind = manifest_kinds[model_source]
@@ -670,7 +671,7 @@ def run_ablation_evaluation(
             "perturbed_outcomes_used": False, "rpe1_cells_used": False,
         }
     selected_candidate = selected_entry = selection_manifest_sha256 = None
-    frozen_selection_sources = {"anchored", "multiteacher"}
+    frozen_selection_sources = {"anchored", "multiteacher", "contextual_multiteacher"}
     if model_source in frozen_selection_sources:
         selection_manifest, selection_manifest_sha256 = _self_hashed_manifest(
             inputs[f"{model_source}_selection_manifest_path"],

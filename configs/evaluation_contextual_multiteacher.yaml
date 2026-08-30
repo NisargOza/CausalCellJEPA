@@ -1,0 +1,121 @@
+# Reporting-only evaluation of the validation-frozen v4 selection.
+latent:
+  base_evaluation_config_path: configs/evaluation.yaml
+  base_evaluation_config_sha256: 02c902173d2b9d8e18fd1114e92ee20e6957fe0e875438e9d7551db6e9dfabae
+  model_source: contextual_multiteacher
+  inputs:
+    contextual_multiteacher_training_manifest_path: manifests/contextual_multiteacher_dynamics_training_v1.json
+    contextual_multiteacher_training_manifest_sha256: 1370ca20cd7e743920c981a5f6ec70e4205eac568a22a5e84f80f7e20dd85e86
+    contextual_multiteacher_selection_manifest_path: manifests/contextual_multiteacher_dynamics_selection_v1.json
+    contextual_multiteacher_selection_manifest_sha256: ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199
+    base_evaluation_manifest_path: manifests/evaluation_pseudo_v1.json
+    base_evaluation_manifest_sha256: 7909807c0ae4a797d9d591452f743171a5d84142e5c0ec8c741b2fe76e979cc6
+    base_condition_metrics_path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+    base_condition_metrics_bytes: 37262909
+    base_condition_metrics_records: 71760
+    base_condition_metrics_sha256: d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50
+    base_summary_path: artifacts/evaluation_with_pseudo/summary.json
+    base_summary_bytes: 61457
+    base_summary_sha256: 677616ecb5a34b5b843363586a90144085d7a2b171a343a9feb16a9a46c03e2b
+    base_provenance_path: artifacts/evaluation_with_pseudo/provenance.json
+    base_provenance_bytes: 6831
+    base_provenance_sha256: a4ff8fac5666cbb2dcfa7be2b6bd5172ab3afc927af440d9f7905ab2f242ed72
+    reference_condition_metrics_path: artifacts/evaluation_multiteacher/condition_metrics.jsonl
+    reference_condition_metrics_bytes: 7777164
+    reference_condition_metrics_records: 14352
+    reference_condition_metrics_sha256: 7179623974c0f9e8688cab99cdf6cf4ac9840b6044fd3801fef339cb0a2ba853
+    reference_summary_path: artifacts/evaluation_multiteacher/summary.json
+    reference_summary_bytes: 87904
+    reference_summary_sha256: de14ca996335d3f057968fc929e82bf9027490bc4de400c380f0628dcad39856
+  models: [contextual_multiteacher_selected]
+  reference_models: [multiteacher_selected]
+  comparisons:
+    - candidate: contextual_multiteacher_selected
+      reference: multiteacher_selected
+      hypothesis: the frozen v4 selection changes performance relative to v3
+    - candidate: contextual_multiteacher_selected
+      reference: causalcelljepa
+      hypothesis: the frozen v4 selection changes performance relative to the primary model
+    - candidate: contextual_multiteacher_selected
+      reference: no_change
+      hypothesis: the frozen v4 selection improves over predicting no perturbation
+    - candidate: contextual_multiteacher_selected
+      reference: mean_effect
+      hypothesis: the frozen v4 selection improves over the K562 mean perturbation effect
+    - candidate: contextual_multiteacher_selected
+      reference: linear_esm
+      hypothesis: the frozen v4 selection improves over the frozen linear ESM baseline
+    - candidate: contextual_multiteacher_selected
+      reference: pseudo_paired
+      hypothesis: the frozen v4 selection improves over pseudo-paired training
+  output_directory: artifacts/evaluation_contextual_multiteacher
+  cpu_smoke:
+    regimes: [perturbation_ood, context_ood]
+    repeats: 1
+    maximum_conditions_per_regime: 2
+    output_directory: artifacts/evaluation_contextual_multiteacher_cpu_smoke
+
+transcriptomic:
+  base_transcriptomics_config_path: configs/transcriptomics.yaml
+  base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+  model_source: contextual_multiteacher
+  inputs:
+    contextual_multiteacher_training_manifest_path: manifests/contextual_multiteacher_dynamics_training_v1.json
+    contextual_multiteacher_training_manifest_sha256: 1370ca20cd7e743920c981a5f6ec70e4205eac568a22a5e84f80f7e20dd85e86
+    contextual_multiteacher_selection_manifest_path: manifests/contextual_multiteacher_dynamics_selection_v1.json
+    contextual_multiteacher_selection_manifest_sha256: ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199
+    base_manifest_path: manifests/transcriptomics_v1.json
+    base_manifest_sha256: 06efa2888dbdbd4aee4f09096a05fd763941e4a99086042b7dc5bf5d7aac06af
+    base_condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+    base_condition_metrics_bytes: 89852133
+    base_condition_metrics_records: 71760
+    base_condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+    base_pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+    base_pathway_metrics_bytes: 4088543
+    base_pathway_metrics_records: 8970
+    base_pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+    base_summary_path: artifacts/transcriptomic_evaluation/summary.json
+    base_summary_bytes: 154198
+    base_summary_sha256: abb6de6c086707355eacb8272891de88284113c93bf9c429bcb0a19de02fb288
+    base_provenance_path: artifacts/transcriptomic_evaluation/provenance.json
+    base_provenance_bytes: 8535
+    base_provenance_sha256: 6c1faeb43786afa0dd0f48b364b4120d7e626aaf7b3448e259a933e6da76fec6
+    reference_condition_metrics_path: artifacts/evaluation_multiteacher_transcriptomics/condition_metrics.jsonl
+    reference_condition_metrics_bytes: 18747997
+    reference_condition_metrics_records: 14352
+    reference_condition_metrics_sha256: 84ce96c18e6ebf257fca2330ea0892203b98b385df9135c22ee952882112db49
+    reference_pathway_metrics_path: artifacts/evaluation_multiteacher_transcriptomics/pathway_metrics.jsonl
+    reference_pathway_metrics_bytes: 856234
+    reference_pathway_metrics_records: 1794
+    reference_pathway_metrics_sha256: 982740e27855b714199be448ef14806a180d662331f9a4e56991b71164ad86ea
+    reference_summary_path: artifacts/evaluation_multiteacher_transcriptomics/summary.json
+    reference_summary_bytes: 226175
+    reference_summary_sha256: 68c857adb0a16be039b0aea6ad2f5269144c00bccddc7262de713f83f5f3438e
+  models:
+    contextual_multiteacher_selected: availability_static
+  reference_models: [multiteacher_selected]
+  comparisons:
+    - candidate: contextual_multiteacher_selected
+      reference: multiteacher_selected
+      hypothesis: the frozen v4 selection changes decoded performance relative to v3
+    - candidate: contextual_multiteacher_selected
+      reference: causalcelljepa
+      hypothesis: the frozen v4 selection changes decoded performance relative to the primary model
+    - candidate: contextual_multiteacher_selected
+      reference: no_change
+      hypothesis: the frozen v4 selection improves over no change after decoding
+    - candidate: contextual_multiteacher_selected
+      reference: mean_effect
+      hypothesis: the frozen v4 selection improves over the mean effect after decoding
+    - candidate: contextual_multiteacher_selected
+      reference: linear_esm
+      hypothesis: the frozen v4 selection improves over frozen linear ESM after decoding
+    - candidate: contextual_multiteacher_selected
+      reference: pseudo_paired
+      hypothesis: the frozen v4 selection improves over pseudo-paired training after decoding
+  output_directory: artifacts/evaluation_contextual_multiteacher_transcriptomics
+  cpu_smoke:
+    regimes: [perturbation_ood, context_ood]
+    repeats: 1
+    maximum_conditions_per_regime: 2
+    output_directory: artifacts/evaluation_contextual_multiteacher_transcriptomics_cpu_smoke

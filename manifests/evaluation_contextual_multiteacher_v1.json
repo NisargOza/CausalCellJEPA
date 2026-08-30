@@ -1,0 +1,103 @@
+{
+  "artifacts": {
+    "cross_baseline_analysis": {
+      "bytes": 77303,
+      "path": "artifacts/evaluation_contextual_multiteacher_analysis/analysis.json",
+      "sha256": "f0792c6756998d55fea27dfcb70ec38343a22968085c2ebdba44ed0525d9775e"
+    },
+    "latent_evaluation": {
+      "condition_metrics.jsonl": {
+        "bytes": 7934165,
+        "path": "artifacts/evaluation_contextual_multiteacher/condition_metrics.jsonl",
+        "records": 14352,
+        "sha256": "a107c8f3cd29f608ab9280975e25932ec46585281239c35e1465da2df9eb5200"
+      },
+      "paired_comparisons.json": {
+        "bytes": 159154,
+        "path": "artifacts/evaluation_contextual_multiteacher/paired_comparisons.json",
+        "sha256": "b16235642ab48c948016cbd48fed867cfc7449136b58f56f743aee4e1f5e13ff"
+      },
+      "provenance.json": {
+        "bytes": 10057,
+        "path": "artifacts/evaluation_contextual_multiteacher/provenance.json",
+        "sha256": "6d5f46faca3704d65a58f054aa16aded3d49c1ed834775c4039857ba3c277ea0"
+      },
+      "summary.json": {
+        "bytes": 88530,
+        "path": "artifacts/evaluation_contextual_multiteacher/summary.json",
+        "sha256": "c832f7b9310730f2611aa401e8c45486446df707ae3fee7ddf9911df5eb1f509"
+      }
+    },
+    "transcriptomic_evaluation": {
+      "condition_metrics.jsonl": {
+        "bytes": 18905501,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/condition_metrics.jsonl",
+        "records": 14352,
+        "sha256": "25cc58fa73b2ac655a5cab1c037bab5995ef992431973c45636d86188f02cea0"
+      },
+      "paired_comparisons.json": {
+        "bytes": 443281,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/paired_comparisons.json",
+        "sha256": "45703f3faf17973a22ba10dfb7696974b00d941e8a60a88cbe1020dc5b325f4b"
+      },
+      "pathway_metrics.jsonl": {
+        "bytes": 875910,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/pathway_metrics.jsonl",
+        "records": 1794,
+        "sha256": "ffe4585b83d3a5760529d04f062a4eed558e67297d3b8ac048af2dd8fec77690"
+      },
+      "provenance.json": {
+        "bytes": 12593,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/provenance.json",
+        "sha256": "be387a2dd7f51f04a430cbe0757dc6945d4a85ecb7081946143579f6f07aabcd"
+      },
+      "summary.json": {
+        "bytes": 227913,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/summary.json",
+        "sha256": "5eb7dde2a4478d0dc29667dca0ec23f9d96a8052d19cbc3bb9a5c05293cb0330"
+      },
+      "truth_report.json": {
+        "bytes": 560,
+        "path": "artifacts/evaluation_contextual_multiteacher_transcriptomics/truth_report.json",
+        "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+      }
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "5c3ac8a3efa6a5930766e7cce7b54fffad2d524ac4a55736ba3c09649d1d0774",
+  "protocol": {
+    "candidate": "contextual_multiteacher_selected",
+    "evaluation_repeats": 8,
+    "reporting_only": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "statistical_unit": "perturbation-condition"
+  },
+  "provenance": {
+    "analysis_git": {
+      "commit": "eca615a6945dfd0673fea737bcc82cef52986231",
+      "dirty": false
+    },
+    "contextual_multiteacher_selection_manifest_sha256": "ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199",
+    "contextual_multiteacher_training_manifest_sha256": "1370ca20cd7e743920c981a5f6ec70e4205eac568a22a5e84f80f7e20dd85e86",
+    "evaluation_config_sha256": "536e37de77df04cf3242f840d269ce9c8fcd15b5d37da48310c328c452db3ad2",
+    "evaluation_git": {
+      "commit": "54f8545a74c5b09b2eaf6cf610d50d4e6ff4b3f7",
+      "dirty": false
+    }
+  },
+  "result": {
+    "all_v3_bootstrap_95ci_verdict_counts": {
+      "inconclusive": 101,
+      "loss": 18,
+      "win": 33
+    },
+    "headline_v3_bootstrap_95ci_verdict_counts": {
+      "inconclusive": 23,
+      "loss": 12,
+      "win": 13
+    },
+    "models_compared": 14,
+    "uniform_superiority_supported": false
+  }
+}
