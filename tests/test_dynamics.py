@@ -27,6 +27,7 @@ from causalcelljepa.evaluation import (
     paired_model_comparisons,
     population_metrics,
 )
+from causalcelljepa.state_baseline import _write_state_h5ad, state_export_indices
 
 
 def test_modality_attention_fuses_all_teachers_and_dropout_keeps_one_visible():
@@ -84,6 +85,62 @@ def test_effect_anchor_loads_legacy_state_without_serialized_input_indices():
     action, known = torch.randn(4, 3), torch.ones(4, dtype=torch.bool)
     assert torch.equal(restored.input_indices, torch.arange(3))
     assert torch.equal(restored(action, known), source(action, known))
+
+
+def test_state_export_selection_excludes_sealed_roles_and_bounds_conditions():
+    roles = np.array(
+        [
+            "control_train",
+            "control_train",
+            "dynamics_train",
+            "dynamics_train",
+            "dynamics_train",
+            "perturbation_ood_validation",
+            "perturbation_ood_validation",
+            "iid_test",
+            "context_ood_test",
+        ]
+    )
+    targets = np.array(
+        ["non-targeting", "non-targeting", "A", "A", "B", "C", "D", "A", "C"]
+    )
+    allowed = ["control_train", "dynamics_train", "perturbation_ood_validation"]
+    full = state_export_indices(roles, targets, allowed)
+    bounded = state_export_indices(roles, targets, allowed, 1, 1)
+    assert full.tolist() == [0, 1, 2, 3, 4, 5, 6]
+    assert bounded.tolist() == [0, 2, 5]
+    assert not {"iid_test", "context_ood_test"}.intersection(roles[full])
+
+
+def test_chunked_state_export_preserves_cell_load_h5ad_schema(tmp_path):
+    expression_path = tmp_path / "expression.h5"
+    with h5py.File(expression_path, "w") as cache:
+        cache.create_dataset("expression", data=np.arange(15, dtype=np.float32).reshape(5, 3))
+    metadata = {
+        "target": np.array(["non-targeting", "A", "A", "B", "B"]),
+        "context": np.array(["K562"] * 5),
+        "source_batch": np.array(["batch-1", "batch-1", "batch-2", "batch-2", "batch-3"]),
+        "role": np.array(["control_train"] + ["dynamics_train"] * 4),
+        "source_row": np.arange(5),
+        "cell_id": np.array([f"cell-{index}" for index in range(5)]),
+    }
+    output = tmp_path / "state.h5ad"
+    with h5py.File(expression_path, "r") as cache:
+        _write_state_h5ad(
+            output,
+            cache["expression"],
+            np.arange(5),
+            metadata,
+            ["G1", "G2", "G3"],
+            ["ENSG1", "ENSG2", "ENSG3"],
+            chunk_cells=2,
+        )
+    with h5py.File(output) as exported:
+        assert isinstance(exported["var/gene_name"], h5py.Dataset)
+        assert exported["var/gene_name"].asstr()[:].tolist() == ["G1", "G2", "G3"]
+        assert exported["var/gene_id"].asstr()[:].tolist() == ["ENSG1", "ENSG2", "ENSG3"]
+        assert isinstance(exported["uns/log1p"], h5py.Group)
+        assert exported["obsm/X_hvg"].shape == (5, 3)
 
 
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():

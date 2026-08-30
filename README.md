@@ -287,6 +287,17 @@ baseline, State is the first
 recommended extension, followed by a K562-only GEARS comparison. The auditable decision record is
 [`manifests/modern_baseline_feasibility_v1.json`](manifests/modern_baseline_feasibility_v1.json).
 
+The user subsequently authorized the State extension. [`configs/state_baseline.yaml`](configs/state_baseline.yaml)
+pins State `0.11.3` and cell-load `0.10.4`; its exporter physically excludes sealed-test
+outcomes and every RPE1 perturbed outcome, retains RPE1 controls only as inference inputs, and
+provides the same frozen 386-dimensional ESM+GO action features for a fair unseen-target test.
+Both single-chunk and streaming multi-chunk exports pass the official cell-load reader. A tiny
+real-data CPU run instantiated State-small (57.4M parameters), completed one optimizer step with
+finite validation loss, and wrote all expected checkpoints before any GPU allocation. The clean
+full export contains 120,156 K562 fit/validation cells and separate K562/RPE1 control templates;
+its hashes and leakage audit are frozen in
+[`manifests/state_baseline_input_v1.json`](manifests/state_baseline_input_v1.json).
+
 ## Development
 
 ```bash
@@ -340,6 +351,8 @@ uv run python scripts/select_anchored_dynamics.py
 uv run python scripts/smoke_anchored_evaluation.py
 uv run python scripts/evaluate_anchored.py
 uv run python scripts/analyze_anchored_evaluation.py
+uv run python scripts/smoke_state_baseline.py
+uv run python scripts/prepare_state_baseline.py
 uv run ruff check .
 uv run pytest
 ```

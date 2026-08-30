@@ -8,6 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "anndata>=0.11",
+    "dask[array]>=2024.1",
     "fair-esm==2.0.0",
     "geomloss==0.3.1",
     "h5py>=3.11",

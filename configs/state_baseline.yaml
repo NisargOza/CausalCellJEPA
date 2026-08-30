@@ -1,0 +1,63 @@
+# Leakage-safe export and bounded training plan for the official State transition model.
+seed: 20260823
+source:
+  state_repository: https://github.com/ArcInstitute/state.git
+  state_commit: 9bbfe78a434a55205e4de834e1ea99f85f7a3add
+  state_version: 0.11.3
+  state_license: CC-BY-NC-SA-4.0
+  cell_load_repository: https://github.com/ArcInstitute/cell-load.git
+  cell_load_commit: 9ba45e59f6f8117bb7a21371ad38d67175586d53
+  cell_load_version: 0.10.4
+inputs:
+  expression_cache_path: artifacts/replogle_expression_readout_v1.h5
+  expression_cache_bytes: 4091928784
+  expression_cache_sha256: 3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0
+  latent_cache_path: artifacts/replogle_latents_f1e5dce.h5
+  latent_cache_bytes: 431844688
+  latent_cache_sha256: af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6
+  replogle_manifest_path: manifests/replogle_v1.json
+  replogle_manifest_sha256: 6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488
+  action_cache_path: artifacts/replogle_actions_esm2_go_context_v1.pt
+  action_cache_bytes: 1557253
+  action_cache_sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
+  action_manifest_path: manifests/contextual_multiteacher_action_v1.json
+  action_manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+export:
+  output_directory: artifacts/state_baseline/input
+  training_roles:
+    - control_train
+    - dynamics_train
+    - perturbation_ood_validation
+  forbidden_training_roles:
+    - iid_test
+    - perturbation_ood_test
+    - context_ood_test
+    - double_ood_test
+    - double_ood_validation_locked
+  training_file: training/state_fit.h5ad
+  k562_control_file: inference/K562_controls.h5ad
+  rpe1_control_file: inference/RPE1_controls.h5ad
+  perturbation_features_file: state_action_features.pt
+  training_toml_file: state_train.toml
+  report_file: report.json
+  hvg_count: 3000
+  chunk_cells: 4096
+state:
+  model: state_sm
+  cell_set_len: 32
+  embed_key: X_hvg
+  output_space: gene
+  perturbation_column: gene
+  cell_type_column: cell_type
+  batch_column: gem_group
+  control_perturbation: non-targeting
+  basal_mapping_strategy: batch
+  use_batch_token: false
+  training_steps: 10000
+  validation_frequency: 500
+  checkpoint_frequency: 500
+  batch_size: 4
+smoke:
+  output_directory: artifacts/state_baseline_cpu_smoke/input
+  maximum_conditions_per_role: 2
+  maximum_cells_per_condition: 4
