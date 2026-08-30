@@ -2,6 +2,13 @@ import gzip
 
 import torch
 
+from causalcelljepa.action_student import (
+    MaskedTeacherFusion,
+    SaltActionStudent,
+    representation_stable_rank,
+    salt_public_split,
+    teacher_neighbor_overlap,
+)
 from causalcelljepa.actions import (
     contextual_multiteacher_action_payload,
     learned_target_id_payload,
@@ -86,15 +93,27 @@ def test_contextual_multiteacher_action_appends_availability_and_uses_any_teache
         "embedding": torch.arange(9, dtype=torch.float32).reshape(3, 3),
         "known": torch.tensor([True, False, False]),
     }
-    payload, report = contextual_multiteacher_action_payload(
-        action, {"GO:1": ("B", "C")}, rank=1
-    )
+    payload, report = contextual_multiteacher_action_payload(action, {"GO:1": ("B", "C")}, rank=1)
     assert payload["embedding"].shape == (3, 6)
     assert payload["embedding"][:, -2:].tolist() == [[1, 0], [0, 1], [0, 1]]
     assert payload["known"].tolist() == [True, True, True]
     assert payload["modality_dims"] == [3, 1]
     assert payload["modality_availability"] is True
     assert report["targets_known_from_any_modality"] == 3
+
+
+def test_salt_action_student_split_fusion_and_geometry_are_finite():
+    availability = torch.tensor([[1, 1], [1, 1], [1, 1], [1, 0], [0, 1]], dtype=torch.bool)
+    split = salt_public_split(["A", "B", "C", "D", "E"], availability, 9, (1 / 3,) * 3)
+    assert sorted(torch.cat(tuple(split.values())).tolist()) == [0, 1, 2]
+    fusion = MaskedTeacherFusion([3, 2], 4, 5)
+    blocks = [torch.randn(6, 3), torch.randn(6, 2)]
+    visible = torch.tensor([[1, 0], [0, 1]] * 3, dtype=torch.bool)
+    joint = fusion(blocks, visible)
+    prediction, state = SaltActionStudent(3, 5, 4)(blocks[0])
+    assert joint.shape == prediction.shape == state.shape == (6, 4)
+    assert torch.isfinite(joint).all() and representation_stable_rank(state) > 1
+    assert teacher_neighbor_overlap(state, state, state, state, k=2) == 1
 
 
 def test_go_parsing_propagation_and_gmt_are_deterministic(tmp_path):
