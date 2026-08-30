@@ -88,6 +88,26 @@ def representation_stable_rank(features):
     return float(values.square().sum() / values.square().max())
 
 
+def fit_ridge_student(inputs, targets, ridge):
+    """Fit an affine ridge student while leaving the intercept unregularized."""
+    if inputs.ndim != 2 or targets.ndim != 2 or len(inputs) != len(targets):
+        raise ValueError("ridge inputs and targets must be aligned rank-two tensors")
+    if ridge <= 0:
+        raise ValueError("ridge regularization must be positive")
+    design = torch.cat((inputs, torch.ones(len(inputs), 1, dtype=inputs.dtype)), 1)
+    penalty = torch.eye(design.shape[1], dtype=inputs.dtype)
+    penalty[-1, -1] = 0
+    return torch.linalg.solve(design.T @ design + ridge * penalty, design.T @ targets)
+
+
+def apply_ridge_student(inputs, weights):
+    """Apply an affine ridge student represented by weights including an intercept row."""
+    if inputs.ndim != 2 or weights.ndim != 2 or weights.shape[0] != inputs.shape[1] + 1:
+        raise ValueError("ridge weights must contain one row per input plus an intercept")
+    design = torch.cat((inputs, torch.ones(len(inputs), 1, dtype=inputs.dtype)), 1)
+    return design @ weights
+
+
 def teacher_neighbor_overlap(query, reference, teacher_query, teacher_reference, k=10):
     """Measure overlap with the frozen teacher's public nearest-neighbor set."""
 

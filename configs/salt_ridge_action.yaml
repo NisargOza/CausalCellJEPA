@@ -1,0 +1,68 @@
+# Freeze the validation-selected linear SALT student before exporting or reading outcomes.
+seed: 20260830
+source_action:
+  path: artifacts/replogle_actions_esm2_go_context_v1.pt
+  bytes: 1557253
+  sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
+  manifest_path: manifests/contextual_multiteacher_action_v1.json
+  manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+source_run:
+  manifest_path: manifests/salt_action_student_v1.json
+  manifest_sha256: d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3
+  teacher_checkpoint_path: artifacts/salt_action_student/teacher_best.pt
+  teacher_checkpoint_bytes: 1863317
+  teacher_checkpoint_sha256: b30e851ea6c144ada8b8bf977cafaf9ee4720646502fb6f2f87fc10f710c72e1
+  nonlinear_validation_reconstruction: 0.3683907687664032
+  selected_ridge: 100.0
+  selected_ridge_validation_loss: 0.28504303097724915
+  public_test_status: viewed_after_source_run_and_sealed_reporting_only
+revision:
+  name: salt_ridge_residual_action_v5b
+  status: post_primary_exploratory
+  selection_basis: inherited_public_validation_selected_control
+  outcome_selection_boundary: no_perturbation_outcomes
+  rationale_path: docs/architecture_revision_v5b_salt_ridge.md
+public_split:
+  unit: target_gene
+  eligibility: esm_and_go_available
+  assignment: sha256_rank
+  fractions: [0.80, 0.10, 0.10]
+teacher:
+  modality_dims: [320, 64]
+  joint_dim: 256
+  projector_hidden_dim: 256
+  fusion: availability_normalized_uniform
+  target: train_split_standardized_frozen_joint_teacher
+ridge_student:
+  input: train_standardized_frozen_esm2_t6_mean_pool
+  loss: SmoothL1
+  candidates: [0.1, 1.0, 10.0, 100.0, 1000.0]
+  selection: minimum_public_validation_reconstruction_loss
+  refit_after_selection: false
+export:
+  representation: raw_frozen_esm_plus_ridge_joint_prediction
+  modality_dims: [320, 256]
+  availability_bits: true
+  checkpoint_path: artifacts/salt_ridge_action/ridge_student.pt
+  action_cache_path: artifacts/replogle_actions_salt_ridge_residual_v1.pt
+  manifest_path: manifests/salt_ridge_action_v1.json
+public_validation_gates:
+  finite_tensors: true
+  standardized_target_max_absolute_mean: 0.00001
+  standardized_target_max_absolute_std_error: 0.0001
+  selected_ridge_replay_absolute_tolerance: 0.0000001
+  minimum_loss_improvement_over_nonlinear_student: 0.05
+  minimum_target_cosine: 0.50
+  minimum_stable_rank: 8.0
+  residual_minimum_go_neighbor_overlap_gain_over_esm: 0.005
+public_test:
+  use: reporting_only
+  may_change_selection_or_gates: false
+downstream_gate:
+  reference_candidate: availability_static
+  reference_selection_manifest: manifests/contextual_multiteacher_dynamics_selection_v1.json
+  reference_validation_loss: 0.6814499282836914
+  replacement_minimum_loss_improvement: 0.003
+  selection_context: K562
+  selection_outcome_role: perturbation_ood_validation
+  rpe1_or_sealed_test_outcomes_used: false
