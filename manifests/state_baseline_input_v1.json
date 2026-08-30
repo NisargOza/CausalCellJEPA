@@ -1,0 +1,121 @@
+{
+  "artifacts": {
+    "k562_controls": {
+      "bytes": 129556447,
+      "context_counts": {
+        "K562": 10691
+      },
+      "path": "artifacts/state_baseline/input/inference/K562_controls.h5ad",
+      "records": 10691,
+      "role_counts": {
+        "control_train": 10691
+      },
+      "sha256": "c247d5b5f95d7e1461dc089e527710e9ef00a7fdf4560f8598762f8e97d3ba30",
+      "source_indices_sha256": "a9b8909299c55b8a60a7d5de8f265077a9828fa13ad4bf4898a3fbaaab9a5c52"
+    },
+    "perturbation_features": {
+      "bytes": 1826011,
+      "path": "artifacts/state_baseline/input/state_action_features.pt",
+      "records": 998,
+      "sha256": "f3e0f7ecce28e1dc8a6adf21af90347351e86bf76c747dd93580d8c5b5cb693e"
+    },
+    "rpe1_controls": {
+      "bytes": 139144465,
+      "context_counts": {
+        "RPE1": 11485
+      },
+      "path": "artifacts/state_baseline/input/inference/RPE1_controls.h5ad",
+      "records": 11485,
+      "role_counts": {
+        "control_inference": 11485
+      },
+      "sha256": "51f21003b0911cf8d8beeec15f7a6dda7342fc92b173f90050078a987abaf4ff",
+      "source_indices_sha256": "4b6f5fc2cb537543fe7b12c1b1785810d5289b6655a1b0ce03bfdcc4a2303e75"
+    },
+    "training": {
+      "bytes": 1452153924,
+      "context_counts": {
+        "K562": 120156
+      },
+      "path": "artifacts/state_baseline/input/training/state_fit.h5ad",
+      "records": 120156,
+      "role_counts": {
+        "control_train": 10691,
+        "dynamics_train": 91853,
+        "perturbation_ood_validation": 17612
+      },
+      "sha256": "1a7e7d832f414472475eeda0ed83020da05f3dd8bc8ed97dc53ed1d0ba54249d",
+      "source_indices_sha256": "b39639514c8328e3eefc086b943c7cca496c8a88ef583dabd2ddfd64c51c941c"
+    },
+    "training_toml": {
+      "bytes": 1099,
+      "path": "artifacts/state_baseline/input/state_train.toml",
+      "sha256": "5dccdd54d3eead40ffd83a40b487ce18722387cdddaffeded1db4fb226b2a79d"
+    }
+  },
+  "features": {
+    "control_is_zero": true,
+    "dimensions": 386,
+    "outcomes_read": false,
+    "targets": 997
+  },
+  "format_version": 1,
+  "manifest_sha256": "de6bbcac2e521147f3c451e2cc404e4c5b2a986b61274c79dfa77992b39f8736",
+  "provenance": {
+    "action_manifest_sha256": "2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde",
+    "git": {
+      "commit": "558e6b1a6c4cc7546379b8b82404ce1a7ba8ad32",
+      "dirty": false
+    },
+    "inputs": {
+      "action_cache": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+      "expression_cache": "3bdfea260555a97d714ebf262f404c43686187d931bbe51a4dc6ff7415ab98c0",
+      "latent_cache": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+    },
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "f17018088247fb8106ae4049fdf44f71e89430da5ec945beb20341b5078361bd"
+  },
+  "smoke_limits": null,
+  "source": {
+    "cell_load_commit": "9ba45e59f6f8117bb7a21371ad38d67175586d53",
+    "cell_load_repository": "https://github.com/ArcInstitute/cell-load.git",
+    "cell_load_version": "0.10.4",
+    "state_commit": "9bbfe78a434a55205e4de834e1ea99f85f7a3add",
+    "state_license": "CC-BY-NC-SA-4.0",
+    "state_repository": "https://github.com/ArcInstitute/state.git",
+    "state_version": "0.11.3"
+  },
+  "split": {
+    "forbidden_training_roles": [
+      "iid_test",
+      "perturbation_ood_test",
+      "context_ood_test",
+      "double_ood_test",
+      "double_ood_validation_locked"
+    ],
+    "rpe1_controls_exported_for_training": false,
+    "rpe1_perturbed_outcomes_exported_for_training": false,
+    "sealed_test_outcomes_exported_for_training": false,
+    "statistical_unit": "perturbation-condition",
+    "training_roles": [
+      "control_train",
+      "dynamics_train",
+      "perturbation_ood_validation"
+    ],
+    "validation_targets": 100
+  }
+}

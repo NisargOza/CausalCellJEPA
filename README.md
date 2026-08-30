@@ -293,7 +293,10 @@ outcomes and every RPE1 perturbed outcome, retains RPE1 controls only as inferen
 provides the same frozen 386-dimensional ESM+GO action features for a fair unseen-target test.
 Both single-chunk and streaming multi-chunk exports pass the official cell-load reader. A tiny
 real-data CPU run instantiated State-small (57.4M parameters), completed one optimizer step with
-finite validation loss, and wrote all expected checkpoints before any GPU allocation.
+finite validation loss, and wrote all expected checkpoints before any GPU allocation. The clean
+full export contains 120,156 K562 fit/validation cells and separate K562/RPE1 control templates;
+its hashes and leakage audit are frozen in
+[`manifests/state_baseline_input_v1.json`](manifests/state_baseline_input_v1.json).
 
 ## Development
 
