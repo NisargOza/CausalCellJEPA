@@ -49,3 +49,16 @@ joint standardization errors were below `1.2e-7`, the validation joint stable ra
 All public-feature gates passed without reading the previously viewed public test or
 any perturbation outcome. The resulting `643`-dimensional cache covers 996 targets and
 is eligible for the isolated effect-anchor check.
+
+## Completed isolated anchor
+
+Selecting only the original ESM+GO modalities produced a 386-dimensional anchor input
+and exactly reproduced v4: validation mean-effect Pearson `0.2909798668364124`, MSE
+`0.0000629025970513245`, and ridge `1000.0`. It used 697 known dynamics-training
+targets and no sealed-test or external outcomes. The joint branch is therefore isolated
+to the dynamics network and cannot degrade or inflate the frozen mean-effect prior.
+
+The two-step CPU dynamics smoke also passed. Resuming after step 1 produced bit-exact
+step-2 model parameters and training events relative to an uninterrupted run. The smoke
+covered all 698 training and 100 K562 validation conditions without reading sealed-test
+or external outcomes. A bounded CUDA checkpoint/resume smoke is therefore eligible.
