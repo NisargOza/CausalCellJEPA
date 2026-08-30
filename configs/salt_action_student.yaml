@@ -45,6 +45,7 @@ student:
   warmup_fraction: 0.05
   minimum_learning_rate_fraction: 0.05
   early_stopping_patience: 40
+  ridge_candidates: [0.1, 1.0, 10.0, 100.0, 1000.0]
 export:
   representation: raw_frozen_esm_plus_student_encoder
   modality_dims: [320, 256]
