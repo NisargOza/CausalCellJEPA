@@ -11,6 +11,7 @@ import yaml
 from causalcelljepa.dynamics import (
     AnchoredPopulationDynamics,
     ContextConditionedModalityProjection,
+    FrozenLowRankEffectAnchor,
     LatentPopulationDataset,
     ModalityAttentiveActionProjection,
     PopulationDynamics,
@@ -18,6 +19,7 @@ from causalcelljepa.dynamics import (
     dynamics_loss,
     dynamics_objective,
     dynamics_replication_configs,
+    effect_anchor_input_indices,
     select_multiteacher_candidate,
 )
 from causalcelljepa.evaluation import (
@@ -342,6 +344,32 @@ def test_anchored_dynamics_preserves_mean_prior_and_bounds_action_correction():
     assert torch.allclose(
         torch.nn.functional.cosine_similarity(gained, frozen), torch.ones(2), atol=1e-6
     )
+
+
+def test_effect_anchor_can_select_original_modalities_from_a_residual_action():
+    action = {
+        "embedding": torch.zeros(2, 8),
+        "modality_dims": [2, 1, 2],
+        "modalities": ["esm", "go", "joint"],
+        "modality_availability": True,
+    }
+    indices = effect_anchor_input_indices(action, {"input_modalities": ["esm", "go"]})
+    assert indices.tolist() == [0, 1, 2, 5, 6]
+    checkpoint = {
+        "format_version": 1,
+        "architecture": "multiteacher_low_rank_latent_effect_ridge",
+        "x_mean": torch.zeros(5),
+        "x_std": torch.ones(5),
+        "y_mean": torch.zeros(2),
+        "components": torch.eye(2),
+        "weights": torch.ones(5, 2),
+        "input_indices": indices,
+    }
+    anchor = FrozenLowRankEffectAnchor(checkpoint)
+    embedding = torch.arange(16, dtype=torch.float32).reshape(2, 8)
+    predicted = anchor(embedding, torch.tensor([True, False]))
+    assert torch.equal(predicted[0], embedding[0, indices].sum().repeat(2))
+    assert torch.equal(predicted[1], torch.zeros(2))
 
 
 def test_control_ood_gate_preserves_means_and_suppresses_only_ood_heterogeneity():

@@ -396,11 +396,17 @@ class FrozenLowRankEffectAnchor(nn.Module):
             value = checkpoint[name].detach().float()
             assert torch.isfinite(value).all()
             self.register_buffer(name, value)
+        input_indices = checkpoint.get("input_indices", torch.arange(len(self.x_mean)))
+        input_indices = input_indices.detach().long()
+        assert input_indices.ndim == 1 and len(input_indices) == len(self.x_mean)
+        assert len(input_indices.unique()) == len(input_indices) and int(input_indices.min()) >= 0
+        self.register_buffer("input_indices", input_indices)
         assert self.weights.shape == (len(self.x_mean), len(self.components))
         assert self.components.shape[1] == len(self.y_mean)
 
     def forward(self, action_embedding, action_known):
-        standardized = (action_embedding - self.x_mean) / self.x_std
+        selected = action_embedding.index_select(1, self.input_indices)
+        standardized = (selected - self.x_mean) / self.x_std
         predicted = standardized @ self.weights @ self.components + self.y_mean
         return torch.where(action_known.unsqueeze(1), predicted, self.y_mean.unsqueeze(0))
 
@@ -752,6 +758,33 @@ def _action_overridden_config(base, specification):
     return base
 
 
+def effect_anchor_input_indices(action, anchor):
+    """Select declared action modalities and their availability bits for an anchor."""
+    modalities = action.get("modalities")
+    modality_dims = action.get("modality_dims")
+    selected_names = anchor.get("input_modalities")
+    if selected_names is None:
+        return torch.arange(action["embedding"].shape[1])
+    assert modalities is not None and modality_dims is not None
+    assert len(modalities) == len(modality_dims)
+    assert len(selected_names) == len(set(selected_names))
+    selected = set(selected_names)
+    assert selected == selected.intersection(modalities)
+    feature_width = sum(modality_dims)
+    availability_width = len(modality_dims) if action.get("modality_availability", False) else 0
+    assert action["embedding"].shape[1] == feature_width + availability_width
+    indices, offset = [], 0
+    selected_positions = []
+    for position, (name, width) in enumerate(zip(modalities, modality_dims, strict=True)):
+        if name in selected:
+            indices.extend(range(offset, offset + width))
+            selected_positions.append(position)
+        offset += width
+    if availability_width:
+        indices.extend(feature_width + position for position in selected_positions)
+    return torch.tensor(indices, dtype=torch.long)
+
+
 def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     """Fit the frozen ESM-to-latent anchor without test or RPE1 outcomes."""
     path = Path(path)
@@ -764,8 +797,12 @@ def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
     assert roles == ("dynamics_train", "perturbation_ood_validation")
     effects, targets, dynamics_manifest = _normalized_role_effects(base, roles)
     action = torch.load(base["inputs"]["action_cache_path"], map_location="cpu", weights_only=True)
+    input_indices = effect_anchor_input_indices(action, anchor)
     action_map = {
-        target: (action["embedding"][index].numpy(), bool(action["known"][index]))
+        target: (
+            action["embedding"][index].index_select(0, input_indices).numpy(),
+            bool(action["known"][index]),
+        )
         for index, target in enumerate(action["targets"])
     }
     train = effects[roles[0]]
@@ -811,6 +848,11 @@ def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
         "fit_targets_with_known_action": len(known_targets),
         "selection_targets": len(validation_targets),
         "rank": len(components),
+        "input_modalities": anchor.get("input_modalities", action.get("modalities")),
+        "input_dimensions": len(input_indices),
+        "input_indices_sha256": sha256(
+            json.dumps(input_indices.tolist(), separators=(",", ":")).encode()
+        ).hexdigest(),
         "selected_ridge": selected["alpha"],
         "selection_mse": selected["mse"],
         "selection_mean_effect_pearson": selected["mean_effect_pearson"],
@@ -841,6 +883,7 @@ def prepare_effect_anchor(path="configs/anchored_dynamics.yaml"):
         "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
         "components": torch.from_numpy(components.astype(np.float32)),
         "weights": torch.from_numpy(selected["weights"].astype(np.float32)),
+        "input_indices": input_indices,
         "report": report,
     }
     output = Path(anchor["output_path"])
