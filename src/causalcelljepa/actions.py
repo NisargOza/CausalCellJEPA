@@ -66,7 +66,27 @@ def multiteacher_action_payload(action, programs, rank=64):
     }
 
 
-def prepare_multiteacher_action(config_path="configs/multiteacher_action.yaml"):
+def contextual_multiteacher_action_payload(action, programs, rank=64):
+    """Append explicit teacher availability while preserving frozen teacher features."""
+    payload, report = multiteacher_action_payload(action, programs, rank)
+    go_targets = set().union(*programs.values()) if programs else set()
+    availability = torch.tensor(
+        [
+            [bool(action["known"][index]), target in go_targets]
+            for index, target in enumerate(action["targets"])
+        ],
+        dtype=torch.bool,
+    )
+    payload["embedding"] = torch.cat((payload["embedding"], availability.float()), 1)
+    payload["known"] = availability.any(1)
+    payload["modality_availability"] = True
+    report["targets_known_from_any_modality"] = int(payload["known"].sum())
+    return payload, report
+
+
+def prepare_multiteacher_action(
+    config_path="configs/multiteacher_action.yaml", include_availability=False
+):
     """Build the checksum-pinned ESM+GO action cache without reading outcomes."""
     config_path = Path(config_path)
     config = yaml.safe_load(config_path.read_text())
@@ -86,20 +106,32 @@ def prepare_multiteacher_action(config_path="configs/multiteacher_action.yaml"):
         go["minimum_targets"],
         go["maximum_targets"],
     )
-    payload, report = multiteacher_action_payload(action, programs, go["rank"])
+    builder = (
+        contextual_multiteacher_action_payload
+        if include_availability
+        else multiteacher_action_payload
+    )
+    payload, report = builder(action, programs, go["rank"])
     output = Path(config["output_path"])
     output.parent.mkdir(parents=True, exist_ok=True)
     torch.save(payload, output)
+    artifact = {
+        "path": str(output),
+        "bytes": output.stat().st_size,
+        "sha256": file_sha256(output),
+        "input_dim": payload["embedding"].shape[1],
+        "modality_dims": payload["modality_dims"],
+    }
+    if include_availability:
+        artifact["modality_availability"] = True
     manifest = {
         "format_version": 1,
-        "architecture": "frozen_esm_go_multiteacher_action",
-        "artifact": {
-            "path": str(output),
-            "bytes": output.stat().st_size,
-            "sha256": file_sha256(output),
-            "input_dim": payload["embedding"].shape[1],
-            "modality_dims": payload["modality_dims"],
-        },
+        "architecture": (
+            "frozen_esm_go_contextual_multiteacher_action"
+            if include_availability
+            else "frozen_esm_go_multiteacher_action"
+        ),
+        "artifact": artifact,
         "report": {**report, "annotation_stats": stats},
         "source": {
             "config_sha256": file_sha256(config_path),

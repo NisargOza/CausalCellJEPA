@@ -10,6 +10,7 @@ import yaml
 
 from causalcelljepa.dynamics import (
     AnchoredPopulationDynamics,
+    ContextConditionedModalityProjection,
     LatentPopulationDataset,
     ModalityAttentiveActionProjection,
     PopulationDynamics,
@@ -34,6 +35,33 @@ def test_modality_attention_fuses_all_teachers_and_dropout_keeps_one_visible():
     evaluation = projection.eval()(action)
     assert train.shape == evaluation.shape == (16, 4)
     assert torch.isfinite(train).all() and torch.isfinite(evaluation).all()
+
+    masked = ModalityAttentiveActionProjection(
+        [3, 2], 4, modality_dropout=0.9, modality_availability=True
+    ).eval()
+    availability = torch.tensor([[1, 0], [0, 1]])
+    masked_action = torch.cat((action[:2], availability), 1)
+    _, weights = masked.projected_and_weights(masked_action)
+    assert weights.tolist() == [[1.0, 0.0], [0.0, 1.0]]
+
+
+def test_context_conditioned_attention_masks_missing_teachers_and_uses_control_state():
+    torch.manual_seed(7)
+    projection = ContextConditionedModalityProjection([3, 2], 4, modality_dropout=0.9)
+    with torch.no_grad():
+        projection.context_query[-1].weight.copy_(torch.eye(4))
+    features = torch.randn(4, 5)
+    availability = torch.tensor([[1, 1], [1, 0], [0, 1], [0, 0]])
+    action = torch.cat((features, availability), 1)
+    context_a = torch.zeros(4, 4)
+    context_b = torch.randn(4, 4)
+    _, weights = projection.eval().projected_and_weights(action, context_a)
+    first = projection(action, context_a)
+    second = projection(action, context_b)
+    assert weights[1].tolist() == [1.0, 0.0]
+    assert weights[2].tolist() == [0.0, 1.0]
+    assert torch.isfinite(weights[3]).all() and weights[3, 0] == 1
+    assert torch.isfinite(first).all() and not torch.allclose(first, second)
 
 
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():

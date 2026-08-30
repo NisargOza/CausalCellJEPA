@@ -1,0 +1,60 @@
+{
+  "architecture": "frozen_esm_go_contextual_multiteacher_action",
+  "artifact": {
+    "bytes": 1557253,
+    "input_dim": 386,
+    "modality_availability": true,
+    "modality_dims": [
+      320,
+      64
+    ],
+    "path": "artifacts/replogle_actions_esm2_go_context_v1.pt",
+    "sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983"
+  },
+  "format_version": 1,
+  "manifest_sha256": "2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde",
+  "provenance": {
+    "git": {
+      "commit": "9925e56540a15fb12b93a80801374da6ac8259fc",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "02d0f6f86f1507e42d01efb33951021a38f363b72329c43b09b5edd365fc649b"
+  },
+  "report": {
+    "annotation_stats": {
+      "accepted_rows": 204596,
+      "excluded_evidence": 770,
+      "negated": 1497,
+      "non_bp_or_taxon": 703325,
+      "rows": 910476,
+      "unknown_term_or_symbol": 288
+    },
+    "go_rank": 64,
+    "go_term_sha256": "688298b71425e142c3d90241e45a9f8c20cab8726c08ea1fa0faa9a2620b526d",
+    "go_terms": 2059,
+    "target_coverage": 0.9317953861584755,
+    "targets_known_from_any_modality": 996,
+    "targets_with_go": 929
+  },
+  "source": {
+    "action_sha256": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "annotations_sha256": "a0afba19dfb1f8fa996bc1bdcd61fd0c9bd4cf0d2bf2509d09ac86993c0e70a2",
+    "config_sha256": "c32adc9e787a8a73feefa49ef0da3a9e6f45c285686317894fce082f37ae36d1",
+    "ontology_sha256": "b08d45b268b8c24ccb2513dbbbc7d4df9f6521c099b413f79eb31e06e0fa3bcc",
+    "outcomes_read": false
+  }
+}

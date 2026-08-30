@@ -8,7 +8,6 @@ from pathlib import Path
 import torch
 import yaml
 
-from causalcelljepa.dynamics import select_multiteacher_candidate
 from causalcelljepa.resources import file_sha256
 
 CONFIG_PATH = Path("configs/multiteacher_dynamics.yaml")
@@ -51,20 +50,33 @@ def _checkpoint_tensors_finite(checkpoint):
     return all(torch.isfinite(value).all() for value in checkpoint["model"].values())
 
 
-def _console_reports():
-    text = CONSOLE_PATH.read_text()
+def _console_reports(path=CONSOLE_PATH):
+    text = path.read_text()
     return json.loads(text[text.index("{") :])
 
 
-def main():
-    specification = yaml.safe_load(CONFIG_PATH.read_text())
-    console_reports = _console_reports()
+def main(
+    config_path=CONFIG_PATH,
+    artifact_root=ARTIFACT_ROOT,
+    console_path=CONSOLE_PATH,
+    training_manifest_path=TRAINING_MANIFEST_PATH,
+    selection_manifest_path=SELECTION_MANIFEST_PATH,
+    remote_sha256=REMOTE_SHA256,
+):
+    specification = yaml.safe_load(config_path.read_text())
+    rule = specification["selection"]
+    margin_name = next(
+        name
+        for name in ("dropout_minimum_loss_improvement", "context_minimum_loss_improvement")
+        if name in rule
+    )
+    console_reports = _console_reports(console_path)
     candidates = {}
     checkpoint_provenance = None
     for name in specification["experiments"]:
-        root = ARTIFACT_ROOT / name
-        paths = {filename: root / filename for filename in REMOTE_SHA256[name]}
-        assert all(file_sha256(path) == REMOTE_SHA256[name][filename] for filename, path in paths.items())
+        root = artifact_root / name
+        paths = {filename: root / filename for filename in remote_sha256[name]}
+        assert all(file_sha256(path) == remote_sha256[name][filename] for filename, path in paths.items())
         rows = [json.loads(line) for line in paths["training.jsonl"].read_text().splitlines()]
         train_rows = [row for row in rows if row["event"] == "train_step"]
         validation_rows = [row for row in rows if row["event"] == "validation"]
@@ -87,7 +99,7 @@ def main():
         assert latest["state"]["best_validation_loss"] == best_row["loss"]
         provenance = latest["provenance"]
         assert provenance["git"]["dirty"] is False
-        assert provenance["config_sha256"] == file_sha256(CONFIG_PATH)
+        assert provenance["config_sha256"] == file_sha256(config_path)
         if checkpoint_provenance is None:
             checkpoint_provenance = provenance
         else:
@@ -122,9 +134,7 @@ def main():
         "protocol": {
             "checkpoint_selection": "minimum original latent loss on frozen K562 perturbation-OOD validation",
             "context": specification["selection"]["context"],
-            "dropout_minimum_loss_improvement": specification["selection"][
-                "dropout_minimum_loss_improvement"
-            ],
+            margin_name: rule[margin_name],
             "fit_outcome_role": specification["effect_anchor"]["fit_outcome_role"],
             "model_and_sampling_seed": specification["seed"],
             "population_size": 32,
@@ -157,7 +167,7 @@ def main():
         },
         "artifacts": {
             "candidates": candidates,
-            "console_log": _artifact(CONSOLE_PATH),
+            "console_log": _artifact(console_path),
         },
         "validation": {
             "all_checkpoint_model_tensors_finite": True,
@@ -170,18 +180,28 @@ def main():
             "optimizer_steps_contiguous": True,
         },
     }
-    selected_name, improvement = select_multiteacher_candidate(training, specification)
+    fallback = rule["fallback_candidate"]
+    alternatives = set(candidates) - {fallback}
+    assert len(alternatives) == 1
+    alternative = alternatives.pop()
+    improvement = (
+        candidates[fallback]["full_run"]["best_validation_loss"]
+        - candidates[alternative]["full_run"]["best_validation_loss"]
+    )
+    selected_name = alternative if improvement >= rule[margin_name] else fallback
     training["manifest_sha256"] = _self_hash(training)
-    TRAINING_MANIFEST_PATH.write_text(json.dumps(training, indent=2, sort_keys=True) + "\n")
+    training_manifest_path.write_text(json.dumps(training, indent=2, sort_keys=True) + "\n")
 
     selected_run = candidates[selected_name]
     selection = {
         "format_version": 1,
         "candidate_summaries": {
             name: {
-                "action_modality_dropout": specification["experiments"][name][
-                    "action_modality_dropout"
-                ],
+                **{
+                    key: specification["experiments"][name][key]
+                    for key in ("action_modality_dropout", "action_context_conditioned")
+                    if key in specification["experiments"][name]
+                },
                 "best_validation_loss": entry["full_run"]["best_validation_loss"],
                 **entry["full_run"]["best_validation_metrics"],
             }
@@ -194,28 +214,32 @@ def main():
             "sealed_test_outcomes_used": False,
         },
         "provenance": {
-            "config_sha256": file_sha256(CONFIG_PATH),
+            "config_sha256": file_sha256(config_path),
             "training_manifest_sha256": training["manifest_sha256"],
         },
         "revision": specification["revision"],
         "selected": {
             "candidate": selected_name,
-            "action_modality_dropout": specification["experiments"][selected_name][
-                "action_modality_dropout"
-            ],
+            **{
+                key: specification["experiments"][selected_name][key]
+                for key in ("action_modality_dropout", "action_context_conditioned")
+                if key in specification["experiments"][selected_name]
+            },
             "best_validation_epoch": selected_run["full_run"]["best_validation_epoch"],
             "best_validation_loss": selected_run["full_run"]["best_validation_loss"],
             **selected_run["best_checkpoint"],
         },
         "selection_rule": {
             **specification["selection"],
-            "observed_dropout_loss_improvement": improvement,
-            "dropout_displaced_fallback": selected_name
-            != specification["selection"]["fallback_candidate"],
+            f"observed_{margin_name.removesuffix('_minimum_loss_improvement')}_loss_improvement": (
+                improvement
+            ),
+            f"{margin_name.removesuffix('_minimum_loss_improvement')}_displaced_fallback": selected_name
+            != fallback,
         },
     }
     selection["manifest_sha256"] = _self_hash(selection)
-    SELECTION_MANIFEST_PATH.write_text(json.dumps(selection, indent=2, sort_keys=True) + "\n")
+    selection_manifest_path.write_text(json.dumps(selection, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"selected": selection["selected"], "improvement": improvement}, indent=2))
 
 
