@@ -1,0 +1,112 @@
+{
+  "architecture": "salt_residual_action_v5",
+  "artifact": {
+    "bytes": 2323917,
+    "known_targets": 995,
+    "modality_dims": [
+      320,
+      256
+    ],
+    "path": "artifacts/replogle_actions_salt_residual_v1.pt",
+    "sha256": "73741b5a25e9c6beefe964105594052c098bf17bd834cda985447921d6d936ea"
+  },
+  "format_version": 1,
+  "manifest_sha256": "d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3",
+  "provenance": {
+    "config_sha256": "e12bbae68fe42a5bc6ba00dcf9a35c502b1389d0c5fbd8a3bdeea25e5a752a98",
+    "git": {
+      "commit": "0d05aca0e4b4e0a8ad85dc64ed7650bf98d8aeed",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "e422d5e146aa3a14cb2c63993c1e1603c235fc008b98b8392fd6604c210fc0ec",
+    "source_action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "source_manifest_sha256": "2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde"
+  },
+  "public_gates": {
+    "checkpoint_tensors_finite": true,
+    "esm_go_neighbor_overlap_at_10": 0.088172048330307,
+    "passed": true,
+    "residual_go_neighbor_overlap_at_10": 0.09462365508079529,
+    "residual_go_neighbor_overlap_gain": 0.006451606750488281,
+    "student_test_stable_rank": 12.814294815063477,
+    "student_test_target_cosine": 0.5672647356987,
+    "target_max_absolute_mean": 2.7794079926479753e-08,
+    "target_max_absolute_std_error": 1.1920928955078125e-07
+  },
+  "public_split": {
+    "test": {
+      "target_sha256": "fa7047e33f6272dfd07a2f879a45bc845209fb28cd3827a6aed95f108afbc77a",
+      "targets": 93
+    },
+    "train": {
+      "target_sha256": "73005309f2cdd6862f4564a7d89ddf5dc8b054fdc57ceff26f421a2ec7caa79e",
+      "targets": 742
+    },
+    "validation": {
+      "target_sha256": "97872203e34233e4e7c54105967259cee12a5b5a38e46dc5962d0c47bc85e35d",
+      "targets": 93
+    }
+  },
+  "source": {
+    "action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "config_sha256": "e12bbae68fe42a5bc6ba00dcf9a35c502b1389d0c5fbd8a3bdeea25e5a752a98",
+    "outcomes_read": false
+  },
+  "student": {
+    "best_epoch": 21,
+    "best_validation": {
+      "loss": 0.3840895891189575,
+      "reconstruction": 0.3683907687664032,
+      "state_stable_rank": 12.768272399902344,
+      "target_cosine": 0.5986443758010864,
+      "variance": 0.015698827803134918
+    },
+    "checkpoint": {
+      "bytes": 1457349,
+      "path": "artifacts/salt_action_student/student_best.pt",
+      "sha256": "8f3bc28eaf3192f695272856329e951df5ddd854751374ce3054c2c368ac4b11"
+    },
+    "epochs_run": 62,
+    "ridge_baseline": {
+      "selected": 100.0,
+      "test_loss": 0.30257996916770935,
+      "test_target_cosine": 0.6111684441566467,
+      "validation_loss": 0.28504303097724915
+    },
+    "test": {
+      "loss": 0.41060176491737366,
+      "reconstruction": 0.39394694566726685,
+      "state_stable_rank": 12.814294815063477,
+      "target_cosine": 0.5672647356987,
+      "variance": 0.016654830425977707
+    }
+  },
+  "teacher": {
+    "best_epoch": 31,
+    "best_validation": {
+      "loss": 0.3991072326898575,
+      "reconstruction": 0.37878674268722534,
+      "variance": 0.02032049000263214
+    },
+    "checkpoint": {
+      "bytes": 1863317,
+      "path": "artifacts/salt_action_student/teacher_best.pt",
+      "sha256": "b30e851ea6c144ada8b8bf977cafaf9ee4720646502fb6f2f87fc10f710c72e1"
+    },
+    "epochs_run": 62
+  }
+}
