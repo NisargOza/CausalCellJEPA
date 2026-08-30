@@ -62,3 +62,16 @@ The two-step CPU dynamics smoke also passed. Resuming after step 1 produced bit-
 step-2 model parameters and training events relative to an uninterrupted run. The smoke
 covered all 698 training and 100 K562 validation conditions without reading sealed-test
 or external outcomes. A bounded CUDA checkpoint/resume smoke is therefore eligible.
+
+## Completed GPU selection result
+
+The bounded L40 CUDA smoke passed at step 64 with finite validation metrics and peak
+allocated memory below 283 MB. The full run then completed by frozen early stopping at
+epoch 195 (8,580 optimizer steps). Its best K562 perturbation-OOD validation loss was
+`0.6814889097` at epoch 179.
+
+This is a near-tie, not an improvement. V4 remains better at `0.6814499283`; the
+hybrid's observed loss improvement is `-0.0000389814`, far below the required positive
+margin of `0.003`. The joint teacher branch is therefore retained as an ablation, while
+`availability_static` remains the selected exploratory architecture. Neither sealed
+test nor external outcomes were read for this decision.

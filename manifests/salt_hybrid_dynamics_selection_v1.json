@@ -1,0 +1,57 @@
+{
+  "candidate_summaries": {
+    "availability_static": {
+      "best_validation_loss": 0.6814499282836914,
+      "source_selection_manifest_sha256": "ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199"
+    },
+    "salt_hybrid_static": {
+      "best_validation_epoch": 179,
+      "best_validation_loss": 0.6814889097213745,
+      "bytes": 73921907,
+      "path": "artifacts/salt_hybrid_dynamics/salt_hybrid_static/best.pt",
+      "sha256": "7befe840e28cb4b89827f2ad15173b410fd853e7192375a86fd20d2fe7f63770"
+    }
+  },
+  "format_version": 1,
+  "leakage": {
+    "context": "K562",
+    "outcome_role": "perturbation_ood_validation",
+    "rpe1_outcomes_used": false,
+    "sealed_test_outcomes_used": false
+  },
+  "manifest_sha256": "fbe47c3afa21fb893bc601b5c789829259c50854478f0e215f751e27bc6c5a07",
+  "provenance": {
+    "config_sha256": "bb0f182e17691e7c83241b5f584b6f214aa77612af3acdecb2ad9294c7e53430",
+    "training_manifest_sha256": "2268e3ebfa91352cb990e7a2eeb6840e7c665f9d0febbef1b14325e21b50d22b"
+  },
+  "revision": {
+    "confirmatory_reuse_of_viewed_tests": false,
+    "name": "salt_hybrid_teacher_residual_action_v6",
+    "outcome_selection_boundary": "k562_perturbation_ood_validation_only",
+    "rationale_path": "docs/architecture_revision_v6_salt_hybrid.md",
+    "status": "post_primary_exploratory"
+  },
+  "selected": {
+    "action_context_conditioned": false,
+    "action_modality_dropout": 0.25,
+    "best_validation_epoch": 146,
+    "best_validation_loss": 0.6814499282836914,
+    "bytes": 73118037,
+    "candidate": "availability_static",
+    "path": "artifacts/contextual_multiteacher_dynamics/availability_static/best.pt",
+    "retained_reference": true,
+    "sha256": "9b179337ebdab233203166345ed4e0381ef2e9cb74123239b7be4652df1b2761",
+    "source_selection_manifest_sha256": "ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199"
+  },
+  "selection_rule": {
+    "checkpoint_rule": "minimum_original_latent_validation_loss",
+    "context": "K562",
+    "hybrid_displaces_reference": false,
+    "observed_hybrid_loss_improvement": -3.898143768310547e-05,
+    "outcome_role": "perturbation_ood_validation",
+    "reference_candidate": "availability_static",
+    "reference_validation_loss": 0.6814499282836914,
+    "replacement_minimum_loss_improvement": 0.003,
+    "viewed_test_outcomes_used": false
+  }
+}
