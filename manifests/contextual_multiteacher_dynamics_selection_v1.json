@@ -1,0 +1,65 @@
+{
+  "candidate_summaries": {
+    "availability_static": {
+      "action_context_conditioned": false,
+      "action_modality_dropout": 0.25,
+      "best_validation_loss": 0.6814499282836914,
+      "direction": 0.8573009061813355,
+      "direction_active": 1.0,
+      "magnitude": 0.02168472595512867,
+      "mmd": 0.03577690958976745,
+      "sinkhorn": 0.24168676495552063
+    },
+    "context_query": {
+      "action_context_conditioned": true,
+      "action_modality_dropout": 0.25,
+      "best_validation_loss": 0.6811293196678162,
+      "direction": 0.8573008942604065,
+      "direction_active": 1.0,
+      "magnitude": 0.021684726253151893,
+      "mmd": 0.035440686941146854,
+      "sinkhorn": 0.24145022213459014
+    }
+  },
+  "format_version": 1,
+  "leakage": {
+    "context": "K562",
+    "outcome_role": "perturbation_ood_validation",
+    "rpe1_outcomes_used": false,
+    "sealed_test_outcomes_used": false
+  },
+  "manifest_sha256": "ee8a3e8aa1f128ae700fbb3548a5a47d3d74e17a50656638705eb5f0f86a5199",
+  "provenance": {
+    "config_sha256": "1658003bd8167f4ccb3c30c27e813a551773f723a49974a6762f9586acc4c9a9",
+    "training_manifest_sha256": "1370ca20cd7e743920c981a5f6ec70e4205eac568a22a5e84f80f7e20dd85e86"
+  },
+  "revision": {
+    "confirmatory_reuse_of_viewed_tests": false,
+    "name": "control_conditioned_multiteacher_action_v4",
+    "outcome_selection_boundary": "k562_perturbation_ood_validation_only",
+    "rationale_path": "docs/architecture_revision_v4_exploratory.md",
+    "status": "post_primary_exploratory"
+  },
+  "selected": {
+    "action_context_conditioned": false,
+    "action_modality_dropout": 0.25,
+    "best_validation_epoch": 146,
+    "best_validation_loss": 0.6814499282836914,
+    "bytes": 73118037,
+    "candidate": "availability_static",
+    "path": "artifacts/contextual_multiteacher_dynamics/availability_static/best.pt",
+    "sha256": "9b179337ebdab233203166345ed4e0381ef2e9cb74123239b7be4652df1b2761"
+  },
+  "selection_rule": {
+    "checkpoint_rule": "minimum_original_latent_validation_loss",
+    "context": "K562",
+    "context_displaced_fallback": false,
+    "context_minimum_loss_improvement": 0.003,
+    "fallback_candidate": "availability_static",
+    "observed_context_loss_improvement": 0.0003206086158752397,
+    "outcome_role": "perturbation_ood_validation",
+    "prior_v3_validation_loss": 0.6847986912727356,
+    "replacement_requires_lower_loss": true,
+    "viewed_test_outcomes_used": false
+  }
+}

@@ -76,3 +76,17 @@ loss. `context_query` must improve that loss by at least `0.003` over
 `availability_static` to be selected; otherwise the static matched control wins. The
 selected v4 candidate must also beat the frozen v3 loss `0.684799` to justify replacing
 v3. Test or external outcomes cannot change these decisions.
+
+## Completed GPU result
+
+Both candidates passed the CUDA checkpoint/resume gate and completed on one RTX A6000.
+`context_query` reached `0.681129`, a numerical improvement of only `0.000321` over
+`availability_static` at `0.681450`; this fails the locked `0.003` complexity margin.
+The selected v4 model is therefore `availability_static`. It improves the v3 validation
+loss by `0.003349` (0.49%), so it replaces v3 for subsequent exploratory evaluation.
+
+The result rejects the control-conditioned query as a material improvement; it does not
+establish state of the art. Selection used no K562 test, RPE1, HepG2, or Jurkat outcomes.
+Exact checkpoints, logs, provenance, and the decision are frozen in
+`manifests/contextual_multiteacher_dynamics_training_v1.json` and
+`manifests/contextual_multiteacher_dynamics_selection_v1.json`.
