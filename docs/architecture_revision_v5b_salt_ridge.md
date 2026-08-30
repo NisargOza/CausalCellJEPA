@@ -38,3 +38,18 @@ Only a passing CPU artifact can enter the existing outcome-restricted anchor and
 perturbation-OOD validation protocol. It must improve validation loss by at least
 `0.003` over v4's `0.681450` before it can replace v4. The older nonlinear, contextual,
 and multiteacher architectures remain reproducible baselines regardless of the result.
+
+## Completed CPU export
+
+The deterministic replay selected ridge `100.0` with zero validation-loss replay
+error. Validation reconstruction loss was `0.285043`, target cosine was `0.640632`,
+and stable rank was `8.40274`. The loss improvement over the nonlinear student was
+`0.083348`. Validation-query residual GO-neighbor overlap improved by `0.007527` over
+raw standardized ESM, so every frozen CPU gate passed.
+
+The reporting-only public test reproduced loss `0.302580` and target cosine `0.611168`.
+Its residual GO-neighbor overlap gain was only `0.001075`, below the validation gate.
+This weaker held-out geometry is a material limitation and is retained in the manifest,
+but it cannot change or tune a revision whose test split was already viewed. The next
+authorized selection boundary remains the pre-existing K562 perturbation-OOD validation
+protocol; no claim of broad superiority follows from this CPU result.

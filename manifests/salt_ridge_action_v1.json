@@ -1,0 +1,124 @@
+{
+  "architecture": "salt_ridge_residual_action_v5b",
+  "artifact": {
+    "bytes": 2323965,
+    "eligible_for_downstream_anchor": true,
+    "known_targets": 995,
+    "modality_dims": [
+      320,
+      256
+    ],
+    "path": "artifacts/replogle_actions_salt_ridge_residual_v1.pt",
+    "sha256": "04dba76b440f8c28d1b3982d23f09f7c9c2721dff184509096e52b1c7eb4e840"
+  },
+  "checkpoint": {
+    "bytes": 338246,
+    "path": "artifacts/salt_ridge_action/ridge_student.pt",
+    "sha256": "0bc5f7b4026c22b38803ed9e52afd79123caf7c546eb2d0d818df49124e2fa60"
+  },
+  "format_version": 1,
+  "manifest_sha256": "8345aea444d0d7d608a9e8e1d75d39dc87c9f6e2255b179b9fa32d519412da81",
+  "provenance": {
+    "config_sha256": "52f6daab095f6d6495714863de8d70e48e51a0f998b2734990374d7f80d150b9",
+    "git": {
+      "commit": "c293e0b915d31a1f97fb1c8f4f3f65e1ac2174b5",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "26cbeddc327214a400c0f808434567e2917201a470386d0ca72ea1e671df6191",
+    "source_action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "source_manifest_sha256": "2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde",
+    "source_run_manifest_sha256": "d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3",
+    "teacher_checkpoint_sha256": "b30e851ea6c144ada8b8bf977cafaf9ee4720646502fb6f2f87fc10f710c72e1"
+  },
+  "public_split": {
+    "test": {
+      "target_sha256": "fa7047e33f6272dfd07a2f879a45bc845209fb28cd3827a6aed95f108afbc77a",
+      "targets": 93
+    },
+    "train": {
+      "target_sha256": "73005309f2cdd6862f4564a7d89ddf5dc8b054fdc57ceff26f421a2ec7caa79e",
+      "targets": 742
+    },
+    "validation": {
+      "target_sha256": "97872203e34233e4e7c54105967259cee12a5b5a38e46dc5962d0c47bc85e35d",
+      "targets": 93
+    }
+  },
+  "public_test_reporting_only": {
+    "esm_go_neighbor_overlap_at_10": 0.088172048330307,
+    "loss": 0.30257996916770935,
+    "residual_go_neighbor_overlap_at_10": 0.08924731612205505,
+    "residual_go_neighbor_overlap_gain": 0.0010752677917480469,
+    "selection_influence": false,
+    "stable_rank": 8.441781044006348,
+    "target_cosine": 0.6111684441566467
+  },
+  "public_validation": {
+    "loss": 0.28504303097724915,
+    "stable_rank": 8.402741432189941,
+    "target_cosine": 0.6406322717666626
+  },
+  "public_validation_gates": {
+    "finite_tensors": true,
+    "passed": true,
+    "selected_ridge": 100.0,
+    "selected_ridge_replay_absolute_error": 0.0,
+    "target_max_absolute_mean": 2.7794079926479753e-08,
+    "target_max_absolute_std_error": 1.1920928955078125e-07,
+    "validation_esm_go_neighbor_overlap_at_10": 0.08279570192098618,
+    "validation_loss_improvement_over_nonlinear_student": 0.08334773778915405,
+    "validation_residual_go_neighbor_overlap_at_10": 0.0903225764632225,
+    "validation_residual_go_neighbor_overlap_gain": 0.007526874542236328,
+    "validation_stable_rank": 8.402741432189941,
+    "validation_target_cosine": 0.6406322717666626
+  },
+  "selection": {
+    "candidates": [
+      {
+        "ridge": 0.1,
+        "validation_loss": 0.4169321656227112
+      },
+      {
+        "ridge": 1.0,
+        "validation_loss": 0.3907409608364105
+      },
+      {
+        "ridge": 10.0,
+        "validation_loss": 0.32442864775657654
+      },
+      {
+        "ridge": 100.0,
+        "validation_loss": 0.28504303097724915
+      },
+      {
+        "ridge": 1000.0,
+        "validation_loss": 0.29645177721977234
+      }
+    ],
+    "nonlinear_validation_reconstruction": 0.3683907687664032,
+    "refit_after_selection": false,
+    "selected_ridge": 100.0,
+    "selected_validation_loss": 0.28504303097724915,
+    "validation_loss_improvement": 0.08334773778915405
+  },
+  "source": {
+    "action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "outcomes_read": false,
+    "public_test_status": "viewed_after_source_run_and_sealed_reporting_only",
+    "source_run_manifest_sha256": "d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3"
+  }
+}
