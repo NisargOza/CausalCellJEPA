@@ -40,3 +40,12 @@ Only then may a bounded CUDA checkpoint/resume smoke run proceed. Full GPU train
 eligible only after that smoke run and must improve K562 perturbation-OOD validation
 loss by at least `0.003` over v4's `0.681450`. Sealed test and external outcomes cannot
 change the architecture decision.
+
+## Completed public-feature export
+
+The CPU export preserved the ESM+GO prefix and availability bits exactly. Train-split
+joint standardization errors were below `1.2e-7`, the validation joint stable rank was
+`13.3289`, and the frozen teacher's validation reconstruction replay error was zero.
+All public-feature gates passed without reading the previously viewed public test or
+any perturbation outcome. The resulting `643`-dimensional cache covers 996 targets and
+is eligible for the isolated effect-anchor check.
