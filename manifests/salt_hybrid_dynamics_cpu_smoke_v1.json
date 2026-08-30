@@ -1,0 +1,19 @@
+{
+  "architecture": "salt_hybrid_teacher_residual_action_v6",
+  "config_sha256": "affe91f2864754bd298814a9155eca65cc1586821c27a0435b96f32805be6c0d",
+  "exact_model_resume": true,
+  "exact_training_log_resume": true,
+  "first_global_step": 1,
+  "format_version": 1,
+  "leakage": {
+    "context": "K562",
+    "rpe1_outcomes_used": false,
+    "sealed_test_outcomes_used": false
+  },
+  "manifest_sha256": "95b85c3faade1d266ff3f9c6cf34610861c2470364e482570e229e7aeaf8e36c",
+  "resumed_global_step": 2,
+  "resumed_train_conditions": 698,
+  "resumed_validation_conditions": 100,
+  "uninterrupted_global_step": 2,
+  "uninterrupted_train_conditions": 698
+}
