@@ -58,3 +58,4 @@ cuda_smoke:
   checkpoint_step: 16
   validation_batches: 2
   output_directory: artifacts/salt_hybrid_dynamics_cuda_smoke
+  report_path: artifacts/salt_hybrid_dynamics_cuda_smoke/report.json

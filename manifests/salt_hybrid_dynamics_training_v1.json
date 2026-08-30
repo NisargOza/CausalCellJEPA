@@ -1,0 +1,98 @@
+{
+  "architecture": "salt_hybrid_teacher_residual_action_v6",
+  "artifacts": {
+    "best_checkpoint": {
+      "bytes": 73921907,
+      "path": "artifacts/salt_hybrid_dynamics/salt_hybrid_static/best.pt",
+      "sha256": "7befe840e28cb4b89827f2ad15173b410fd853e7192375a86fd20d2fe7f63770"
+    },
+    "console_log": {
+      "bytes": 667,
+      "path": "artifacts/salt_hybrid_training_console.log",
+      "sha256": "959e89b8683becc815d24d7871bebbda7a1912922842c75f5df216a418acc27b"
+    },
+    "cuda_smoke_report": {
+      "bytes": 1215,
+      "path": "artifacts/salt_hybrid_dynamics_cuda_smoke/report.json",
+      "sha256": "19044e015f0e3ef8bdc45096854487d9cfa13cbd8dbd7ebdb1b49a183cc5a5ed"
+    },
+    "latest_checkpoint": {
+      "bytes": 73923403,
+      "path": "artifacts/salt_hybrid_dynamics/salt_hybrid_static/latest.pt",
+      "sha256": "f97f8f549033940621f9e812056db988cf68425cccdd3a948f218f8356c7fbaf"
+    },
+    "training_log": {
+      "bytes": 2924533,
+      "path": "artifacts/salt_hybrid_dynamics/salt_hybrid_static/training.jsonl",
+      "records": 8775,
+      "sha256": "1f941c954fa9a61b212ecfe2b4fc2bcc0c598c6ccf7ff92f3e56c1cb49d69c42"
+    }
+  },
+  "format_version": 1,
+  "full_run": {
+    "best_validation_epoch": 179,
+    "best_validation_loss": 0.6814889097213745,
+    "best_validation_metrics": {
+      "direction": 0.8573009109497071,
+      "direction_active": 1.0,
+      "magnitude": 0.021684726476669313,
+      "mmd": 0.03504517078399658,
+      "sinkhorn": 0.24190869092941283
+    },
+    "completion_reason": "early_stopping",
+    "elapsed_seconds": 1091.0210004933178,
+    "epochs": 195,
+    "global_steps": 8580,
+    "peak_cuda_memory_bytes": 282039296
+  },
+  "manifest_sha256": "2268e3ebfa91352cb990e7a2eeb6840e7c665f9d0febbef1b14325e21b50d22b",
+  "protocol": {
+    "context": "K562",
+    "fit_outcome_role": "dynamics_train",
+    "model_and_sampling_seed": 20260830,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_outcome_role": "perturbation_ood_validation"
+  },
+  "runtime": {
+    "cuda": "13.0",
+    "gpu": {
+      "capability": [
+        8,
+        9
+      ],
+      "name": "NVIDIA L40",
+      "total_memory_bytes": 47695921152
+    },
+    "python": "3.12.13",
+    "torch": "2.13.0"
+  },
+  "source": {
+    "cache_sha256": {
+      "action": "0589ddafc15624e3a6c9ba29e032bb22f6d733542410bc0ec076905053cc6b14",
+      "effect_anchor": "a2b0b093dd7fda9458934150d01ab88bfea91ea6d0526cc2ebfb0f72733fc2a9",
+      "latent": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6"
+    },
+    "config_sha256": "bb0f182e17691e7c83241b5f584b6f214aa77612af3acdecb2ad9294c7e53430",
+    "cpu_smoke_manifest_sha256": "95b85c3faade1d266ff3f9c6cf34610861c2470364e482570e229e7aeaf8e36c",
+    "cuda_smoke_report_sha256": "95b5e3637bd959788667373c62ef28b9c126f0e6815ba49d80e9d68ec82b605e",
+    "git_commit": "4e79a3eb67da3a2ae7099d64fbac2ef8ea7332e0",
+    "manifest_sha256": {
+      "action": "26902eb4babc135dde6a48db78de644423c508abb5d6ca7ed881002e279c403d",
+      "dynamics": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+      "effect_anchor": "c8a40023df9eac7824a54c9927477a826496503345758de46755e463e96f994c",
+      "replogle": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488"
+    },
+    "runtime_source_sha256": "5922c22e672653ef27eb596142e57dd542214fb0be907ecdb281e41447c87c23"
+  },
+  "validation": {
+    "all_checkpoint_model_tensors_finite": true,
+    "all_log_numeric_values_finite": true,
+    "best_checkpoint_matches_logged_minimum": true,
+    "checkpoint_provenance_matches_clean_commit": true,
+    "cpu_checkpoint_resume_exactness_passed": true,
+    "cuda_checkpoint_resume_smoke_passed": true,
+    "local_transfer_sha256_matches_remote": true,
+    "optimizer_steps_contiguous": true
+  }
+}
