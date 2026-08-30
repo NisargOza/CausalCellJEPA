@@ -1,0 +1,61 @@
+# Freeze the outcome-free hybrid teacher action before export or outcome fitting.
+seed: 20260830
+source_action:
+  path: artifacts/replogle_actions_esm2_go_context_v1.pt
+  bytes: 1557253
+  sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
+  manifest_path: manifests/contextual_multiteacher_action_v1.json
+  manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+source_teacher:
+  run_manifest_path: manifests/salt_action_student_v1.json
+  run_manifest_sha256: d79feba17199a4d3e762f6384e3adf6d38e4a747c048e2f5163de6943b623ff3
+  checkpoint_path: artifacts/salt_action_student/teacher_best.pt
+  checkpoint_bytes: 1863317
+  checkpoint_sha256: b30e851ea6c144ada8b8bf977cafaf9ee4720646502fb6f2f87fc10f710c72e1
+  best_validation_reconstruction: 0.37878674268722534
+revision:
+  name: salt_hybrid_teacher_residual_action_v6
+  status: post_primary_exploratory
+  outcome_selection_boundary: no_perturbation_outcomes
+  rationale_path: docs/architecture_revision_v6_salt_hybrid.md
+public_split:
+  unit: target_gene
+  eligibility: esm_and_go_available
+  assignment: sha256_rank
+  fractions: [0.80, 0.10, 0.10]
+teacher:
+  modality_dims: [320, 64]
+  joint_dim: 256
+  projector_hidden_dim: 256
+  fusion: availability_normalized_uniform
+  checkpoint_selection: public_validation_masked_reconstruction
+joint_branch:
+  input: all_available_public_teacher_modalities
+  standardization: public_train_joint_mean_and_std
+  missing_policy: masked_teacher_fusion_for_any_available_modality
+  student_fallback: none
+  rationale: public_teachers_are_cacheable_and_the_esm_only_student_failed_the_k562_anchor_gate
+export:
+  representation: raw_frozen_esm_plus_raw_go_plus_standardized_joint_teacher
+  modality_dims: [320, 64, 256]
+  availability_bits: true
+  action_cache_path: artifacts/replogle_actions_salt_hybrid_v1.pt
+  manifest_path: manifests/salt_hybrid_action_v1.json
+public_validation_gates:
+  finite_tensors: true
+  raw_teacher_prefix_exact: true
+  standardized_target_max_absolute_mean: 0.00001
+  standardized_target_max_absolute_std_error: 0.0001
+  minimum_joint_stable_rank: 8.0
+  source_teacher_reconstruction_absolute_tolerance: 0.0000001
+public_test:
+  status: previously_viewed_in_v5
+  use: not_read_by_this_revision
+downstream_gate:
+  anchor_input_modalities: [esm2_t6_8M_UR50D, go_biological_process_svd]
+  reference_candidate: availability_static
+  reference_validation_loss: 0.6814499282836914
+  replacement_minimum_loss_improvement: 0.003
+  selection_context: K562
+  selection_outcome_role: perturbation_ood_validation
+  rpe1_or_sealed_test_outcomes_used: false
