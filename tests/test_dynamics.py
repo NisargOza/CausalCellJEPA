@@ -66,6 +66,26 @@ def test_context_conditioned_attention_masks_missing_teachers_and_uses_control_s
     assert torch.isfinite(first).all() and not torch.allclose(first, second)
 
 
+def test_effect_anchor_loads_legacy_state_without_serialized_input_indices():
+    checkpoint = {
+        "format_version": 1,
+        "architecture": "multiteacher_low_rank_latent_effect_ridge",
+        "x_mean": torch.zeros(3),
+        "x_std": torch.ones(3),
+        "y_mean": torch.zeros(2),
+        "components": torch.eye(2),
+        "weights": torch.ones(3, 2),
+    }
+    source = FrozenLowRankEffectAnchor(checkpoint)
+    legacy = source.state_dict()
+    legacy.pop("input_indices")
+    restored = FrozenLowRankEffectAnchor(checkpoint)
+    restored.load_state_dict(legacy)
+    action, known = torch.randn(4, 3), torch.ones(4, dtype=torch.bool)
+    assert torch.equal(restored.input_indices, torch.arange(3))
+    assert torch.equal(restored(action, known), source(action, known))
+
+
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():
     artifact = {"bytes": 7, "path": "best.pt", "sha256": "abc"}
     run = {"best_validation_epoch": 4, "best_validation_loss": 0.25}

@@ -404,6 +404,30 @@ class FrozenLowRankEffectAnchor(nn.Module):
         assert self.weights.shape == (len(self.x_mean), len(self.components))
         assert self.components.shape[1] == len(self.y_mean)
 
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ):
+        # Checkpoints frozen before modality-subset anchors did not serialize this buffer.
+        key = f"{prefix}input_indices"
+        if key not in state_dict:
+            state_dict[key] = self.input_indices
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+
     def forward(self, action_embedding, action_known):
         selected = action_embedding.index_select(1, self.input_indices)
         standardized = (selected - self.x_mean) / self.x_std
