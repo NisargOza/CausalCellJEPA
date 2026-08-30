@@ -1,0 +1,70 @@
+# Freeze the outcome-free SALT-style action student before implementation or fitting.
+seed: 20260830
+source_action:
+  path: artifacts/replogle_actions_esm2_go_context_v1.pt
+  bytes: 1557253
+  sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
+  manifest_path: manifests/contextual_multiteacher_action_v1.json
+  manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+revision:
+  name: salt_residual_action_v5
+  status: post_primary_exploratory
+  outcome_selection_boundary: no_perturbation_outcomes
+  rationale_path: docs/architecture_revision_v5_salt_student.md
+public_split:
+  unit: target_gene
+  eligibility: esm_and_go_available
+  assignment: sha256_rank
+  fractions: [0.80, 0.10, 0.10]
+teacher:
+  modality_dims: [320, 64]
+  joint_dim: 256
+  projector_hidden_dim: 256
+  attention_weight_floor: 0.25
+  masking: exactly_one_available_teacher
+  reconstruction_loss: SmoothL1
+  variance_weight: 1.0
+  epochs: 300
+  batch_size: 64
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  early_stopping_patience: 30
+student:
+  input: frozen_esm2_t6_mean_pool
+  input_dim: 320
+  hidden_dim: 512
+  output_dim: 256
+  predictor: linear
+  target: train_split_standardized_frozen_joint_teacher
+  loss: SmoothL1
+  variance_weight: 1.0
+  epochs: 500
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.05
+  warmup_fraction: 0.05
+  minimum_learning_rate_fraction: 0.05
+  early_stopping_patience: 40
+export:
+  representation: raw_frozen_esm_plus_student_encoder
+  modality_dims: [320, 256]
+  availability_bits: true
+  teacher_checkpoint_path: artifacts/salt_action_student/teacher_best.pt
+  student_checkpoint_path: artifacts/salt_action_student/student_best.pt
+  action_cache_path: artifacts/replogle_actions_salt_residual_v1.pt
+  manifest_path: manifests/salt_action_student_v1.json
+public_gates:
+  finite_checkpoint_tensors: true
+  standardized_target_max_absolute_mean: 0.00001
+  standardized_target_max_absolute_std_error: 0.0001
+  student_test_minimum_target_cosine: 0.50
+  student_test_minimum_stable_rank: 8.0
+  residual_minimum_go_neighbor_overlap_gain_over_esm: 0.005
+downstream_gate:
+  reference_candidate: availability_static
+  reference_selection_manifest: manifests/contextual_multiteacher_dynamics_selection_v1.json
+  reference_validation_loss: 0.6814499282836914
+  replacement_minimum_loss_improvement: 0.003
+  selection_context: K562
+  selection_outcome_role: perturbation_ood_validation
+  rpe1_or_sealed_test_outcomes_used: false
