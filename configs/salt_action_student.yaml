@@ -20,7 +20,7 @@ teacher:
   modality_dims: [320, 64]
   joint_dim: 256
   projector_hidden_dim: 256
-  attention_weight_floor: 0.25
+  fusion: availability_normalized_uniform
   masking: exactly_one_available_teacher
   reconstruction_loss: SmoothL1
   variance_weight: 1.0

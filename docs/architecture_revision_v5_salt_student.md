@@ -29,8 +29,7 @@ in the sequence representation.
 Revision v5 consequently has two outcome-free phases:
 
 1. An ESM+GO joint teacher hides exactly one available modality and reconstructs it
-   from the other. Both encoders remain frozen; only projectors, attention, and
-   decoders train.
+   from the other. Both encoders remain frozen; only projectors and decoders train.
 2. The joint teacher freezes. Training-split joint targets are standardized per
    dimension, cached, and predicted by a small student whose only input is the frozen
    320-dimensional ESM-2 vector.
@@ -39,6 +38,12 @@ The downstream action cache concatenates raw frozen ESM with the student encoder
 representation. This residual sequence path is the deliberate deviation from
 ProtJEPA: it prevents the distilled branch from having to preserve every useful ESM
 direction while still making cross-modal public knowledge available.
+
+ProtJEPA can identify sample-dependent attention because several of ten teachers
+remain visible when others are masked. With two teachers, hiding exactly one leaves no
+attention choice. The v5 joint teacher therefore uses availability-normalized equal
+fusion; pretending to learn a gate in this setting would add an underidentified
+parameter rather than biological capacity.
 
 ## Frozen controls and gates
 
