@@ -1,0 +1,76 @@
+{
+  "artifacts": {
+    "condition_metrics": {"bytes": 2346960, "path": "artifacts/string_kernel_gene_evaluation/condition_metrics.jsonl", "records": 1794, "sha256": "bc1fe746caeb87d4076f19b733728395632cc3494b55cb4043521accdb1b4e53"},
+    "paired_comparisons": {"bytes": 583370, "condition_comparisons": 656, "path": "artifacts/string_kernel_gene_evaluation/paired_comparisons.json", "pathway_comparisons": 172, "sha256": "abbc81f32fcac6d9b702dc03f8bab3a81e80c0acca7cd1f6ecc4d86f0a44db05"},
+    "pathway_metrics": {"bytes": 861903, "path": "artifacts/string_kernel_gene_evaluation/pathway_metrics.jsonl", "records": 1794, "sha256": "2ceee8b4f470c350ef5af64baee65f77d18de2bf9c2f9b911820aaf4664c6f38"},
+    "provenance": {"bytes": 8928, "path": "artifacts/string_kernel_gene_evaluation/provenance.json", "sha256": "0ad9f2129486dc28493d62365b31079f3421dc191e668de0a8e595fc8c5003a1"},
+    "summary": {"bytes": 36718, "condition_summaries": 88, "path": "artifacts/string_kernel_gene_evaluation/summary.json", "pathway_summaries": 24, "sha256": "dcd93c4492fca2e1f47c84680917f7257cfc45f57ae6f51cbadb3d73ca6015c0"},
+    "truth_report": {"bytes": 560, "path": "artifacts/string_kernel_gene_evaluation/truth_report.json", "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"}
+  },
+  "experimental_status": "exploratory_post_test_requires_external_confirmation",
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {"go_rbf": 0.226143, "string_go_rbf": 0.226999},
+      "all_magnitude_absolute_error": {"go_rbf": 3.840617, "string_go_rbf": 3.798777},
+      "deg_auprc": {"go_rbf": 0.20885, "string_go_rbf": 0.214224},
+      "pathway_nes_pearson": {"go_rbf": 0.257176, "string_go_rbf": 0.254575}
+    },
+    "double_ood": {
+      "all_effect_pearson": {"direct_gene_esm": 0.213575, "go_rbf": 0.196371, "string_go_rbf": 0.20315},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 3.731797, "go_rbf": 3.49709, "string_go_rbf": 3.461794},
+      "deg_auprc": {"direct_gene_esm": 0.174735, "go_rbf": 0.173674, "string_go_rbf": 0.182443},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.267801, "go_rbf": 0.244705, "string_go_rbf": 0.242481}
+    },
+    "iid": {
+      "all_effect_pearson": {"go_rbf": 0.254449, "string_go_rbf": 0.259827},
+      "all_magnitude_absolute_error": {"go_rbf": 3.395795, "string_go_rbf": 3.352719},
+      "deg_auprc": {"go_rbf": 0.116225, "string_go_rbf": 0.127581},
+      "pathway_nes_pearson": {"go_rbf": 0.279199, "string_go_rbf": 0.283188}
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {"direct_gene_esm": 0.235313, "go_rbf": 0.262449, "string_go_rbf": 0.274644},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 2.029525, "go_rbf": 1.830614, "string_go_rbf": 1.782034},
+      "deg_auprc": {"direct_gene_esm": 0.139752, "go_rbf": 0.177495, "string_go_rbf": 0.189594},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.281877, "go_rbf": 0.298693, "string_go_rbf": 0.312288}
+    }
+  },
+  "leakage": {
+    "checkpoint_frozen_in_selection_manifest_before_evaluation": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_manifest_sha256": "1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf"
+  },
+  "manifest_sha256": "e4d423644eb594adef25de109a6b61efcd248c3c9f5985561fd341679a722af6",
+  "paired_bootstrap_95ci_counts": {
+    "condition_metrics": {
+      "direct_gene_esm": {"inconclusive": 17, "losses": 8, "wins": 63},
+      "go_rbf": {"inconclusive": 48, "losses": 0, "wins": 40},
+      "state_sm": {"inconclusive": 1, "losses": 0, "wins": 87}
+    },
+    "pathway_metrics": {
+      "direct_gene_esm": {"inconclusive": 8, "losses": 5, "wins": 11},
+      "go_rbf": {"inconclusive": 17, "losses": 0, "wins": 7},
+      "state_sm": {"inconclusive": 4, "losses": 0, "wins": 20}
+    }
+  },
+  "retrieval_mrr": {
+    "context_ood": {"go_rbf": 0.060809, "string_go_rbf": 0.061121},
+    "double_ood": {"go_rbf": 0.080456, "string_go_rbf": 0.087885},
+    "iid": {"go_rbf": 0.076429, "string_go_rbf": 0.078348},
+    "perturbation_ood": {"go_rbf": 0.097741, "string_go_rbf": 0.104869}
+  },
+  "result_scope": {
+    "gpu_scaling_justified": false,
+    "interpretation": "STRING adds a reproducible incremental gain over GO, led by unseen-target direction, DE recovery, pathways, and retrieval. Cross-context direction improves only modestly and still trails the strongest simple references.",
+    "state_of_the_art_claim_supported": false,
+    "supports_uniform_superiority": false
+  },
+  "source": {
+    "action_manifest_sha256": "b8d803eb6ca36080d2fd0206e6ce59506372ec59aa3449e763500f7c2855fe00",
+    "config_sha256": "060ba854918fa6f958c3fcb78b2b4ef151827ac12ac7b5c90b4e7555e4d3818d",
+    "evaluation_git_commit": "25189b83e37c361e87a9a05ba3b4ed054bb658fb",
+    "evaluation_git_dirty": false,
+    "selection_manifest_sha256": "1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf"
+  }
+}

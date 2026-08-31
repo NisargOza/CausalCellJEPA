@@ -233,6 +233,12 @@ The public STRING extension is intentionally treated as a minor follow-up: GO+ST
 validation MSE by 0.43% and mean effect Pearson from 0.2700 to 0.2762 over GO alone. Its selected
 checkpoint is frozen before test evaluation in
 [`manifests/string_kernel_selection_v1.json`](manifests/string_kernel_selection_v1.json).
+Reporting confirms a useful incremental gain: STRING+GO raises perturbation-OOD Pearson from
+0.2624 to 0.2746, DE AUPRC from 0.1775 to 0.1896, and pathway Pearson from 0.2987 to 0.3123
+relative to GO alone. It also improves double-OOD Pearson from 0.1964 to 0.2032, but still trails
+the strongest simple cross-context references; GPU scaling is therefore not justified. Exact
+artifacts are frozen in
+[`manifests/string_kernel_evaluation_v1.json`](manifests/string_kernel_evaluation_v1.json).
 
 ## Post-primary architecture revision
 
