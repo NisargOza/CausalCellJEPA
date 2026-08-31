@@ -1,0 +1,61 @@
+{
+  "architecture": "frozen_esm_go_string_spectral_action",
+  "artifact": {
+    "bytes": 1816445,
+    "input_dim": 451,
+    "modality_availability": true,
+    "modality_dims": [
+      320,
+      64,
+      64
+    ],
+    "path": "artifacts/replogle_actions_esm2_go_string_v1.pt",
+    "sha256": "bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0"
+  },
+  "format_version": 1,
+  "graph": {
+    "maximum_weight": 999,
+    "normalization": "symmetric_degree",
+    "rank": 64,
+    "self_loop_weight": 1.0,
+    "symmetrization": "maximum",
+    "top_neighbors_per_target": 20
+  },
+  "manifest_sha256": "b8d803eb6ca36080d2fd0206e6ce59506372ec59aa3449e763500f7c2855fe00",
+  "provenance": {
+    "git": {
+      "commit": "edc2bb946dd1d3aaf34e85044edb2ae1eabc4163",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "a5fc4fa50364c478f3937329f399a46c1c2352eda7c5dc3973f787781811ef09"
+  },
+  "report": {
+    "input_edges": 107336,
+    "selected_directed_edges": 17946,
+    "string_rank": 64,
+    "target_coverage": 0.950852557673019,
+    "targets_with_string": 948
+  },
+  "source": {
+    "base_action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "commit": "08d82eea86746b044cf7531f4ec8c5f60e1cb73f",
+    "config_sha256": "d6d4200726dc30ff0d1f3f519f792314a0c64abc7f3a6f4d1f4574e768085e45",
+    "outcomes_read": false,
+    "repository": "https://github.com/valence-labs/TxPert.git",
+    "string_sha256": "55d312f8d6186078eb00a7caf108ef731cd27aa08a5b48de59cd0333f0206404"
+  }
+}
