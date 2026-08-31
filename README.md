@@ -213,6 +213,12 @@ evaluation outperforms the latent world model on effect direction, DE recovery, 
 and pathway agreement in all four regimes; the negative result is frozen in
 [`manifests/direct_gene_v1.json`](manifests/direct_gene_v1.json).
 
+An exploratory post-test action student extends that baseline with the frozen contextual
+ESM-2/GO representation and linear/RBF kernels while retaining its frozen rank-64 expression
+basis. Fitting uses only K562 dynamics-training effects and selection uses only the designated
+K562 perturbation-OOD validation role. Because this variant was developed after primary test
+results were inspected, any later test result is exploratory and requires external confirmation.
+
 ## Post-primary architecture revision
 
 The completed diagnostics motivate an explicit experimental revision without changing the
@@ -361,6 +367,7 @@ uv run python scripts/evaluate_stage2_replication_transcriptomics.py
 uv run python scripts/analyze_stage2_replication_transcriptomics.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
+uv run python scripts/fit_kernel_gene_student.py
 uv run python scripts/prepare_effect_anchor.py
 uv run python scripts/smoke_anchored_dynamics.py
 uv run python scripts/smoke_anchored_validation.py
