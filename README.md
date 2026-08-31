@@ -218,6 +218,11 @@ ESM-2/GO representation and linear/RBF kernels while retaining its frozen rank-6
 basis. Fitting uses only K562 dynamics-training effects and selection uses only the designated
 K562 perturbation-OOD validation role. Because this variant was developed after primary test
 results were inspected, any later test result is exploratory and requires external confirmation.
+The frozen validation-only selection chose the GO-with-availability RBF student and reduced MSE
+by 15.23% relative to the direct ESM ridge reference while increasing mean effect Pearson from
+0.2313 to 0.2700. This is evidence to proceed to exploratory evaluation, not a test-set or
+state-of-the-art claim; exact checkpoint and report hashes are in
+[`manifests/kernel_gene_selection_v1.json`](manifests/kernel_gene_selection_v1.json).
 
 ## Post-primary architecture revision
 
