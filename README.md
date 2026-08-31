@@ -223,6 +223,12 @@ by 15.23% relative to the direct ESM ridge reference while increasing mean effec
 0.2313 to 0.2700. This is evidence to proceed to exploratory evaluation, not a test-set or
 state-of-the-art claim; exact checkpoint and report hashes are in
 [`manifests/kernel_gene_selection_v1.json`](manifests/kernel_gene_selection_v1.json).
+Its frozen exploratory evaluation is strongest among evaluated models on K562 IID and unseen-
+target effect direction, magnitude calibration, DE recovery, and pathway direction, and ranks
+first on retrieval in every regime. It does not preserve the direction advantage after RPE1
+transfer: double-OOD Pearson is 0.1964 versus 0.2136 for direct ESM, although magnitude error
+improves from 3.7318 to 3.4971. The exact mixed result is frozen in
+[`manifests/kernel_gene_evaluation_v1.json`](manifests/kernel_gene_evaluation_v1.json).
 
 ## Post-primary architecture revision
 
