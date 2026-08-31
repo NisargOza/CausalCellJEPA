@@ -229,6 +229,10 @@ first on retrieval in every regime. It does not preserve the direction advantage
 transfer: double-OOD Pearson is 0.1964 versus 0.2136 for direct ESM, although magnitude error
 improves from 3.7318 to 3.4971. The exact mixed result is frozen in
 [`manifests/kernel_gene_evaluation_v1.json`](manifests/kernel_gene_evaluation_v1.json).
+The public STRING extension is intentionally treated as a minor follow-up: GO+STRING improves
+validation MSE by 0.43% and mean effect Pearson from 0.2700 to 0.2762 over GO alone. Its selected
+checkpoint is frozen before test evaluation in
+[`manifests/string_kernel_selection_v1.json`](manifests/string_kernel_selection_v1.json).
 
 ## Post-primary architecture revision
 
