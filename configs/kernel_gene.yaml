@@ -22,3 +22,53 @@ kernel_gene:
   rbf_ridge_candidates: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
   checkpoint_path: artifacts/kernel_gene_student_v1.pt
   output_directory: artifacts/kernel_gene_selection
+  selection_manifest_path: manifests/kernel_gene_selection_v1.json
+  selection_manifest_sha256: dc70f5710e6f37185176e1830cf98900476437e5cbf3c7f00dce24f23727a02a
+evaluation:
+  model_name: kernel_gene_go_rbf
+  references:
+    - models: [direct_gene_esm]
+      condition_metrics_path: artifacts/direct_gene_baseline/condition_metrics.jsonl
+      condition_metrics_bytes: 2330865
+      condition_metrics_records: 1794
+      condition_metrics_sha256: f403cc0f909441a1ebaf4bd76969ed8810bd6854314602e036d27906602f2f6e
+      pathway_metrics_path: artifacts/direct_gene_baseline/pathway_metrics.jsonl
+      pathway_metrics_bytes: 847590
+      pathway_metrics_records: 1794
+      pathway_metrics_sha256: cf95dae84c3311161afd69006ad831737c81e2dc90307ccaa57600c521f9b70f
+    - models: [causalcelljepa, no_change, mean_effect, linear_esm, pseudo_paired]
+      condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+      condition_metrics_bytes: 89852133
+      condition_metrics_records: 71760
+      condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+      pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+      pathway_metrics_bytes: 4088543
+      pathway_metrics_records: 8970
+      pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+    - models: [contextual_multiteacher_selected]
+      condition_metrics_path: artifacts/evaluation_contextual_multiteacher_transcriptomics/condition_metrics.jsonl
+      condition_metrics_bytes: 18905501
+      condition_metrics_records: 14352
+      condition_metrics_sha256: 25cc58fa73b2ac655a5cab1c037bab5995ef992431973c45636d86188f02cea0
+      pathway_metrics_path: artifacts/evaluation_contextual_multiteacher_transcriptomics/pathway_metrics.jsonl
+      pathway_metrics_bytes: 875910
+      pathway_metrics_records: 1794
+      pathway_metrics_sha256: ffe4585b83d3a5760529d04f062a4eed558e67297d3b8ac048af2dd8fec77690
+    - models: [state_sm]
+      condition_metrics_path: artifacts/state_baseline/evaluation/condition_metrics.jsonl
+      condition_metrics_bytes: 18637206
+      condition_metrics_records: 14352
+      condition_metrics_sha256: 4e912d9c149b5069093c27048e39484fd5762f15b1706d989ddb93b8ae09bcfc
+      pathway_metrics_path: artifacts/state_baseline/evaluation/pathway_metrics.jsonl
+      pathway_metrics_bytes: 823193
+      pathway_metrics_records: 1794
+      pathway_metrics_sha256: dd8413d655b71de195095af61799bff498cee33f00345001577440bf8f3cabc1
+  comparisons:
+    - {candidate: kernel_gene_go_rbf, reference: direct_gene_esm, hypothesis: GO kernel improves the frozen direct ESM ridge}
+    - {candidate: kernel_gene_go_rbf, reference: contextual_multiteacher_selected, hypothesis: GO kernel improves the validation-frozen v4 model}
+    - {candidate: kernel_gene_go_rbf, reference: state_sm, hypothesis: GO kernel improves the bounded State baseline}
+    - {candidate: kernel_gene_go_rbf, reference: causalcelljepa, hypothesis: GO kernel improves the primary model}
+    - {candidate: kernel_gene_go_rbf, reference: no_change, hypothesis: GO kernel improves no-change prediction}
+    - {candidate: kernel_gene_go_rbf, reference: mean_effect, hypothesis: GO kernel improves mean-effect prediction}
+    - {candidate: kernel_gene_go_rbf, reference: linear_esm, hypothesis: GO kernel improves the frozen linear ESM baseline}
+  output_directory: artifacts/kernel_gene_evaluation

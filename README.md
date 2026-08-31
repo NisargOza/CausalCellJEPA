@@ -373,6 +373,7 @@ uv run python scripts/analyze_stage2_replication_transcriptomics.py
 uv run python scripts/smoke_direct_gene.py
 uv run python scripts/evaluate_direct_gene.py
 uv run python scripts/fit_kernel_gene_student.py
+uv run python scripts/evaluate_kernel_gene.py
 uv run python scripts/prepare_effect_anchor.py
 uv run python scripts/smoke_anchored_dynamics.py
 uv run python scripts/smoke_anchored_validation.py

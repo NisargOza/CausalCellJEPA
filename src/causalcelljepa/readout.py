@@ -1975,6 +1975,113 @@ def run_state_baseline_evaluation(config, base):
     return summary, paired, truth_report, provenance
 
 
+def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory=None):
+    """Report a selection-frozen kernel student against immutable references."""
+    kernel, evaluation, base = config["kernel_gene"], config["evaluation"], config["transcriptomics"]
+    selection = json.loads(Path(kernel["selection_manifest_path"]).read_text())
+    declared = selection.pop("manifest_sha256")
+    assert declared == kernel["selection_manifest_sha256"] == sha256(
+        json.dumps(selection, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    checkpoint_artifact = selection["artifacts"]["checkpoint"]
+    checkpoint_path = Path(checkpoint_artifact["path"])
+    assert (checkpoint_path.stat().st_size, file_sha256(checkpoint_path)) == (
+        checkpoint_artifact["bytes"],
+        checkpoint_artifact["sha256"],
+    )
+    action_path = Path(kernel["action_path"])
+    assert (action_path.stat().st_size, file_sha256(action_path)) == (
+        kernel["action_bytes"],
+        kernel["action_sha256"],
+    )
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    selected = checkpoint["report"]["selected"]
+    frozen = selection["selection"]["selected"]
+    assert (
+        selected["feature_block"],
+        selected["kernel"],
+        selected["bandwidth_multiplier"],
+        selected["ridge"],
+        selected["selection_mse"],
+    ) == (
+        frozen["feature_block"],
+        frozen["kernel"],
+        frozen["bandwidth_multiplier"],
+        frozen["ridge"],
+        frozen["mse"],
+    )
+    predicted = kernel_gene_predictions(checkpoint, action_path)
+    with h5py.File(base["inputs"]["latent_cache_path"], "r") as latent:
+        roles, targets = latent["role"].asstr()[:], latent["target"].asstr()[:]
+    rows = []
+    for regime, specification in base["regimes"].items():
+        regime_targets = sorted(set(targets[roles == specification["outcome_role"]]))
+        regime_targets = regime_targets[: maximum_conditions or len(regime_targets)]
+        rows.extend((regime, target, 0, predicted[target]) for target in regime_targets)
+    records, pathways, retrieval, truth_report = score_effect_predictions(
+        base, evaluation["model_name"], rows, maximum_conditions
+    )
+    reference_records, reference_pathways = [], []
+    for reference in evaluation["references"]:
+        for name, destination in (
+            ("condition_metrics", reference_records),
+            ("pathway_metrics", reference_pathways),
+        ):
+            path = Path(reference[f"{name}_path"])
+            assert (path.stat().st_size, file_sha256(path)) == (
+                reference[f"{name}_bytes"],
+                reference[f"{name}_sha256"],
+            )
+            lines = path.read_text().splitlines()
+            assert len(lines) == reference[f"{name}_records"]
+            destination.extend(
+                value for value in map(json.loads, lines) if value["model"] in reference["models"]
+            )
+    resamples = base["metrics"]["bootstrap_resamples"]
+    summary = {
+        "condition_metrics": _condition_summary(records, resamples, base["seed"]),
+        "pathway_metrics": _condition_summary(pathways, resamples, base["seed"]),
+        "retrieval": retrieval,
+    }
+    paired = {
+        "condition_comparisons": _paired_transcriptomic_models(
+            reference_records + records, evaluation["comparisons"], resamples, base["seed"]
+        ),
+        "pathway_comparisons": _paired_transcriptomic_models(
+            reference_pathways + pathways, evaluation["comparisons"], resamples, base["seed"]
+        ),
+    }
+    provenance = {
+        "config": deepcopy(config),
+        "experimental_status": selection["experimental_status"],
+        "reporting_only": True,
+        "selection_manifest_sha256": declared,
+        "selection_checkpoint_frozen_before_test_evaluation": True,
+        "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        "sealed_test_outcomes_used_for_fit_or_selection": False,
+        "checkpoint_provenance": checkpoint["provenance"],
+        "maximum_conditions_per_regime": maximum_conditions,
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    output = Path(output_directory or evaluation["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    for filename, payload in (
+        ("summary.json", summary),
+        ("paired_comparisons.json", paired),
+        ("truth_report.json", truth_report),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (("condition_metrics.jsonl", records), ("pathway_metrics.jsonl", pathways)):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, paired, truth_report, provenance
+
+
 def run_direct_gene_evaluation(config, checkpoint):
     """Evaluate the frozen direct gene-space baseline against the frozen five-model result."""
     base, direct = config["transcriptomics"], config["direct_gene"]
