@@ -361,8 +361,9 @@ uv run python scripts/evaluate_anchored.py
 uv run python scripts/analyze_anchored_evaluation.py
 uv run python scripts/smoke_state_baseline.py
 uv run python scripts/prepare_state_baseline.py
+uv run python scripts/prepare_state_prediction_metadata.py
 # The next command runs inside the pinned official State CUDA environment.
-python scripts/predict_state_baseline.py
+PYTHONPATH=src work/state/.venv/bin/python scripts/predict_state_baseline.py
 uv run python scripts/evaluate_state_baseline.py
 uv run ruff check .
 uv run pytest
