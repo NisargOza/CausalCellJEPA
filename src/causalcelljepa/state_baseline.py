@@ -347,8 +347,14 @@ def predict_state_baseline(
     assert file_sha256(config["base_transcriptomics_config_path"]) == config[
         "base_transcriptomics_config_sha256"
     ]
-    for name in ("expression_cache", "latent_cache", "action_cache", "state_features"):
+    for name in ("latent_cache", "action_cache", "state_features"):
         assert file_sha256(inputs[f"{name}_path"]) == inputs[f"{name}_sha256"]
+    for artifact in prediction["control_files"].values():
+        path = Path(artifact["path"])
+        assert (path.stat().st_size, file_sha256(path)) == (
+            artifact["bytes"],
+            artifact["sha256"],
+        )
     assert (
         model.input_dim,
         model.output_dim,
@@ -367,10 +373,20 @@ def predict_state_baseline(
     selected_controls = sha256()
     rows = expected = 0
     string = h5py.string_dtype("utf-8")
-    with h5py.File(inputs["expression_cache_path"], "r") as expression, h5py.File(
-        inputs["latent_cache_path"], "r"
-    ) as metadata, h5py.File(output, "w") as destination:
+    with h5py.File(inputs["latent_cache_path"], "r") as metadata, h5py.File(
+        prediction["control_files"]["K562"]["path"], "r"
+    ) as k562_controls, h5py.File(
+        prediction["control_files"]["RPE1"]["path"], "r"
+    ) as rpe1_controls, h5py.File(output, "w") as destination:
         roles = metadata["role"].asstr()[:]
+        control_files = {"K562": k562_controls, "RPE1": rpe1_controls}
+        control_source_rows = {
+            context: handle["obs/source_row"][:] for context, handle in control_files.items()
+        }
+        assert all(
+            len(rows) == len(np.unique(rows)) and np.all(rows[1:] > rows[:-1])
+            for rows in control_source_rows.values()
+        )
         effect = destination.create_dataset(
             "predicted_effect",
             (0, model.output_dim),
@@ -406,8 +422,17 @@ def predict_state_baseline(
                     controls, targets = [], []
                     for control_indices, _, target in plans:
                         assert set(roles[control_indices]) == {specification["control_role"]}
-                        order = np.argsort(control_indices)
-                        values = expression["expression"][control_indices[order]][np.argsort(order)]
+                        index_order = np.argsort(control_indices)
+                        source_rows = metadata["source_row"][control_indices[index_order]][
+                            np.argsort(index_order)
+                        ]
+                        control_rows = control_source_rows[specification["context"]]
+                        positions = np.searchsorted(control_rows, source_rows)
+                        assert np.array_equal(control_rows[positions], source_rows)
+                        order = np.argsort(positions)
+                        values = control_files[specification["context"]]["obsm/X_hvg"][
+                            positions[order]
+                        ][np.argsort(order)]
                         controls.append(values)
                         targets.append(target)
                         selected_controls.update(
