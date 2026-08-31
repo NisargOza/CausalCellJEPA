@@ -166,6 +166,21 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
             "context": ["K562"] * 4,
         }.items():
             cache.create_dataset(name, data=np.asarray(values, dtype=object), dtype=strings)
+        cache.create_dataset("source_row", data=np.arange(4))
+    control_paths = {}
+    for context, rows in {"K562": [0, 1], "RPE1": [4]}.items():
+        path = tmp_path / f"{context}_controls.h5ad"
+        with h5py.File(path, "w") as control:
+            control.create_dataset("obs/source_row", data=rows)
+            control.create_dataset(
+                "obsm/X_hvg",
+                data=np.stack([np.full(3000, row) for row in rows]).astype(np.float32),
+            )
+        control_paths[context] = {
+            "path": str(path),
+            "bytes": path.stat().st_size,
+            "sha256": file_sha256(path),
+        }
     action_path, features_path = tmp_path / "action.pt", tmp_path / "features.pt"
     torch.save(
         {
@@ -194,8 +209,6 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
         "base_transcriptomics_config_path": str(base_path),
         "base_transcriptomics_config_sha256": file_sha256(base_path),
         "inputs": {
-            "expression_cache_path": str(expression_path),
-            "expression_cache_sha256": file_sha256(expression_path),
             "latent_cache_path": str(latent_path),
             "latent_cache_sha256": file_sha256(latent_path),
             "action_cache_path": str(action_path),
@@ -211,6 +224,7 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
             "batch_size": 1,
             "repeats": 2,
             "model_name": "state_dummy",
+            "control_files": control_paths,
             "output_path": str(tmp_path / "prediction.h5"),
         },
     }

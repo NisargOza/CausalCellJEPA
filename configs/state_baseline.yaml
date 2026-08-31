@@ -71,6 +71,15 @@ prediction:
   repeats: 8
   batch_size: 16
   action_dimensions: 386
+  control_files:
+    K562:
+      path: artifacts/state_baseline/input/inference/K562_controls.h5ad
+      bytes: 129556447
+      sha256: c247d5b5f95d7e1461dc089e527710e9ef00a7fdf4560f8598762f8e97d3ba30
+    RPE1:
+      path: artifacts/state_baseline/input/inference/RPE1_controls.h5ad
+      bytes: 139144465
+      sha256: 51f21003b0911cf8d8beeec15f7a6dda7342fc92b173f90050078a987abaf4ff
   output_path: artifacts/state_baseline/predictions/state_sm_seed_20260823_effects.h5
   report_path: artifacts/state_baseline/predictions/state_sm_seed_20260823_report.json
 evaluation:
