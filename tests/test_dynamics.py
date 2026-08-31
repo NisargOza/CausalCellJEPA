@@ -27,7 +27,12 @@ from causalcelljepa.evaluation import (
     paired_model_comparisons,
     population_metrics,
 )
-from causalcelljepa.state_baseline import _write_state_h5ad, state_export_indices
+from causalcelljepa.resources import file_sha256
+from causalcelljepa.state_baseline import (
+    _write_state_h5ad,
+    predict_state_baseline,
+    state_export_indices,
+)
 
 
 def test_modality_attention_fuses_all_teachers_and_dropout_keeps_one_visible():
@@ -141,6 +146,89 @@ def test_chunked_state_export_preserves_cell_load_h5ad_schema(tmp_path):
         assert exported["var/gene_id"].asstr()[:].tolist() == ["ENSG1", "ENSG2", "ENSG3"]
         assert isinstance(exported["uns/log1p"], h5py.Group)
         assert exported["obsm/X_hvg"].shape == (5, 3)
+
+
+def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_path):
+    expression_path, latent_path = tmp_path / "expression.h5", tmp_path / "latent.h5"
+    with h5py.File(expression_path, "w") as cache:
+        cache.create_dataset(
+            "expression",
+            data=np.stack(
+                [np.zeros(3000), np.ones(3000), np.full(3000, 90), np.full(3000, 100)]
+            ).astype(np.float32),
+        )
+    strings = h5py.string_dtype("utf-8")
+    with h5py.File(latent_path, "w") as cache:
+        for name, values in {
+            "role": ["control_train", "control_train", "iid_test", "iid_test"],
+            "target": ["non-targeting", "non-targeting", "A", "A"],
+            "source_batch": ["b1", "b2", "b1", "b2"],
+            "context": ["K562"] * 4,
+        }.items():
+            cache.create_dataset(name, data=np.asarray(values, dtype=object), dtype=strings)
+    action_path, features_path = tmp_path / "action.pt", tmp_path / "features.pt"
+    torch.save(
+        {
+            "targets": ["A"],
+            "embedding": torch.tensor([[1.0, 0.0]]),
+            "known": torch.tensor([True]),
+        },
+        action_path,
+    )
+    torch.save({"A": torch.tensor([1.0, 0.0])}, features_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({"normalization": {"latent_mean": [0], "latent_std": [1], "dimension_scale": 1}}))
+    base_path = tmp_path / "base.yaml"
+    base_path.write_text("seed: 7\n")
+    base = {
+        "seed": 7,
+        "regimes": {
+            "iid": {
+                "context": "K562",
+                "outcome_role": "iid_test",
+                "control_role": "control_train",
+            }
+        },
+    }
+    config = {
+        "base_transcriptomics_config_path": str(base_path),
+        "base_transcriptomics_config_sha256": file_sha256(base_path),
+        "inputs": {
+            "expression_cache_path": str(expression_path),
+            "expression_cache_sha256": file_sha256(expression_path),
+            "latent_cache_path": str(latent_path),
+            "latent_cache_sha256": file_sha256(latent_path),
+            "action_cache_path": str(action_path),
+            "action_cache_sha256": file_sha256(action_path),
+            "state_features_path": str(features_path),
+            "state_features_sha256": file_sha256(features_path),
+            "dynamics_manifest_path": str(manifest_path),
+            "checkpoint_sha256": "frozen-checkpoint",
+        },
+        "prediction": {
+            "action_dimensions": 2,
+            "population_size": 2,
+            "batch_size": 1,
+            "repeats": 2,
+            "model_name": "state_dummy",
+            "output_path": str(tmp_path / "prediction.h5"),
+        },
+    }
+
+    class DummyState(torch.nn.Module):
+        input_dim = output_dim = 3000
+        pert_dim, cell_sentence_len = 2, 2
+        batch_encoder, use_batch_token = None, False
+
+        def forward(self, batch, padded=True):
+            assert padded and "pert_cell_emb" not in batch
+            return batch["ctrl_cell_emb"] + batch["pert_emb"][:, :1]
+
+    report = predict_state_baseline(config, base, DummyState())
+    assert report["records"] == 2 and report["test_outcome_expression_read"] is False
+    with h5py.File(config["prediction"]["output_path"]) as prediction:
+        assert np.allclose(prediction["predicted_effect"][:], 1)
+        assert prediction["repeat"][:].tolist() == [0, 1]
 
 
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():

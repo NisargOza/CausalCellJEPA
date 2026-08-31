@@ -1596,6 +1596,203 @@ def direct_gene_predictions(checkpoint, action_path):
     return {target: predicted[index].numpy() for index, target in enumerate(action["targets"])}
 
 
+def score_effect_predictions(base, model_name, predictions, maximum_conditions=None):
+    """Score frozen gene-effect predictions through the common reporting-only endpoint."""
+    truth, truth_report = expression_truth(base, maximum_conditions=maximum_conditions)
+    replogle = json.loads(Path(base["inputs"]["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    pathway_matrix, pathway_labels = _load_pathway_matrix(
+        base["inputs"]["go_gmt_path"], hvg_genes
+    )
+    assert len(pathway_labels) == 4328
+    records, signatures, seen = [], defaultdict(lambda: [0, None]), Counter()
+    for regime, target, repeat, predicted in predictions:
+        assert (regime, target) in truth and repeat >= 0
+        predicted = np.asarray(predicted, dtype=np.float32)
+        assert predicted.shape == (len(hvg_genes),) and np.isfinite(predicted).all()
+        observed = truth[regime, target]
+        specification = base["regimes"][regime]
+        metadata = {
+            "regime": regime,
+            "context": specification["context"],
+            "outcome_role": specification["outcome_role"],
+            "target": target,
+            "repeat": int(repeat),
+            "model": model_name,
+            "truth_batches": observed["batches"],
+            "truth_cells": observed["cells"],
+            "true_deg_count": int(observed["deg"].sum()),
+            "target_in_hvg": target in hvg_index,
+        }
+        records.append(
+            {
+                **metadata,
+                **gene_effect_metrics(
+                    predicted,
+                    observed["effect"],
+                    hvg_index.get(target),
+                    observed["deg"],
+                    base["metrics"]["retrospective_top_genes"],
+                ),
+            }
+        )
+        key = regime, model_name, target
+        signatures[key][0] += 1
+        signatures[key][1] = predicted if signatures[key][1] is None else signatures[key][1] + predicted
+        seen[regime, target, int(repeat)] += 1
+    assert {(regime, target) for regime, target, _ in seen} == set(truth)
+    assert set(seen.values()) == {1}
+
+    pathway_records, retrieval = [], []
+    for regime, specification in base["regimes"].items():
+        targets = sorted(target for key, target in truth if key == regime)
+        predicted_signatures = np.stack(
+            [signatures[regime, model_name, target][1] / signatures[regime, model_name, target][0] for target in targets]
+        )
+        true_signatures = np.stack([truth[regime, target]["effect"] for target in targets])
+        normalized_prediction = predicted_signatures / np.linalg.norm(
+            predicted_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        normalized_truth = true_signatures / np.linalg.norm(
+            true_signatures, axis=1, keepdims=True
+        ).clip(1e-12)
+        similarity = normalized_prediction @ normalized_truth.T
+        ranks = np.asarray(
+            [
+                1
+                + np.count_nonzero(row > row[index])
+                + 0.5 * (np.count_nonzero(row == row[index]) - 1)
+                for index, row in enumerate(similarity)
+            ]
+        )
+        retrieval.append(
+            {
+                "regime": regime,
+                "model": model_name,
+                "targets": len(targets),
+                "top_1": float(np.mean(ranks <= 1)),
+                "top_5": float(np.mean(ranks <= 5)),
+                "mean_reciprocal_rank": float(np.mean(1 / ranks)),
+                "median_rank": float(np.median(ranks)),
+            }
+        )
+        for index, target in enumerate(targets):
+            observed = truth[regime, target]
+            pathway_records.append(
+                {
+                    "regime": regime,
+                    "context": specification["context"],
+                    "outcome_role": specification["outcome_role"],
+                    "target": target,
+                    "repeat": 0,
+                    "model": model_name,
+                    "truth_batches": observed["batches"],
+                    "truth_cells": observed["cells"],
+                    "true_deg_count": int(observed["deg"].sum()),
+                    "target_in_hvg": target in hvg_index,
+                    **pathway_agreement(
+                        predicted_signatures[index],
+                        true_signatures[index],
+                        pathway_matrix,
+                        base["metrics"]["pathway_top_k"],
+                    ),
+                }
+            )
+    return records, pathway_records, retrieval, truth_report
+
+
+def run_state_baseline_evaluation(config, base):
+    """Evaluate validation-frozen State predictions and pair them with frozen references."""
+    evaluation, inputs = config["evaluation"], config["inputs"]
+    prediction_report = json.loads(Path(config["prediction"]["report_path"]).read_text())
+    prediction_path = Path(prediction_report["path"])
+    assert (prediction_path.stat().st_size, file_sha256(prediction_path)) == (
+        prediction_report["bytes"],
+        prediction_report["sha256"],
+    )
+    assert (Path(inputs["checkpoint_path"]).stat().st_size, file_sha256(inputs["checkpoint_path"])) == (
+        inputs["checkpoint_bytes"],
+        inputs["checkpoint_sha256"],
+    )
+    with h5py.File(prediction_path, "r") as prediction:
+        assert prediction.attrs["checkpoint_sha256"] == inputs["checkpoint_sha256"]
+        assert not prediction.attrs["test_outcome_expression_read"]
+        assert len(prediction["predicted_effect"]) == prediction_report["records"]
+        predictions = (
+            (
+                prediction["regime"].asstr()[index],
+                prediction["target"].asstr()[index],
+                int(prediction["repeat"][index]),
+                prediction["predicted_effect"][index],
+            )
+            for index in range(prediction_report["records"])
+        )
+        records, pathways, retrieval, truth_report = score_effect_predictions(
+            base, config["prediction"]["model_name"], predictions
+        )
+    reference_records, reference_pathways = [], []
+    for reference in evaluation["references"]:
+        for name, destination in (
+            ("condition_metrics", reference_records),
+            ("pathway_metrics", reference_pathways),
+        ):
+            path = Path(reference[f"{name}_path"])
+            assert (path.stat().st_size, file_sha256(path)) == (
+                reference[f"{name}_bytes"],
+                reference[f"{name}_sha256"],
+            )
+            lines = path.read_text().splitlines()
+            assert len(lines) == reference[f"{name}_records"]
+            destination.extend(
+                value
+                for value in map(json.loads, lines)
+                if value["model"] in reference["models"]
+            )
+    resamples = base["metrics"]["bootstrap_resamples"]
+    summary = {
+        "condition_metrics": _condition_summary(records, resamples, base["seed"]),
+        "pathway_metrics": _condition_summary(pathways, resamples, base["seed"]),
+        "retrieval": retrieval,
+    }
+    paired = {
+        "condition_comparisons": _paired_transcriptomic_models(
+            reference_records + records, evaluation["comparisons"], resamples, base["seed"]
+        ),
+        "pathway_comparisons": _paired_transcriptomic_models(
+            reference_pathways + pathways, evaluation["comparisons"], resamples, base["seed"]
+        ),
+    }
+    provenance = {
+        "config": deepcopy(config),
+        "base_transcriptomics_config": deepcopy(base),
+        "reporting_only": True,
+        "checkpoint_selected_on": "K562 perturbation_ood_validation only",
+        "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        "sealed_test_outcomes_used_for_fit_or_selection": False,
+        "prediction_report": prediction_report,
+        "checkpoint_sha256": inputs["checkpoint_sha256"],
+        "runtime_source_sha256": _runtime_source_hash(),
+        "runtime_environment": _runtime_environment(),
+        "git": _git_state(),
+    }
+    output = Path(evaluation["output_directory"])
+    assert not output.exists()
+    output.mkdir(parents=True)
+    for filename, payload in (
+        ("summary.json", summary),
+        ("paired_comparisons.json", paired),
+        ("truth_report.json", truth_report),
+        ("provenance.json", provenance),
+    ):
+        (output / filename).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    for filename, values in (("condition_metrics.jsonl", records), ("pathway_metrics.jsonl", pathways)):
+        with (output / filename).open("w") as handle:
+            for value in values:
+                handle.write(json.dumps(value, sort_keys=True) + "\n")
+    return summary, paired, truth_report, provenance
+
+
 def run_direct_gene_evaluation(config, checkpoint):
     """Evaluate the frozen direct gene-space baseline against the frozen five-model result."""
     base, direct = config["transcriptomics"], config["direct_gene"]
