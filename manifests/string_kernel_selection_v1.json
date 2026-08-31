@@ -1,0 +1,80 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 1343361,
+      "path": "artifacts/string_kernel_gene_student_v1.pt",
+      "sha256": "87d6bad11f947d98ee57ff30124f93de8fe983a0c0bd02ae737fbf77940b43cd"
+    },
+    "selection_report": {
+      "bytes": 59490,
+      "candidates": 204,
+      "path": "artifacts/string_kernel_gene_selection/selection.json",
+      "sha256": "2b17bcf6afd84530a18d5946307c674eb25e2357b28845fa03bc49360507fe49"
+    }
+  },
+  "experimental_status": "exploratory_post_test_requires_external_confirmation",
+  "fit": {
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets": 698,
+    "fit_targets_with_known_action": 697,
+    "rank": 64,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100
+  },
+  "format_version": 1,
+  "leakage": {
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_checkpoint_frozen_before_test_evaluation": true
+  },
+  "manifest_sha256": "1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf",
+  "protocol": {
+    "action_manifest_sha256": "b8d803eb6ca36080d2fd0206e6ce59506372ec59aa3449e763500f7c2855fe00",
+    "candidate_feature_blocks": ["go_with_availability", "string_with_availability", "go_string", "all"],
+    "candidate_kernels": ["linear", "rbf"],
+    "expression_basis": "frozen rank-64 basis from direct_gene_esm_v1",
+    "selection_rule": "minimum validation MSE; config order breaks exact ties",
+    "statistical_unit": "perturbation-condition"
+  },
+  "selection": {
+    "best_by_family": {
+      "all_linear": {"mean_effect_pearson": 0.26569956382699306, "mse": 0.0037578901414458037, "ridge": 1000.0},
+      "all_rbf": {"bandwidth_multiplier": 1.0, "mean_effect_pearson": 0.26705279951690214, "mse": 0.003626031065883479, "ridge": 1.0},
+      "go_linear": {"mean_effect_pearson": 0.268075418275046, "mse": 0.0036732953968709276, "ridge": 1000.0},
+      "go_rbf": {"bandwidth_multiplier": 0.5, "mean_effect_pearson": 0.27001512174514175, "mse": 0.003429995964201167, "ridge": 1.0},
+      "go_string_linear": {"mean_effect_pearson": 0.2754009800980793, "mse": 0.0036445281105056807, "ridge": 1000.0},
+      "go_string_rbf": {"bandwidth_multiplier": 0.5, "mean_effect_pearson": 0.27619773444833373, "mse": 0.0034154033303216646, "ridge": 1.0},
+      "string_linear": {"mean_effect_pearson": 0.26292863055321414, "mse": 0.003823425284553319, "ridge": 100.0},
+      "string_rbf": {"bandwidth_multiplier": 8.0, "mean_effect_pearson": 0.2652773534849638, "mse": 0.003528124117330223, "ridge": 1.0}
+    },
+    "go_reference_mse": 0.003429995964201167,
+    "relative_mse_reduction_vs_go": 0.004254417215590275,
+    "selected": {
+      "bandwidth_multiplier": 0.5,
+      "feature_block": "go_string",
+      "kernel": "rbf",
+      "mean_effect_pearson": 0.27619773444833373,
+      "median_squared_distance": 130.13759543200095,
+      "mse": 0.0034154033303216646,
+      "ridge": 1.0
+    },
+    "serialized_checkpoint_replay": {
+      "finite": true,
+      "mean_effect_pearson": 0.27619782071773347,
+      "mse": 0.0034154027234762907,
+      "mse_delta_from_selection": 6.068453738648782e-10,
+      "targets": 100
+    }
+  },
+  "source": {
+    "action_sha256": "bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0",
+    "config_sha256": "81099770ebf634c450285f074cb469f5c46935f9f723669a036cb4c48588ee16",
+    "direct_checkpoint_sha256": "85ca626235562eb36a53604df45ce06bf4c6e1ce5ea26c4e0e1fb048bf5722a3",
+    "git_commit": "8e611648576c63a89acb4eb3b5dee0558bb4a914",
+    "git_dirty": false
+  },
+  "test_evaluation": {
+    "performed": false,
+    "reason": "Selection artifact frozen before evaluation of this model on sealed or RPE1 perturbed outcomes."
+  }
+}
