@@ -306,6 +306,17 @@ action vector to State, and stores gene-effect predictions before the four-regim
 test outcomes. This preserves the proposal's condition-level paired comparison and target-gene-
 excluded endpoints without treating control and perturbed cells as paired.
 
+The complete reporting-only evaluation does **not** support the bounded State-small model as a
+replacement architecture. All-effect Pearson is `0.0239` IID, `0.0281` perturbation-OOD,
+`0.0017` context-OOD, and `-0.0013` double-OOD; magnitude absolute error rises from `5.94` and
+`7.60` in K562 to `16.85` and `17.27` in RPE1. State ranks 14th of 14 defined models for both
+K562 effect-correlation regimes and 15th of 15 for magnitude error in every regime. Against the
+validation-frozen v4 model, 104 paired endpoints are losses, 6 inconclusive, and 2 wins by the
+bootstrap-95% rule. This bounded run used 32-cell sets, batch size 4, and 10,000 steps rather than
+State-small's much larger official defaults, so it establishes a feasible modern baseline—not a
+definitive ceiling on State. Exact hashes, ranks, and leakage provenance are frozen in
+[`manifests/state_baseline_v1.json`](manifests/state_baseline_v1.json).
+
 ## Development
 
 ```bash
