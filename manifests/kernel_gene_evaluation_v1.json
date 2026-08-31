@@ -1,0 +1,111 @@
+{
+  "artifacts": {
+    "condition_metrics": {
+      "bytes": 2334480,
+      "path": "artifacts/kernel_gene_evaluation/condition_metrics.jsonl",
+      "records": 1794,
+      "sha256": "a65747a476b8286dcdf52afb1f8226dcf64e0f359dbdaef04ef7126861cc729b"
+    },
+    "paired_comparisons": {
+      "bytes": 496109,
+      "condition_comparisons": 568,
+      "path": "artifacts/kernel_gene_evaluation/paired_comparisons.json",
+      "pathway_comparisons": 148,
+      "sha256": "0f5d9544f93155a19f06e7b7b783a062302b6ed3651933e4672be89b4866e59f"
+    },
+    "pathway_metrics": {
+      "bytes": 849212,
+      "path": "artifacts/kernel_gene_evaluation/pathway_metrics.jsonl",
+      "records": 1794,
+      "sha256": "9d975be0b62f75cf92f7473ea427d9f10ef28336a0e5dfd792beccf8eb8cb8a6"
+    },
+    "provenance": {
+      "bytes": 11252,
+      "path": "artifacts/kernel_gene_evaluation/provenance.json",
+      "sha256": "88486bd3b79134f7eb8fc7a4bafefd82ffc390bb939a12d3068bbb36854c27b4"
+    },
+    "summary": {
+      "bytes": 35933,
+      "condition_summaries": 88,
+      "path": "artifacts/kernel_gene_evaluation/summary.json",
+      "pathway_summaries": 24,
+      "sha256": "b0dcf305a6b127aa3871556029c7a3ade91c6c4fc3c677c176e043a348c27c8e"
+    },
+    "truth_report": {
+      "bytes": 560,
+      "path": "artifacts/kernel_gene_evaluation/truth_report.json",
+      "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+    }
+  },
+  "experimental_status": "exploratory_post_test_requires_external_confirmation",
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {"direct_gene_esm": 0.227737, "kernel_gene_go_rbf": 0.226143},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 4.144253, "kernel_gene_go_rbf": 3.840617},
+      "deg_auprc": {"direct_gene_esm": 0.203488, "kernel_gene_go_rbf": 0.20885},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.269796, "kernel_gene_go_rbf": 0.257176}
+    },
+    "double_ood": {
+      "all_effect_pearson": {"direct_gene_esm": 0.213575, "kernel_gene_go_rbf": 0.196371},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 3.731797, "kernel_gene_go_rbf": 3.49709},
+      "deg_auprc": {"direct_gene_esm": 0.174735, "kernel_gene_go_rbf": 0.173674},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.267801, "kernel_gene_go_rbf": 0.244705}
+    },
+    "iid": {
+      "all_effect_pearson": {"direct_gene_esm": 0.192544, "kernel_gene_go_rbf": 0.254449},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 3.717001, "kernel_gene_go_rbf": 3.395795},
+      "deg_auprc": {"direct_gene_esm": 0.061179, "kernel_gene_go_rbf": 0.116225},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.226962, "kernel_gene_go_rbf": 0.279199}
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {"direct_gene_esm": 0.235313, "kernel_gene_go_rbf": 0.262449},
+      "all_magnitude_absolute_error": {"direct_gene_esm": 2.029525, "kernel_gene_go_rbf": 1.830614},
+      "deg_auprc": {"direct_gene_esm": 0.139752, "kernel_gene_go_rbf": 0.177495},
+      "pathway_nes_pearson": {"direct_gene_esm": 0.281877, "kernel_gene_go_rbf": 0.298693}
+    }
+  },
+  "headline_rank_among_evaluated_models": {
+    "context_ood": {"all_effect_pearson": "5/8", "all_magnitude_absolute_error": "2/9", "deg_auprc": "4/9", "pathway_nes_pearson": "5/8"},
+    "double_ood": {"all_effect_pearson": "5/8", "all_magnitude_absolute_error": "2/9", "deg_auprc": "5/9", "pathway_nes_pearson": "5/8"},
+    "iid": {"all_effect_pearson": "1/8", "all_magnitude_absolute_error": "1/9", "deg_auprc": "1/9", "pathway_nes_pearson": "1/8"},
+    "perturbation_ood": {"all_effect_pearson": "1/8", "all_magnitude_absolute_error": "1/9", "deg_auprc": "1/9", "pathway_nes_pearson": "1/8"}
+  },
+  "leakage": {
+    "checkpoint_frozen_in_selection_manifest_before_evaluation": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_manifest_sha256": "dc70f5710e6f37185176e1830cf98900476437e5cbf3c7f00dce24f23727a02a"
+  },
+  "manifest_sha256": "5674c16881864693f68ad49b2d7c38b4a535ede80d5ac4faaa9883f9d6fb30d9",
+  "paired_bootstrap_95ci_counts": {
+    "condition_metrics": {
+      "direct_gene_esm": {"inconclusive": 18, "losses": 10, "wins": 60},
+      "state_sm": {"inconclusive": 1, "losses": 0, "wins": 87},
+      "contextual_multiteacher_selected": {"inconclusive": 18, "losses": 13, "wins": 57}
+    },
+    "pathway_metrics": {
+      "direct_gene_esm": {"inconclusive": 10, "losses": 5, "wins": 9},
+      "state_sm": {"inconclusive": 5, "losses": 0, "wins": 19},
+      "contextual_multiteacher_selected": {"inconclusive": 5, "losses": 5, "wins": 14}
+    }
+  },
+  "retrieval": {
+    "context_ood": {"direct_gene_esm_mrr": 0.014854, "kernel_gene_go_rbf_mrr": 0.060809, "kernel_rank": "1/9"},
+    "double_ood": {"direct_gene_esm_mrr": 0.036408, "kernel_gene_go_rbf_mrr": 0.080456, "kernel_rank": "1/9"},
+    "iid": {"direct_gene_esm_mrr": 0.018455, "kernel_gene_go_rbf_mrr": 0.076429, "kernel_rank": "1/9"},
+    "perturbation_ood": {"direct_gene_esm_mrr": 0.040533, "kernel_gene_go_rbf_mrr": 0.097741, "kernel_rank": "1/9"}
+  },
+  "result_scope": {
+    "interpretation": "The GO RBF student is strongest among evaluated models on K562 IID and unseen-target metrics and on retrieval in all regimes. It improves calibration but not effect direction after RPE1 transfer, so cross-context generalization remains unsolved.",
+    "state_of_the_art_claim_supported": false,
+    "supports_further_context_aware_revision": true,
+    "supports_uniform_superiority": false
+  },
+  "source": {
+    "config_sha256": "95af072fc202d13822d697f20499f1be4137b1fe2456d53dd858f36f8852bbac",
+    "evaluation_git_commit": "4922b9b86c47ed0a7149d183dd0ae5c796205c8a",
+    "evaluation_git_dirty": false,
+    "selection_manifest_sha256": "dc70f5710e6f37185176e1830cf98900476437e5cbf3c7f00dce24f23727a02a"
+  }
+}
