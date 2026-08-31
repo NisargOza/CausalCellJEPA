@@ -1,0 +1,113 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 1157997,
+      "path": "artifacts/kernel_gene_student_v1.pt",
+      "sha256": "decd536b964d81523c323c37f1ac36aaca87222dc7a15bcd7d90ff8fa8cd3563"
+    },
+    "selection_report": {
+      "bytes": 43972,
+      "candidates": 153,
+      "path": "artifacts/kernel_gene_selection/selection.json",
+      "sha256": "d64dcb7b9d3562b56f1119041750dc8231b8d5742f24634ac7a0e1a88bcdabea"
+    }
+  },
+  "experimental_status": "exploratory_post_test_requires_external_confirmation",
+  "fit": {
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets": 698,
+    "fit_targets_with_known_action": 697,
+    "rank": 64,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100
+  },
+  "format_version": 1,
+  "leakage": {
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_checkpoint_frozen_before_test_evaluation": true
+  },
+  "manifest_sha256": "dc70f5710e6f37185176e1830cf98900476437e5cbf3c7f00dce24f23727a02a",
+  "protocol": {
+    "action_representation": "frozen contextual ESM-2/GO features with availability indicators",
+    "candidate_feature_blocks": [
+      "esm",
+      "go_with_availability",
+      "all"
+    ],
+    "candidate_kernels": [
+      "linear",
+      "rbf"
+    ],
+    "expression_basis": "frozen rank-64 basis from direct_gene_esm_v1",
+    "selection_rule": "minimum validation MSE; config order breaks exact ties",
+    "statistical_unit": "perturbation-condition"
+  },
+  "selection": {
+    "best_by_family": {
+      "all_linear": {
+        "mean_effect_pearson": 0.2569203566792134,
+        "mse": 0.003741326991948216,
+        "ridge": 1000.0
+      },
+      "all_rbf": {
+        "bandwidth_multiplier": 1.0,
+        "mean_effect_pearson": 0.25645288635362895,
+        "mse": 0.003690113033276788,
+        "ridge": 1.0
+      },
+      "esm_linear": {
+        "mean_effect_pearson": 0.23131117108017724,
+        "mse": 0.004046102889411655,
+        "ridge": 10000.0
+      },
+      "esm_rbf": {
+        "bandwidth_multiplier": 4.0,
+        "mean_effect_pearson": 0.23207857799459858,
+        "mse": 0.003961289211365494,
+        "ridge": 1.0
+      },
+      "go_with_availability_linear": {
+        "mean_effect_pearson": 0.268075418275046,
+        "mse": 0.0036732953968709276,
+        "ridge": 1000.0
+      },
+      "go_with_availability_rbf": {
+        "bandwidth_multiplier": 0.5,
+        "mean_effect_pearson": 0.27001512174514175,
+        "mse": 0.003429995964201167,
+        "ridge": 1.0
+      }
+    },
+    "direct_esm_reference_mse": 0.004046043264406644,
+    "relative_mse_reduction_vs_direct_esm": 0.1522591974299664,
+    "selected": {
+      "bandwidth_multiplier": 0.5,
+      "feature_block": "go_with_availability",
+      "kernel": "rbf",
+      "mean_effect_pearson": 0.27001512174514175,
+      "median_squared_distance": 92.94286561443542,
+      "mse": 0.003429995964201167,
+      "ridge": 1.0
+    },
+    "serialized_checkpoint_replay": {
+      "finite": true,
+      "mean_effect_pearson": 0.27001522076645723,
+      "mse": 0.0034299958497285843,
+      "mse_delta_from_selection": 1.1447258288846407e-10,
+      "targets": 100
+    }
+  },
+  "source": {
+    "action_sha256": "d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983",
+    "config_sha256": "86252d4d215fab414cc79af2a3e0f83f3f91b14065956969d2cd114e4ac9effe",
+    "direct_checkpoint_sha256": "85ca626235562eb36a53604df45ce06bf4c6e1ce5ea26c4e0e1fb048bf5722a3",
+    "git_commit": "3368c6ef001da5b537c4a8e2bc24d08a5cff2719",
+    "git_dirty": false,
+    "runtime_source_sha256": "c1e85e28999f734d6aa5864a39ea11f4ce908e44e39fae8de5ece4236beaad7f"
+  },
+  "test_evaluation": {
+    "performed": false,
+    "reason": "Selection artifact frozen before any evaluation of this model on sealed or RPE1 perturbed outcomes."
+  }
+}
