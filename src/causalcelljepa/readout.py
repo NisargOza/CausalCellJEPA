@@ -1606,6 +1606,13 @@ def fit_kernel_gene_student(config, maximum_targets=None):
             kernel[f"{prefix}_bytes"],
             kernel[f"{prefix}_sha256"],
         )
+    if "action_manifest_path" in kernel:
+        action_manifest = json.loads(Path(kernel["action_manifest_path"]).read_text())
+        declared = action_manifest.pop("manifest_sha256")
+        assert declared == kernel["action_manifest_sha256"] == sha256(
+            json.dumps(action_manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        assert action_manifest["artifact"]["sha256"] == kernel["action_sha256"]
     direct = torch.load(kernel["direct_checkpoint_path"], map_location="cpu", weights_only=True)
     action = torch.load(kernel["action_path"], map_location="cpu", weights_only=True)
     assert direct["architecture"] == "direct_gene_esm_low_rank_ridge"
@@ -1743,7 +1750,7 @@ def fit_kernel_gene_student(config, maximum_targets=None):
             "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
         },
         "provenance": {
-            "config_sha256": file_sha256("configs/kernel_gene.yaml"),
+            "config_sha256": file_sha256(kernel.get("config_path", "configs/kernel_gene.yaml")),
             "direct_checkpoint_sha256": kernel["direct_checkpoint_sha256"],
             "action_sha256": kernel["action_sha256"],
             "latent_cache_sha256": base["inputs"]["latent_cache_sha256"],
