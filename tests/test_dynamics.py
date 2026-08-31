@@ -31,6 +31,7 @@ from causalcelljepa.resources import file_sha256
 from causalcelljepa.state_baseline import (
     _write_state_h5ad,
     predict_state_baseline,
+    prepare_state_prediction_metadata,
     state_export_indices,
 )
 
@@ -167,6 +168,7 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
         }.items():
             cache.create_dataset(name, data=np.asarray(values, dtype=object), dtype=strings)
         cache.create_dataset("source_row", data=np.arange(4))
+        cache.attrs["source_latent_sha256"] = "source-cache"
     control_paths = {}
     for context, rows in {"K562": [0, 1], "RPE1": [4]}.items():
         path = tmp_path / f"{context}_controls.h5ad"
@@ -209,8 +211,7 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
         "base_transcriptomics_config_path": str(base_path),
         "base_transcriptomics_config_sha256": file_sha256(base_path),
         "inputs": {
-            "latent_cache_path": str(latent_path),
-            "latent_cache_sha256": file_sha256(latent_path),
+            "latent_cache_sha256": "source-cache",
             "action_cache_path": str(action_path),
             "action_cache_sha256": file_sha256(action_path),
             "state_features_path": str(features_path),
@@ -220,6 +221,9 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
         },
         "prediction": {
             "action_dimensions": 2,
+            "metadata_path": str(latent_path),
+            "metadata_bytes": latent_path.stat().st_size,
+            "metadata_sha256": file_sha256(latent_path),
             "population_size": 2,
             "batch_size": 1,
             "repeats": 2,
@@ -243,6 +247,35 @@ def test_state_prediction_reads_controls_but_not_test_outcome_expression(tmp_pat
     with h5py.File(config["prediction"]["output_path"]) as prediction:
         assert np.allclose(prediction["predicted_effect"][:], 1)
         assert prediction["repeat"][:].tolist() == [0, 1]
+
+
+def test_state_prediction_metadata_is_compact_and_source_hashed(tmp_path):
+    source, output = tmp_path / "source.h5", tmp_path / "metadata.h5"
+    strings = h5py.string_dtype("utf-8")
+    with h5py.File(source, "w") as cache:
+        for name, values in {
+            "context": ["K562", "RPE1"],
+            "role": ["control_train", "double_ood_test"],
+            "source_batch": ["batch-1", "batch-2"],
+            "target": ["non-targeting", "A"],
+        }.items():
+            cache.create_dataset(name, data=np.asarray(values, dtype=object), dtype=strings)
+        cache.create_dataset("source_row", data=[3, 9])
+        cache.create_dataset("latent", data=np.zeros((2, 10_000), dtype=np.float32))
+    config = {
+        "inputs": {
+            "latent_cache_path": str(source),
+            "latent_cache_bytes": source.stat().st_size,
+            "latent_cache_sha256": file_sha256(source),
+        },
+        "prediction": {"metadata_path": str(output)},
+    }
+    report = prepare_state_prediction_metadata(config)
+    assert report["records"] == 2 and report["bytes"] < source.stat().st_size
+    with h5py.File(output) as metadata:
+        assert "latent" not in metadata
+        assert metadata["target"].asstr()[:].tolist() == ["non-targeting", "A"]
+        assert metadata.attrs["source_latent_sha256"] == file_sha256(source)
 
 
 def test_anchored_selection_entry_locks_candidate_without_test_leakage():

@@ -330,6 +330,36 @@ def prepare_state_baseline(config, output_directory=None, smoke=None):
     return report
 
 
+def prepare_state_prediction_metadata(config, output_path=None):
+    """Compress the audited split fields needed for remote control-population sampling."""
+    inputs, prediction = config["inputs"], config["prediction"]
+    latent_path = _validate_artifact(
+        inputs["latent_cache_path"], inputs["latent_cache_bytes"], inputs["latent_cache_sha256"]
+    )
+    output = Path(output_path or prediction["metadata_path"])
+    assert not output.exists()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(latent_path, "r") as source, h5py.File(output, "w") as destination:
+        for name in ("context", "role", "source_batch", "target"):
+            values = source[name].asstr()[:]
+            destination.create_dataset(
+                name,
+                data=np.asarray(values, dtype=f"S{max(map(len, values))}"),
+                compression="gzip",
+                compression_opts=9,
+                shuffle=True,
+            )
+        destination.create_dataset(
+            "source_row",
+            data=source["source_row"][:],
+            compression="gzip",
+            compression_opts=9,
+            shuffle=True,
+        )
+        destination.attrs["source_latent_sha256"] = inputs["latent_cache_sha256"]
+    return _artifact(output, len(values))
+
+
 @torch.inference_mode()
 def predict_state_baseline(
     config,
@@ -347,8 +377,11 @@ def predict_state_baseline(
     assert file_sha256(config["base_transcriptomics_config_path"]) == config[
         "base_transcriptomics_config_sha256"
     ]
-    for name in ("latent_cache", "action_cache", "state_features"):
+    for name in ("action_cache", "state_features"):
         assert file_sha256(inputs[f"{name}_path"]) == inputs[f"{name}_sha256"]
+    metadata_path = _validate_artifact(
+        prediction["metadata_path"], prediction["metadata_bytes"], prediction["metadata_sha256"]
+    )
     for artifact in prediction["control_files"].values():
         path = Path(artifact["path"])
         assert (path.stat().st_size, file_sha256(path)) == (
@@ -373,12 +406,13 @@ def predict_state_baseline(
     selected_controls = sha256()
     rows = expected = 0
     string = h5py.string_dtype("utf-8")
-    with h5py.File(inputs["latent_cache_path"], "r") as metadata, h5py.File(
+    with h5py.File(metadata_path, "r") as metadata, h5py.File(
         prediction["control_files"]["K562"]["path"], "r"
     ) as k562_controls, h5py.File(
         prediction["control_files"]["RPE1"]["path"], "r"
     ) as rpe1_controls, h5py.File(output, "w") as destination:
         roles = metadata["role"].asstr()[:]
+        assert metadata.attrs["source_latent_sha256"] == inputs["latent_cache_sha256"]
         control_files = {"K562": k562_controls, "RPE1": rpe1_controls}
         control_source_rows = {
             context: handle["obs/source_row"][:] for context, handle in control_files.items()
@@ -400,7 +434,7 @@ def predict_state_baseline(
         repeat_values = destination.create_dataset("repeat", (0,), maxshape=(None,), dtype="i2")
         for regime, specification in regimes.items():
             dataset = LatentPopulationDataset(
-                inputs["latent_cache_path"],
+                metadata_path,
                 inputs["action_cache_path"],
                 inputs["dynamics_manifest_path"],
                 regime,
@@ -464,6 +498,7 @@ def predict_state_baseline(
                 "format_version": 1,
                 "model": prediction["model_name"],
                 "checkpoint_sha256": inputs["checkpoint_sha256"],
+                "metadata_sha256": prediction["metadata_sha256"],
                 "controls_sha256": selected_controls.hexdigest(),
                 "test_outcome_expression_read": False,
             }
@@ -476,5 +511,6 @@ def predict_state_baseline(
         "records": rows,
         "repeats": repeats,
         "controls_sha256": selected_controls.hexdigest(),
+        "metadata_sha256": prediction["metadata_sha256"],
         "test_outcome_expression_read": False,
     }

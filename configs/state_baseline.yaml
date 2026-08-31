@@ -67,6 +67,9 @@ state:
   batch_size: 4
 prediction:
   model_name: state_sm
+  metadata_path: artifacts/state_baseline/input/state_prediction_metadata.h5
+  metadata_bytes: 4051849
+  metadata_sha256: 0f0c3fe43603564a329ae1aa4f4cba39c827e34f6d84e638fa465327e823d694
   population_size: 32
   repeats: 8
   batch_size: 16
