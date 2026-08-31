@@ -298,6 +298,14 @@ full export contains 120,156 K562 fit/validation cells and separate K562/RPE1 co
 its hashes and leakage audit are frozen in
 [`manifests/state_baseline_input_v1.json`](manifests/state_baseline_input_v1.json).
 
+The bounded State-small A6000 run completed all 10,000 steps with finite losses. Its checkpoint
+is frozen by minimum K562 perturbation-OOD validation loss (`13.9905`), before any sealed or RPE1
+perturbed outcome is used. Reporting-only inference samples the same eight deterministic
+32-control populations as the common benchmark, supplies only control expression and the frozen
+action vector to State, and stores gene-effect predictions before the four-regime scorer opens
+test outcomes. This preserves the proposal's condition-level paired comparison and target-gene-
+excluded endpoints without treating control and perturbed cells as paired.
+
 ## Development
 
 ```bash
@@ -353,6 +361,9 @@ uv run python scripts/evaluate_anchored.py
 uv run python scripts/analyze_anchored_evaluation.py
 uv run python scripts/smoke_state_baseline.py
 uv run python scripts/prepare_state_baseline.py
+# The next command runs inside the pinned official State CUDA environment.
+python scripts/predict_state_baseline.py
+uv run python scripts/evaluate_state_baseline.py
 uv run ruff check .
 uv run pytest
 ```

@@ -13,6 +13,7 @@ import pandas as pd
 import scipy.sparse as sp
 import torch
 
+from .dynamics import LatentPopulationDataset
 from .resources import file_sha256
 from .training import _git_state, _runtime_environment, _runtime_source_hash
 
@@ -327,3 +328,128 @@ def prepare_state_baseline(config, output_directory=None, smoke=None):
     report_path = output / export["report_file"]
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     return report
+
+
+@torch.inference_mode()
+def predict_state_baseline(
+    config,
+    base_config,
+    model,
+    output_path=None,
+    device=None,
+    regimes=None,
+    repeats=None,
+    maximum_conditions=None,
+):
+    """Generate test effects from controls/actions only with a validation-frozen State model."""
+    device = device or torch.device("cpu")
+    inputs, prediction = config["inputs"], config["prediction"]
+    assert file_sha256(config["base_transcriptomics_config_path"]) == config[
+        "base_transcriptomics_config_sha256"
+    ]
+    for name in ("expression_cache", "latent_cache", "action_cache", "state_features"):
+        assert file_sha256(inputs[f"{name}_path"]) == inputs[f"{name}_sha256"]
+    assert (
+        model.input_dim,
+        model.output_dim,
+        model.pert_dim,
+        model.cell_sentence_len,
+        model.batch_encoder,
+        model.use_batch_token,
+    ) == (3000, 3000, prediction["action_dimensions"], prediction["population_size"], None, False)
+    model = model.to(device).eval()
+    regimes = regimes or base_config["regimes"]
+    repeats = repeats or prediction["repeats"]
+    features = torch.load(inputs["state_features_path"], map_location="cpu", weights_only=True)
+    output = Path(output_path or prediction["output_path"])
+    assert not output.exists()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    selected_controls = sha256()
+    rows = expected = 0
+    string = h5py.string_dtype("utf-8")
+    with h5py.File(inputs["expression_cache_path"], "r") as expression, h5py.File(
+        inputs["latent_cache_path"], "r"
+    ) as metadata, h5py.File(output, "w") as destination:
+        roles = metadata["role"].asstr()[:]
+        effect = destination.create_dataset(
+            "predicted_effect",
+            (0, model.output_dim),
+            maxshape=(None, model.output_dim),
+            dtype="f4",
+            chunks=(prediction["batch_size"], model.output_dim),
+            compression="lzf",
+        )
+        regime_values = destination.create_dataset("regime", (0,), maxshape=(None,), dtype=string)
+        target_values = destination.create_dataset("target", (0,), maxshape=(None,), dtype=string)
+        repeat_values = destination.create_dataset("repeat", (0,), maxshape=(None,), dtype="i2")
+        for regime, specification in regimes.items():
+            dataset = LatentPopulationDataset(
+                inputs["latent_cache_path"],
+                inputs["action_cache_path"],
+                inputs["dynamics_manifest_path"],
+                regime,
+                prediction["population_size"],
+                base_config["seed"],
+                specification["outcome_role"],
+                specification["control_role"],
+                specification["context"],
+            )
+            indices = list(range(min(len(dataset), maximum_conditions or len(dataset))))
+            expected += repeats * len(indices)
+            for repeat in range(repeats):
+                dataset.set_epoch(repeat)
+                for start in range(0, len(indices), prediction["batch_size"]):
+                    plans = [
+                        dataset.sample_indices(index)
+                        for index in indices[start : start + prediction["batch_size"]]
+                    ]
+                    controls, targets = [], []
+                    for control_indices, _, target in plans:
+                        assert set(roles[control_indices]) == {specification["control_role"]}
+                        order = np.argsort(control_indices)
+                        values = expression["expression"][control_indices[order]][np.argsort(order)]
+                        controls.append(values)
+                        targets.append(target)
+                        selected_controls.update(
+                            f"{regime}\0{repeat}\0{target}\0".encode() + control_indices.tobytes()
+                        )
+                    control = torch.from_numpy(np.stack(controls)).to(device)
+                    action = torch.stack([features[target] for target in targets]).to(device)
+                    action = action[:, None].expand(-1, prediction["population_size"], -1)
+                    predicted = model(
+                        {
+                            "ctrl_cell_emb": control.flatten(0, 1),
+                            "pert_emb": action.flatten(0, 1),
+                        },
+                        padded=True,
+                    )
+                    predicted = predicted.reshape(len(targets), prediction["population_size"], -1)
+                    values = (predicted.mean(1) - control.mean(1)).float().cpu().numpy()
+                    assert values.shape == (len(targets), model.output_dim) and np.isfinite(values).all()
+                    stop = rows + len(targets)
+                    for dataset_value in (effect, regime_values, target_values, repeat_values):
+                        dataset_value.resize(stop, axis=0)
+                    effect[rows:stop] = values
+                    regime_values[rows:stop] = [regime] * len(targets)
+                    target_values[rows:stop] = targets
+                    repeat_values[rows:stop] = repeat
+                    rows = stop
+        destination.attrs.update(
+            {
+                "format_version": 1,
+                "model": prediction["model_name"],
+                "checkpoint_sha256": inputs["checkpoint_sha256"],
+                "controls_sha256": selected_controls.hexdigest(),
+                "test_outcome_expression_read": False,
+            }
+        )
+    assert rows == expected
+    return {
+        "path": str(output),
+        "bytes": output.stat().st_size,
+        "sha256": file_sha256(output),
+        "records": rows,
+        "repeats": repeats,
+        "controls_sha256": selected_controls.hexdigest(),
+        "test_outcome_expression_read": False,
+    }

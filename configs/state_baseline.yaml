@@ -1,5 +1,7 @@
 # Leakage-safe export and bounded training plan for the official State transition model.
 seed: 20260823
+base_transcriptomics_config_path: configs/transcriptomics.yaml
+base_transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
 source:
   state_repository: https://github.com/ArcInstitute/state.git
   state_commit: 9bbfe78a434a55205e4de834e1ea99f85f7a3add
@@ -22,6 +24,12 @@ inputs:
   action_cache_sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
   action_manifest_path: manifests/contextual_multiteacher_action_v1.json
   action_manifest_sha256: 2a39709c46e20c445a291d1e332d6b04da5c70706782bb34954376efdbea7cde
+  state_features_path: artifacts/state_baseline/input/state_action_features.pt
+  state_features_sha256: f3e0f7ecce28e1dc8a6adf21af90347351e86bf76c747dd93580d8c5b5cb693e
+  dynamics_manifest_path: manifests/dynamics_v1.json
+  checkpoint_path: artifacts/state_baseline/training/state_sm_seed_20260823/checkpoints/best.ckpt
+  checkpoint_bytes: 517137603
+  checkpoint_sha256: 5dd727afd408e5039f6ef8b0a4141ebb66299409c97cf8804ecfab340682d262
 export:
   output_directory: artifacts/state_baseline/input
   training_roles:
@@ -57,6 +65,54 @@ state:
   validation_frequency: 500
   checkpoint_frequency: 500
   batch_size: 4
+prediction:
+  model_name: state_sm
+  population_size: 32
+  repeats: 8
+  batch_size: 16
+  action_dimensions: 386
+  output_path: artifacts/state_baseline/predictions/state_sm_seed_20260823_effects.h5
+  report_path: artifacts/state_baseline/predictions/state_sm_seed_20260823_report.json
+evaluation:
+  references:
+    - models: [causalcelljepa, no_change, mean_effect, linear_esm, pseudo_paired]
+      condition_metrics_path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+      condition_metrics_bytes: 89852133
+      condition_metrics_records: 71760
+      condition_metrics_sha256: 213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f
+      pathway_metrics_path: artifacts/transcriptomic_evaluation/pathway_metrics.jsonl
+      pathway_metrics_bytes: 4088543
+      pathway_metrics_records: 8970
+      pathway_metrics_sha256: fb289d1667b19ce5cdbdd2d534413b5ea483aa80dc8c9a52055a8cdbeaf1895b
+    - models: [contextual_multiteacher_selected]
+      condition_metrics_path: artifacts/evaluation_contextual_multiteacher_transcriptomics/condition_metrics.jsonl
+      condition_metrics_bytes: 18905501
+      condition_metrics_records: 14352
+      condition_metrics_sha256: 25cc58fa73b2ac655a5cab1c037bab5995ef992431973c45636d86188f02cea0
+      pathway_metrics_path: artifacts/evaluation_contextual_multiteacher_transcriptomics/pathway_metrics.jsonl
+      pathway_metrics_bytes: 875910
+      pathway_metrics_records: 1794
+      pathway_metrics_sha256: ffe4585b83d3a5760529d04f062a4eed558e67297d3b8ac048af2dd8fec77690
+  comparisons:
+    - candidate: state_sm
+      reference: contextual_multiteacher_selected
+      hypothesis: State set-level gene-space prediction improves over the validation-frozen v4 model
+    - candidate: state_sm
+      reference: causalcelljepa
+      hypothesis: State set-level gene-space prediction improves over the primary model
+    - candidate: state_sm
+      reference: no_change
+      hypothesis: State improves over predicting no perturbation
+    - candidate: state_sm
+      reference: mean_effect
+      hypothesis: State improves over the K562 mean perturbation effect
+    - candidate: state_sm
+      reference: linear_esm
+      hypothesis: State improves over the frozen linear ESM baseline
+    - candidate: state_sm
+      reference: pseudo_paired
+      hypothesis: State improves over pseudo-paired dynamics
+  output_directory: artifacts/state_baseline/evaluation
 smoke:
   output_directory: artifacts/state_baseline_cpu_smoke/input
   maximum_conditions_per_role: 2
