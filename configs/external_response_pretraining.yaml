@@ -1,0 +1,42 @@
+# Post-test exploratory response pretraining; the Nadig screens cease to be confirmatory here.
+# Replogle validation/sealed targets and every RPE1 perturbation outcome remain excluded from fit.
+transcriptomics_config_path: configs/transcriptomics.yaml
+transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+external_response:
+  config_path: configs/external_response_pretraining.yaml
+  experimental_status: exploratory_post_test_not_confirmatory
+  protocol_amendment: >-
+    Nadig HepG2/Jurkat outcomes were previously evaluated test-only. Reusing them now for
+    response pretraining is explicitly exploratory, relinquishes their confirmatory role,
+    and requires a new independent dataset for confirmation.
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  excluded_outcome_roles:
+    - perturbation_ood_validation
+    - double_ood_validation_locked
+    - perturbation_ood_test
+    - double_ood_test
+  contexts: [HepG2, Jurkat]
+  external_config_path: configs/nadig_external_validation.yaml
+  external_config_sha256: 9d85c3d11ea3bb7818d4d90f54c8a90c3e0811496cc82064d18e6024829efbe5
+  external_manifest_path: manifests/nadig_external_validation_v1.json
+  external_manifest_sha256: fdd9a8a32ebea4c3e1f65a780423e12c532d1bd3a4c4dfa911e875d74cf927b3
+  action_path: artifacts/replogle_actions_esm2_go_string_v1.pt
+  action_bytes: 1816445
+  action_sha256: bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0
+  reference_checkpoint_path: artifacts/string_kernel_gene_student_v1.pt
+  reference_checkpoint_bytes: 1343361
+  reference_checkpoint_sha256: 87d6bad11f947d98ee57ff30124f93de8fe983a0c0bd02ae737fbf77940b43cd
+  feature_slice: [320, 451]
+  source_block_size: 4096
+  external_view_weights: [0.0, 1.0, 2.0, 4.0, 8.0]
+  ranks: [24, 32, 48, 64, 96, 128]
+  rbf_bandwidth_multipliers: [0.25, 0.5, 1.0]
+  rbf_ridge_candidates: [0.1, 1.0, 10.0]
+  output_scale_candidates: [1.0, 1.05, 1.1, 1.15, 1.2]
+  validation_gates:
+    minimum_relative_mse_improvement: 0.005
+    minimum_pearson_improvement: 0.0
+    maximum_magnitude_error_degradation: 0.0
+  checkpoint_path: artifacts/external_response_student_v1.pt
+  output_directory: artifacts/external_response_selection

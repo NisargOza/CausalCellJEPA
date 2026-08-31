@@ -182,6 +182,9 @@ def test_kernel_gene_prediction_matches_linear_and_rbf_equations(tmp_path):
     observed = kernel_gene_predictions(linear, action_path)
     assert np.allclose(observed["known"], [4.5, -1.75])
     assert np.allclose(observed["unknown"], checkpoint["y_mean"])
+    scaled = kernel_gene_predictions({**linear, "output_scale": 1.5}, action_path)
+    assert np.allclose(scaled["known"], 1.5 * observed["known"])
+    assert np.allclose(scaled["unknown"], 1.5 * checkpoint["y_mean"])
     rbf = {
         **checkpoint,
         "kernel": "rbf",

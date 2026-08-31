@@ -4,6 +4,7 @@ import json
 from collections import Counter, defaultdict
 from copy import deepcopy
 from hashlib import sha256
+from itertools import product
 from pathlib import Path
 
 import anndata as ad
@@ -1762,6 +1763,277 @@ def fit_kernel_gene_student(config, maximum_targets=None):
     }
 
 
+def fit_external_response_student(config, maximum_targets=None):
+    """Fit a multi-view action student without validation or sealed-target outcome leakage."""
+    from causalcelljepa.external_evaluation import grouped_expression_moments
+
+    specification, base = config["external_response"], config["transcriptomics"]
+    assert specification["experimental_status"] == "exploratory_post_test_not_confirmatory"
+    assert specification["fit_outcome_role"] == "dynamics_train"
+    assert specification["selection_outcome_role"] == "perturbation_ood_validation"
+    for name in ("action", "reference_checkpoint"):
+        path = Path(specification[f"{name}_path"])
+        assert (path.stat().st_size, file_sha256(path)) == (
+            specification[f"{name}_bytes"],
+            specification[f"{name}_sha256"],
+        )
+    external_config_path = Path(specification["external_config_path"])
+    assert file_sha256(external_config_path) == specification["external_config_sha256"]
+    external_config = yaml.safe_load(external_config_path.read_text())
+    external_manifest = json.loads(Path(specification["external_manifest_path"]).read_text())
+    declared = external_manifest.pop("manifest_sha256")
+    assert declared == specification["external_manifest_sha256"] == sha256(
+        json.dumps(external_manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert external_manifest["protocol"]["role"] == "external_test_only"
+
+    effects = _expression_role_effects(
+        base,
+        (specification["fit_outcome_role"], specification["selection_outcome_role"]),
+        maximum_targets,
+    )
+    train, validation = (
+        effects[specification["fit_outcome_role"]],
+        effects[specification["selection_outcome_role"]],
+    )
+    action = torch.load(specification["action_path"], map_location="cpu", weights_only=True)
+    action_map = {
+        target: (action["embedding"][index].numpy(), bool(action["known"][index]))
+        for index, target in enumerate(action["targets"])
+    }
+    train_targets = [target for target in sorted(train) if action_map[target][1]]
+    validation_targets = sorted(validation)
+    assert all(action_map[target][1] for target in validation_targets)
+    with h5py.File(base["inputs"]["latent_cache_path"], "r") as cache:
+        roles, cache_targets = cache["role"].asstr()[:], cache["target"].asstr()[:]
+    excluded_targets = set().union(
+        *(set(cache_targets[roles == role]) for role in specification["excluded_outcome_roles"])
+    )
+    assert not set(train_targets).intersection(excluded_targets)
+
+    replogle = json.loads(Path(base["inputs"]["replogle_manifest_path"]).read_text())
+    hvg_genes = replogle["genes"]["hvg_gene_names"]
+    hvg_index = {gene: index for index, gene in enumerate(hvg_genes)}
+    train_y = np.stack([train[target] for target in train_targets]).astype(np.float64)
+    validation_y = np.stack([validation[target] for target in validation_targets])
+    y_mean, centered_y = train_y.mean(0), train_y - train_y.mean(0)
+    target_index = {target: index for index, target in enumerate(train_targets)}
+    external_blocks, external_report = {}, {}
+    for context in specification["contexts"]:
+        source = external_config["source"]["files"][context]
+        path = Path(external_config["source"]["raw_directory"]) / source["filename"]
+        assert path.stat().st_size == source["bytes"]
+        assert file_sha256(path) == external_manifest["contexts"][context]["source_sha256"]
+        data = ad.read_h5ad(path, backed="r")
+        labels = data.obs[external_config["source"]["perturbation_column"]].astype(str).to_numpy()
+        eligible = set(external_manifest["contexts"][context]["eligible_targets"])
+        admitted = sorted(set(train_targets).intersection(eligible))
+        assert not set(admitted).intersection(excluded_targets)
+        present_genes = [gene for gene in hvg_genes if gene in data.var_names]
+        columns = np.asarray([data.var_names.get_loc(gene) for gene in present_genes])
+        groups = [external_config["source"]["control_label"], *admitted]
+        means, _, counts = grouped_expression_moments(
+            data.X, labels, groups, columns, specification["source_block_size"]
+        )
+        data.file.close()
+        assert counts[0] == source["expected_controls"]
+        assert counts[1:].min() >= external_config["protocol"]["population_size"]
+        observed = means[1:] - means[0]
+        observed -= observed.mean(0)
+        rows = np.zeros((len(train_targets), len(present_genes)), dtype=np.float64)
+        positions = np.asarray([target_index[target] for target in admitted])
+        rows[positions] = observed
+        gene_positions = np.asarray([hvg_index[gene] for gene in present_genes])
+        reference_rms = np.sqrt(np.mean(centered_y[np.ix_(positions, gene_positions)] ** 2))
+        source_rms = np.sqrt(np.mean(observed**2))
+        scale = float(reference_rms / source_rms)
+        external_blocks[context] = rows * scale
+        external_report[context] = {
+            "fit_targets": len(admitted),
+            "fit_target_sha256": sha256("\n".join(admitted).encode()).hexdigest(),
+            "genes": len(present_genes),
+            "cells": int(counts.sum()),
+            "effect_rms_scale_to_k562": scale,
+            "source_sha256": external_manifest["contexts"][context]["source_sha256"],
+        }
+
+    start, end = specification["feature_slice"]
+    train_x = np.stack(
+        [action_map[target][0][start:end] for target in train_targets]
+    ).astype(np.float64)
+    validation_x = np.stack(
+        [action_map[target][0][start:end] for target in validation_targets]
+    ).astype(np.float64)
+    x_mean, x_std = train_x.mean(0), train_x.std(0).clip(1e-8)
+    train_x, validation_x = (train_x - x_mean) / x_std, (validation_x - x_mean) / x_std
+    train_square = np.square(train_x).sum(1)
+    train_distance = np.maximum(
+        train_square[:, None] + train_square[None, :] - 2 * train_x @ train_x.T, 0
+    )
+    median_distance = float(np.median(train_distance[train_distance > 0]))
+    validation_distance = np.maximum(
+        np.square(validation_x).sum(1)[:, None]
+        + train_square[None, :]
+        - 2 * validation_x @ train_x.T,
+        0,
+    )
+    kernels = {}
+    for bandwidth in specification["rbf_bandwidth_multipliers"]:
+        gram = np.exp(-bandwidth * train_distance / median_distance)
+        values, vectors = np.linalg.eigh(gram)
+        kernels[bandwidth] = (
+            values,
+            vectors,
+            np.exp(-bandwidth * validation_distance / median_distance),
+        )
+
+    reference = torch.load(
+        specification["reference_checkpoint_path"], map_location="cpu", weights_only=True
+    )
+    reference_prediction = kernel_gene_predictions(reference, specification["action_path"])
+    reference_y = np.stack([reference_prediction[target] for target in validation_targets])
+    reference_metrics = {
+        "mse": float(np.mean((reference_y - validation_y) ** 2)),
+        "mean_effect_pearson": float(
+            np.mean(
+                [
+                    np.corrcoef(predicted, observed)[0, 1]
+                    for predicted, observed in zip(reference_y, validation_y)
+                ]
+            )
+        ),
+        "mean_magnitude_absolute_error": float(
+            np.mean(
+                np.abs(
+                    np.linalg.norm(reference_y, axis=1)
+                    - np.linalg.norm(validation_y, axis=1)
+                )
+            )
+        ),
+    }
+    candidates, solutions = [], []
+    weight_grid = specification["external_view_weights"]
+    for weights in (
+        dict(zip(specification["contexts"], values, strict=True))
+        for values in product(weight_grid, repeat=len(specification["contexts"]))
+    ):
+        joined = np.concatenate(
+            [centered_y]
+            + [weights[context] * external_blocks[context] for context in specification["contexts"]],
+            axis=1,
+        )
+        _, _, components = np.linalg.svd(joined, full_matrices=False)
+        for rank in specification["ranks"]:
+            rank = min(rank, len(train_targets))
+            selected_components = components[:rank]
+            scores = joined @ selected_components.T
+            gene_head = selected_components[:, : train_y.shape[1]]
+            for bandwidth, (values, vectors, design) in kernels.items():
+                projected = vectors.T @ scores
+                for ridge in specification["rbf_ridge_candidates"]:
+                    dual = vectors @ (projected / (values[:, None] + ridge))
+                    unscaled = design @ dual @ gene_head + y_mean
+                    correlation = float(
+                        np.mean(
+                            [
+                                np.corrcoef(predicted, observed)[0, 1]
+                                for predicted, observed in zip(unscaled, validation_y)
+                            ]
+                        )
+                    )
+                    for output_scale in specification["output_scale_candidates"]:
+                        prediction = output_scale * unscaled
+                        candidate = {
+                            "external_view_weights": weights,
+                            "rank": rank,
+                            "bandwidth_multiplier": float(bandwidth),
+                            "ridge": float(ridge),
+                            "output_scale": float(output_scale),
+                            "median_squared_distance": median_distance,
+                            "selection_mse": float(np.mean((prediction - validation_y) ** 2)),
+                            "selection_mean_effect_pearson": correlation,
+                            "selection_mean_magnitude_absolute_error": float(
+                                np.mean(
+                                    np.abs(
+                                        np.linalg.norm(prediction, axis=1)
+                                        - np.linalg.norm(validation_y, axis=1)
+                                    )
+                                )
+                            ),
+                        }
+                        candidates.append(candidate)
+                        solutions.append((dual, gene_head))
+    gates = specification["validation_gates"]
+    admissible = [
+        index
+        for index, item in enumerate(candidates)
+        if sum(item["external_view_weights"].values()) > 0
+        and item["selection_mse"]
+        <= reference_metrics["mse"] * (1 - gates["minimum_relative_mse_improvement"])
+        and item["selection_mean_effect_pearson"]
+        >= reference_metrics["mean_effect_pearson"] + gates["minimum_pearson_improvement"]
+        and item["selection_mean_magnitude_absolute_error"]
+        <= reference_metrics["mean_magnitude_absolute_error"]
+        + gates["maximum_magnitude_error_degradation"]
+    ]
+    selected_index = min(
+        admissible or range(len(candidates)),
+        key=lambda index: (candidates[index]["selection_mse"], index),
+    )
+    selected, (dual, gene_head) = candidates[selected_index], solutions[selected_index]
+    selected["passes_validation_gate"] = bool(admissible)
+    internal_control = min(
+        (item for item in candidates if sum(item["external_view_weights"].values()) == 0),
+        key=lambda item: item["selection_mse"],
+    )
+    report = {
+        "experimental_status": specification["experimental_status"],
+        "protocol_amendment": specification["protocol_amendment"],
+        "fit_outcome_role": specification["fit_outcome_role"],
+        "selection_outcome_role": specification["selection_outcome_role"],
+        "fit_targets": len(train_targets),
+        "selection_targets": len(validation_targets),
+        "external": external_report,
+        "excluded_outcome_roles": specification["excluded_outcome_roles"],
+        "excluded_target_count": len(excluded_targets),
+        "excluded_target_sha256": sha256("\n".join(sorted(excluded_targets)).encode()).hexdigest(),
+        "reference": reference_metrics,
+        "internal_no_external_control": internal_control,
+        "selected": selected,
+        "candidate_count": len(candidates),
+        "validation_gates": gates,
+        "sealed_test_outcomes_used_for_fit_or_selection": False,
+        "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        "prior_external_results_make_this_confirmatory": False,
+    }
+    return {
+        "format_version": 1,
+        "architecture": "external_response_multiview_kernel_gene_student",
+        "feature_slice": specification["feature_slice"],
+        "kernel": "rbf",
+        "x_mean": torch.from_numpy(x_mean.astype(np.float32)),
+        "x_std": torch.from_numpy(x_std.astype(np.float32)),
+        "y_mean": torch.from_numpy(y_mean.astype(np.float32)),
+        "components": torch.from_numpy(gene_head.astype(np.float32)),
+        "train_x": torch.from_numpy(train_x.astype(np.float32)),
+        "dual": torch.from_numpy(dual.astype(np.float32)),
+        "output_scale": selected["output_scale"],
+        "report": report,
+        "provenance": {
+            "config_sha256": file_sha256(specification["config_path"]),
+            "external_config_sha256": specification["external_config_sha256"],
+            "external_manifest_sha256": declared,
+            "reference_checkpoint_sha256": specification["reference_checkpoint_sha256"],
+            "action_sha256": specification["action_sha256"],
+            "latent_cache_sha256": base["inputs"]["latent_cache_sha256"],
+            "expression_cache_sha256": base["inputs"]["expression_cache_sha256"],
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+
+
 def kernel_gene_predictions(checkpoint, action_path):
     """Apply a frozen linear or RBF action student without outcome access."""
     action = torch.load(action_path, map_location="cpu", weights_only=True)
@@ -1780,8 +2052,12 @@ def kernel_gene_predictions(checkpoint, action_path):
             / selected["median_squared_distance"]
         )
         scores = similarity @ checkpoint["dual"]
-    predicted = scores @ checkpoint["components"] + checkpoint["y_mean"]
-    predicted[~action["known"]] = checkpoint["y_mean"]
+    predicted = checkpoint.get("output_scale", 1.0) * (
+        scores @ checkpoint["components"] + checkpoint["y_mean"]
+    )
+    predicted[~action["known"]] = checkpoint.get("output_scale", 1.0) * checkpoint[
+        "y_mean"
+    ]
     return {target: predicted[index].numpy() for index, target in enumerate(action["targets"])}
 
 
