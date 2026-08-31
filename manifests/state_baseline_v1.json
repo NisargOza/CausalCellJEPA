@@ -1,0 +1,132 @@
+{
+  "artifacts": {
+    "analysis": {
+      "bytes": 41663,
+      "path": "artifacts/state_baseline/analysis/analysis.json",
+      "sha256": "1ec93a41cf1dd10e15d5e0bd72f3a996eb9f90bfdd57eb6b340107e41666efd2"
+    },
+    "best_checkpoint": {
+      "bytes": 517137603,
+      "path": "artifacts/state_baseline/training/state_sm_seed_20260823/checkpoints/best.ckpt",
+      "sha256": "5dd727afd408e5039f6ef8b0a4141ebb66299409c97cf8804ecfab340682d262"
+    },
+    "evaluation": {
+      "condition_metrics.jsonl": {
+        "bytes": 18637206,
+        "path": "artifacts/state_baseline/evaluation/condition_metrics.jsonl",
+        "records": 14352,
+        "sha256": "4e912d9c149b5069093c27048e39484fd5762f15b1706d989ddb93b8ae09bcfc"
+      },
+      "paired_comparisons.json": {
+        "bytes": 423746,
+        "path": "artifacts/state_baseline/evaluation/paired_comparisons.json",
+        "sha256": "3b16e995df7c805f92390c48fe269006866fc3b0ed8f4b0557f30c34c7fb6109"
+      },
+      "pathway_metrics.jsonl": {
+        "bytes": 823193,
+        "path": "artifacts/state_baseline/evaluation/pathway_metrics.jsonl",
+        "records": 1794,
+        "sha256": "dd8413d655b71de195095af61799bff498cee33f00345001577440bf8f3cabc1"
+      },
+      "provenance.json": {
+        "bytes": 11670,
+        "path": "artifacts/state_baseline/evaluation/provenance.json",
+        "sha256": "b389977066b087ae8f3d5fcf7418494a5f2f0f70785e2b5bee976ccd50844bd6"
+      },
+      "summary.json": {
+        "bytes": 35033,
+        "path": "artifacts/state_baseline/evaluation/summary.json",
+        "sha256": "27e052cdd11131a89729d84714b99ca75de47a0dae6f06d9965a5bafd1c47c6e"
+      },
+      "truth_report.json": {
+        "bytes": 560,
+        "path": "artifacts/state_baseline/evaluation/truth_report.json",
+        "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+      }
+    },
+    "prediction": {
+      "bytes": 173567216,
+      "path": "artifacts/state_baseline/predictions/state_sm_seed_20260823_effects.h5",
+      "records": 14352,
+      "sha256": "7ba5373674dec826cdaf94d32e999ab80bf269aa4210464fce7628aa23b85858"
+    },
+    "prediction_report": {
+      "bytes": 444,
+      "path": "artifacts/state_baseline/predictions/state_sm_seed_20260823_report.json",
+      "sha256": "8f6a637d5d785df064252bf424f113c6072756a9f449f40d5210f003b44d601a"
+    },
+    "training_config": {
+      "bytes": 2917,
+      "path": "artifacts/state_baseline/training/state_sm_seed_20260823/config.yaml",
+      "sha256": "4904c768df243410f798000dbe4f8c8661884a3a1fd6c7240ec157d0c2b67131"
+    },
+    "training_log": {
+      "bytes": 6203,
+      "path": "artifacts/state_baseline/training/state_sm_seed_20260823.log",
+      "sha256": "7f0649f977872f33d14129a05992cdf4704060e60918007d4ce5f45fbdcb616c"
+    },
+    "training_metrics": {
+      "bytes": 36754,
+      "path": "artifacts/state_baseline/training/state_sm_seed_20260823/version_0/metrics.csv",
+      "records": 221,
+      "sha256": "e82cfe4caff632c77bea3bb3edae3171fa62366a663e3f9a12da1fe0e6ba464f"
+    }
+  },
+  "format_version": 1,
+  "manifest_sha256": "118bdf5f4cb20124c0e25156d8a8f2b9cbcf2f53a9a359c476e1d6c36b6ef34f",
+  "protocol": {
+    "checkpoint_selected_on": "K562 perturbation_ood_validation only",
+    "reporting_only_evaluation": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "test_outcome_expression_read_during_prediction": false
+  },
+  "provenance": {
+    "base_analysis_manifest_sha256": "5c3ac8a3efa6a5930766e7cce7b54fffad2d524ac4a55736ba3c09649d1d0774",
+    "evaluation_git": {
+      "commit": "3d3dc19500ab18e2a1b5c0e24e3b6fe6b622a2cb",
+      "dirty": false
+    },
+    "git": {
+      "commit": "8844ee2b9f357b34e66c463c53f97e4a6afa8c59",
+      "dirty": false
+    },
+    "prediction_report": {
+      "bytes": 173567216,
+      "controls_sha256": "4a7c9e9a5a2c684dccc981c000c5762dfc5e148d1c71a8f503971986f1f454f4",
+      "metadata_sha256": "0f0c3fe43603564a329ae1aa4f4cba39c827e34f6d84e638fa465327e823d694",
+      "path": "artifacts/state_baseline/predictions/state_sm_seed_20260823_effects.h5",
+      "records": 14352,
+      "repeats": 8,
+      "sha256": "7ba5373674dec826cdaf94d32e999ab80bf269aa4210464fce7628aa23b85858",
+      "test_outcome_expression_read": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "5fd71dc12bd3113f268611f03e9de293dd5ef595427b111fe007080252061fca"
+  },
+  "result": {
+    "k562_effect_correlations_near_zero": true,
+    "state_is_best_on_any_headline_metric": false,
+    "transferred_magnitude_miscalibrated": true,
+    "uniform_superiority_supported": false
+  },
+  "source": {
+    "cell_load_commit": "9ba45e59f6f8117bb7a21371ad38d67175586d53",
+    "cell_load_version": "0.10.4",
+    "state_commit": "9bbfe78a434a55205e4de834e1ea99f85f7a3add",
+    "state_version": "0.11.3"
+  }
+}
