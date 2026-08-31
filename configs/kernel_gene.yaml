@@ -1,0 +1,24 @@
+# Exploratory post-test action student selected only on K562 validation outcomes.
+# It reuses the frozen direct-gene expression basis for a controlled comparison.
+transcriptomics_config_path: configs/transcriptomics.yaml
+transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+kernel_gene:
+  experimental_status: exploratory_post_test_requires_external_confirmation
+  fit_outcome_role: dynamics_train
+  selection_outcome_role: perturbation_ood_validation
+  direct_checkpoint_path: artifacts/direct_gene_esm_v1.pt
+  direct_checkpoint_bytes: 868595
+  direct_checkpoint_sha256: 85ca626235562eb36a53604df45ce06bf4c6e1ce5ea26c4e0e1fb048bf5722a3
+  action_path: artifacts/replogle_actions_esm2_go_context_v1.pt
+  action_bytes: 1557253
+  action_sha256: d6987ef03b3db4bf6d26990e0ebe3a47f564e196f5d7b4c935c4680e04778983
+  feature_blocks:
+    esm: [0, 320]
+    go_with_availability: [320, 386]
+    all: [0, 386]
+  kernels: [linear, rbf]
+  linear_ridge_candidates: [0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0]
+  rbf_bandwidth_multipliers: [0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0]
+  rbf_ridge_candidates: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+  checkpoint_path: artifacts/kernel_gene_student_v1.pt
+  output_directory: artifacts/kernel_gene_selection

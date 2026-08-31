@@ -1596,6 +1596,188 @@ def direct_gene_predictions(checkpoint, action_path):
     return {target: predicted[index].numpy() for index, target in enumerate(action["targets"])}
 
 
+def fit_kernel_gene_student(config, maximum_targets=None):
+    """Select a low-rank action kernel using only K562 train/validation effects."""
+    kernel, base = config["kernel_gene"], config["transcriptomics"]
+    assert kernel["experimental_status"] == "exploratory_post_test_requires_external_confirmation"
+    for prefix in ("direct_checkpoint", "action"):
+        path = Path(kernel[f"{prefix}_path"])
+        assert (path.stat().st_size, file_sha256(path)) == (
+            kernel[f"{prefix}_bytes"],
+            kernel[f"{prefix}_sha256"],
+        )
+    direct = torch.load(kernel["direct_checkpoint_path"], map_location="cpu", weights_only=True)
+    action = torch.load(kernel["action_path"], map_location="cpu", weights_only=True)
+    assert direct["architecture"] == "direct_gene_esm_low_rank_ridge"
+    effects = _expression_role_effects(
+        base,
+        (kernel["fit_outcome_role"], kernel["selection_outcome_role"]),
+        maximum_targets,
+    )
+    action_map = {
+        target: (action["embedding"][index].numpy(), bool(action["known"][index]))
+        for index, target in enumerate(action["targets"])
+    }
+    train = effects[kernel["fit_outcome_role"]]
+    train_targets = [target for target in sorted(train) if action_map[target][1]]
+    validation = effects[kernel["selection_outcome_role"]]
+    validation_targets = sorted(validation)
+    assert all(action_map[target][1] for target in validation_targets)
+    train_y = np.stack([train[target] for target in train_targets]).astype(np.float64)
+    validation_y = np.stack([validation[target] for target in validation_targets])
+    components = direct["components"].numpy().astype(np.float64)
+    y_mean = direct["y_mean"].numpy().astype(np.float64)
+    train_scores = (train_y - y_mean) @ components.T
+    candidates, solutions = [], []
+    for block, (start, end) in kernel["feature_blocks"].items():
+        train_x = np.stack(
+            [action_map[target][0][start:end] for target in train_targets]
+        ).astype(np.float64)
+        validation_x = np.stack(
+            [action_map[target][0][start:end] for target in validation_targets]
+        ).astype(np.float64)
+        mean, std = train_x.mean(0), train_x.std(0).clip(1e-8)
+        train_x, validation_x = (train_x - mean) / std, (validation_x - mean) / std
+        for kind in kernel["kernels"]:
+            if kind == "linear":
+                problems = [
+                    (
+                        None,
+                        None,
+                        validation_x,
+                        train_x.T @ train_x,
+                        train_x.T @ train_scores,
+                        kernel["linear_ridge_candidates"],
+                    )
+                ]
+            else:
+                assert kind == "rbf"
+                train_square = np.square(train_x).sum(1)
+                train_distance = np.maximum(
+                    train_square[:, None] + train_square[None, :] - 2 * train_x @ train_x.T,
+                    0,
+                )
+                median_distance = float(np.median(train_distance[train_distance > 0]))
+                validation_distance = np.maximum(
+                    np.square(validation_x).sum(1)[:, None]
+                    + train_square[None, :]
+                    - 2 * validation_x @ train_x.T,
+                    0,
+                )
+                problems = [
+                    (
+                        float(multiplier),
+                        median_distance,
+                        np.exp(-multiplier * validation_distance / median_distance),
+                        np.exp(-multiplier * train_distance / median_distance),
+                        train_scores,
+                        kernel["rbf_ridge_candidates"],
+                    )
+                    for multiplier in kernel["rbf_bandwidth_multipliers"]
+                ]
+            for multiplier, median, design, gram, cross, ridges in problems:
+                values, vectors = np.linalg.eigh(gram)
+                projected = vectors.T @ cross
+                for alpha in ridges:
+                    coefficient = vectors @ (projected / (values[:, None] + alpha))
+                    prediction = design @ coefficient @ components + y_mean
+                    candidates.append(
+                        {
+                            "feature_block": block,
+                            "kernel": kind,
+                            "bandwidth_multiplier": multiplier,
+                            "ridge": float(alpha),
+                            "selection_mse": float(np.mean((prediction - validation_y) ** 2)),
+                            "selection_mean_effect_pearson": float(
+                                np.mean(
+                                    [
+                                        np.corrcoef(predicted, observed)[0, 1]
+                                        for predicted, observed in zip(prediction, validation_y)
+                                    ]
+                                )
+                            ),
+                            "median_squared_distance": median,
+                        }
+                    )
+                    solutions.append(
+                        {"weights": coefficient}
+                        if kind == "linear"
+                        else {"dual": coefficient, "train_x": train_x}
+                    )
+    selected_index = min(
+        range(len(candidates)),
+        key=lambda index: (candidates[index]["selection_mse"], index),
+    )
+    selected, solution = candidates[selected_index], solutions[selected_index]
+    start, end = kernel["feature_blocks"][selected["feature_block"]]
+    selected_x = np.stack(
+        [action_map[target][0][start:end] for target in train_targets]
+    ).astype(np.float64)
+    mean, std = selected_x.mean(0), selected_x.std(0).clip(1e-8)
+    return {
+        "format_version": 1,
+        "architecture": "kernel_gene_low_rank_student",
+        "feature_block": selected["feature_block"],
+        "feature_slice": [start, end],
+        "kernel": selected["kernel"],
+        "x_mean": torch.from_numpy(mean.astype(np.float32)),
+        "x_std": torch.from_numpy(std.astype(np.float32)),
+        "y_mean": direct["y_mean"],
+        "components": direct["components"],
+        **{
+            name: torch.from_numpy(value.astype(np.float32))
+            for name, value in solution.items()
+        },
+        "report": {
+            "experimental_status": kernel["experimental_status"],
+            "fit_outcome_role": kernel["fit_outcome_role"],
+            "selection_outcome_role": kernel["selection_outcome_role"],
+            "fit_targets": len(train),
+            "fit_targets_with_known_action": len(train_targets),
+            "selection_targets": len(validation_targets),
+            "rank": len(components),
+            "selection_rule": "minimum validation MSE; config order breaks exact ties",
+            "selected": selected,
+            "candidates": candidates,
+            "sealed_test_outcomes_used_for_fit_or_selection": False,
+            "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
+        },
+        "provenance": {
+            "config_sha256": file_sha256("configs/kernel_gene.yaml"),
+            "direct_checkpoint_sha256": kernel["direct_checkpoint_sha256"],
+            "action_sha256": kernel["action_sha256"],
+            "latent_cache_sha256": base["inputs"]["latent_cache_sha256"],
+            "expression_cache_sha256": base["inputs"]["expression_cache_sha256"],
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+
+
+def kernel_gene_predictions(checkpoint, action_path):
+    """Apply a frozen linear or RBF action student without outcome access."""
+    action = torch.load(action_path, map_location="cpu", weights_only=True)
+    start, end = checkpoint["feature_slice"]
+    standardized = (
+        action["embedding"][:, start:end] - checkpoint["x_mean"]
+    ) / checkpoint["x_std"]
+    if checkpoint["kernel"] == "linear":
+        scores = standardized @ checkpoint["weights"]
+    else:
+        distance = torch.cdist(standardized, checkpoint["train_x"]).square()
+        selected = checkpoint["report"]["selected"]
+        similarity = torch.exp(
+            -selected["bandwidth_multiplier"]
+            * distance
+            / selected["median_squared_distance"]
+        )
+        scores = similarity @ checkpoint["dual"]
+    predicted = scores @ checkpoint["components"] + checkpoint["y_mean"]
+    predicted[~action["known"]] = checkpoint["y_mean"]
+    return {target: predicted[index].numpy() for index, target in enumerate(action["targets"])}
+
+
 def score_effect_predictions(base, model_name, predictions, maximum_conditions=None):
     """Score frozen gene-effect predictions through the common reporting-only endpoint."""
     truth, truth_report = expression_truth(base, maximum_conditions=maximum_conditions)

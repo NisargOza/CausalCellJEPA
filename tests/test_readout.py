@@ -7,6 +7,7 @@ from causalcelljepa.readout import (
     decode_representation_centroids,
     decoder_split,
     gene_effect_metrics,
+    kernel_gene_predictions,
     normalized_hvg_expression,
     pathway_agreement,
     regression_mse,
@@ -155,3 +156,40 @@ def test_arbitrary_transcriptomic_pairs_use_metric_specific_directions():
     comparisons = _paired_transcriptomic_models(records, pairs, 100, 7)
     assert len(comparisons) == 3
     assert all(item["mean_improvement"] > 0 for item in comparisons)
+
+
+def test_kernel_gene_prediction_matches_linear_and_rbf_equations(tmp_path):
+    action_path = tmp_path / "action.pt"
+    torch.save(
+        {
+            "targets": ["known", "unknown"],
+            "embedding": torch.tensor([[1.0, 3.0], [2.0, 5.0]]),
+            "known": torch.tensor([True, False]),
+        },
+        action_path,
+    )
+    checkpoint = {
+        "feature_slice": [0, 2],
+        "x_mean": torch.tensor([1.0, 1.0]),
+        "x_std": torch.tensor([1.0, 2.0]),
+        "components": torch.tensor([[2.0, -1.0]]),
+        "y_mean": torch.tensor([0.5, 0.25]),
+        "report": {
+            "selected": {"bandwidth_multiplier": 0.5, "median_squared_distance": 2.0}
+        },
+    }
+    linear = {**checkpoint, "kernel": "linear", "weights": torch.tensor([[1.0], [2.0]])}
+    observed = kernel_gene_predictions(linear, action_path)
+    assert np.allclose(observed["known"], [4.5, -1.75])
+    assert np.allclose(observed["unknown"], checkpoint["y_mean"])
+    rbf = {
+        **checkpoint,
+        "kernel": "rbf",
+        "train_x": torch.tensor([[0.0, 0.0], [0.0, 2.0]]),
+        "dual": torch.tensor([[1.0], [3.0]]),
+    }
+    similarity = np.exp(-0.5 * np.asarray([1.0, 1.0]) / 2.0)
+    expected_score = similarity @ np.asarray([1.0, 3.0])
+    observed = kernel_gene_predictions(rbf, action_path)
+    expected = expected_score * np.asarray([2.0, -1.0]) + [0.5, 0.25]
+    assert np.allclose(observed["known"], expected)
