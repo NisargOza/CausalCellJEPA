@@ -13,6 +13,7 @@ dependencies = [
     "geomloss==0.3.1",
     "h5py>=3.11",
     "numpy>=2.0",
+    "pyarrow>=20.0",
     "pyyaml>=6.0",
     "scipy>=1.13",
     "torch>=2.6",

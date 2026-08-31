@@ -17,6 +17,7 @@ from causalcelljepa.actions import (
     map_targets,
     multiteacher_action_payload,
     protein_symbols,
+    string_spectral_action_payload,
 )
 from causalcelljepa.resources import (
     derive_hvg_programs,
@@ -102,6 +103,25 @@ def test_contextual_multiteacher_action_appends_availability_and_uses_any_teache
     assert payload["modality_dims"] == [3, 1]
     assert payload["modality_availability"] is True
     assert report["targets_known_from_any_modality"] == 3
+
+
+def test_string_spectral_action_is_deterministic_and_marks_graph_coverage():
+    action = {
+        "targets": ["A", "B", "C", "D"],
+        "embedding": torch.arange(16, dtype=torch.float32).reshape(4, 4),
+        "known": torch.tensor([True, True, False, False]),
+        "modality_dims": [3],
+        "modalities": ["existing"],
+    }
+    edges = [("A", "B", 9), ("C", "B", 8), ("D", "B", 7), ("C", "A", 6)]
+    first, report = string_spectral_action_payload(action, edges, 2, 2, 9)
+    second, _ = string_spectral_action_payload(action, reversed(edges), 2, 2, 9)
+    assert torch.equal(first["embedding"], second["embedding"])
+    assert first["embedding"].shape == (4, 7)
+    assert first["embedding"][:, -1].tolist() == [1, 1, 1, 0]
+    assert first["known"].tolist() == [True, True, True, False]
+    assert first["modality_dims"] == [3, 2]
+    assert report["selected_directed_edges"] == 3 and report["targets_with_string"] == 3
 
 
 def test_salt_action_student_split_fusion_and_geometry_are_finite():

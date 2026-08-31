@@ -3,6 +3,7 @@
 import json
 import re
 from collections import defaultdict
+from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
 
@@ -82,6 +83,123 @@ def contextual_multiteacher_action_payload(action, programs, rank=64):
     payload["modality_availability"] = True
     report["targets_known_from_any_modality"] = int(payload["known"].sum())
     return payload, report
+
+
+def string_spectral_action_payload(action, edges, top_neighbors=20, rank=64, maximum_weight=999):
+    """Append a deterministic normalized-STRING spectral teacher and availability bit."""
+    targets = list(action["targets"])
+    target_index, neighbors = {target: index for index, target in enumerate(targets)}, defaultdict(list)
+    for regulator, target, weight in edges:
+        if regulator in target_index and target in target_index:
+            neighbors[target].append((regulator, int(weight)))
+    adjacency = np.zeros((len(targets), len(targets)), dtype=np.float64)
+    selected_edges = 0
+    for target, values in neighbors.items():
+        for regulator, weight in sorted(values, key=lambda item: (-item[1], item[0]))[:top_neighbors]:
+            row, column = target_index[target], target_index[regulator]
+            adjacency[row, column] = max(adjacency[row, column], weight / maximum_weight)
+            selected_edges += 1
+    adjacency = np.maximum(adjacency, adjacency.T)
+    available = adjacency.max(1) > 0
+    adjacency += np.eye(len(targets))
+    degree = np.sqrt(adjacency.sum(1))
+    values, vectors = np.linalg.eigh(adjacency / degree[:, None] / degree[None, :])
+    values, vectors = values[-rank:], vectors[:, -rank:]
+    vectors *= np.sqrt(values.clip(min=0))
+    anchors = np.abs(vectors).argmax(0)
+    vectors *= np.where(vectors[anchors, np.arange(rank)] < 0, -1, 1)
+    availability = torch.from_numpy(available[:, None])
+    payload = {
+        **action,
+        "embedding": torch.cat(
+            (
+                action["embedding"].float(),
+                torch.from_numpy(vectors.astype(np.float32)),
+                availability.float(),
+            ),
+            1,
+        ),
+        "known": action["known"].bool() | availability[:, 0],
+        "modality_dims": list(action["modality_dims"]) + [rank],
+        "modalities": list(action["modalities"]) + ["string_v11_5_spectral"],
+        "modality_availability": True,
+    }
+    return payload, {
+        "input_edges": sum(map(len, neighbors.values())),
+        "selected_directed_edges": selected_edges,
+        "targets_with_string": int(available.sum()),
+        "target_coverage": float(available.mean()),
+        "string_rank": rank,
+    }
+
+
+def prepare_string_action(config_path="configs/string_action.yaml"):
+    """Stream the pinned TxPert STRING graph into an outcome-free action cache."""
+    from pyarrow import parquet
+
+    config_path = Path(config_path)
+    config = yaml.safe_load(config_path.read_text())
+    source, base = config["source"], config["base_action"]
+    for specification in (source, base):
+        path = Path(specification["path"])
+        assert (path.stat().st_size, file_sha256(path)) == (
+            specification["bytes"],
+            specification["sha256"],
+        )
+    action = torch.load(base["path"], map_location="cpu", weights_only=True)
+    targets, edges = set(action["targets"]), []
+    for batch in parquet.ParquetFile(source["path"]).iter_batches(
+        columns=("regulator", "target", "weight"), batch_size=65536
+    ):
+        for regulator, target, weight in zip(*(column.to_pylist() for column in batch)):
+            if regulator in targets and target in targets:
+                edges.append((regulator, target, weight))
+    graph = config["graph"]
+    payload, report = string_spectral_action_payload(
+        action,
+        edges,
+        graph["top_neighbors_per_target"],
+        graph["rank"],
+        graph["maximum_weight"],
+    )
+    output = Path(config["output_path"])
+    assert not output.exists()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(payload, output)
+    manifest = {
+        "format_version": 1,
+        "architecture": "frozen_esm_go_string_spectral_action",
+        "artifact": {
+            "path": str(output),
+            "bytes": output.stat().st_size,
+            "sha256": file_sha256(output),
+            "input_dim": payload["embedding"].shape[1],
+            "modality_dims": payload["modality_dims"],
+            "modality_availability": True,
+        },
+        "graph": deepcopy(graph),
+        "report": report,
+        "source": {
+            "config_sha256": file_sha256(config_path),
+            "repository": source["repository"],
+            "commit": source["commit"],
+            "string_sha256": source["sha256"],
+            "base_action_sha256": base["sha256"],
+            "outcomes_read": False,
+        },
+        "provenance": {
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+    manifest["manifest_sha256"] = sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    destination = Path(config["manifest_path"])
+    assert not destination.exists()
+    destination.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    return manifest
 
 
 def prepare_multiteacher_action(
