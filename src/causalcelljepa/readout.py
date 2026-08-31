@@ -1985,6 +1985,33 @@ def run_state_baseline_evaluation(config, base):
 def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory=None):
     """Report a selection-frozen kernel student against immutable references."""
     kernel, evaluation, base = config["kernel_gene"], config["evaluation"], config["transcriptomics"]
+    if "reference_config_path" in evaluation:
+        assert file_sha256(evaluation["reference_config_path"]) == evaluation[
+            "reference_config_sha256"
+        ]
+        reference_evaluation = yaml.safe_load(Path(evaluation["reference_config_path"]).read_text())[
+            "evaluation"
+        ]
+        reference_manifest = json.loads(Path(evaluation["reference_manifest_path"]).read_text())
+        reference_declared = reference_manifest.pop("manifest_sha256")
+        assert reference_declared == evaluation["reference_manifest_sha256"] == sha256(
+            json.dumps(reference_manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        references = reference_evaluation["references"] + [
+            {
+                "models": [reference_evaluation["model_name"]],
+                **{
+                    f"{name}_{field}": reference_manifest["artifacts"][name][field]
+                    for name in ("condition_metrics", "pathway_metrics")
+                    for field in ("path", "bytes", "records", "sha256")
+                },
+            }
+        ]
+        comparisons = [
+            {**pair, "candidate": evaluation["model_name"]} for pair in evaluation["comparisons"]
+        ]
+    else:
+        references, comparisons = evaluation["references"], evaluation["comparisons"]
     selection = json.loads(Path(kernel["selection_manifest_path"]).read_text())
     declared = selection.pop("manifest_sha256")
     assert declared == kernel["selection_manifest_sha256"] == sha256(
@@ -2029,7 +2056,7 @@ def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory
         base, evaluation["model_name"], rows, maximum_conditions
     )
     reference_records, reference_pathways = [], []
-    for reference in evaluation["references"]:
+    for reference in references:
         for name, destination in (
             ("condition_metrics", reference_records),
             ("pathway_metrics", reference_pathways),
@@ -2052,10 +2079,10 @@ def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory
     }
     paired = {
         "condition_comparisons": _paired_transcriptomic_models(
-            reference_records + records, evaluation["comparisons"], resamples, base["seed"]
+            reference_records + records, comparisons, resamples, base["seed"]
         ),
         "pathway_comparisons": _paired_transcriptomic_models(
-            reference_pathways + pathways, evaluation["comparisons"], resamples, base["seed"]
+            reference_pathways + pathways, comparisons, resamples, base["seed"]
         ),
     }
     provenance = {

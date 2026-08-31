@@ -25,3 +25,21 @@ kernel_gene:
   rbf_ridge_candidates: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
   checkpoint_path: artifacts/string_kernel_gene_student_v1.pt
   output_directory: artifacts/string_kernel_gene_selection
+  selection_manifest_path: manifests/string_kernel_selection_v1.json
+  selection_manifest_sha256: 1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf
+evaluation:
+  model_name: string_kernel_gene_go_rbf
+  reference_config_path: configs/kernel_gene.yaml
+  reference_config_sha256: 95af072fc202d13822d697f20499f1be4137b1fe2456d53dd858f36f8852bbac
+  reference_manifest_path: manifests/kernel_gene_evaluation_v1.json
+  reference_manifest_sha256: 5674c16881864693f68ad49b2d7c38b4a535ede80d5ac4faaa9883f9d6fb30d9
+  comparisons:
+    - {reference: kernel_gene_go_rbf, hypothesis: STRING improves the frozen GO kernel student}
+    - {reference: direct_gene_esm, hypothesis: STRING plus GO improves the frozen direct ESM ridge}
+    - {reference: contextual_multiteacher_selected, hypothesis: STRING plus GO improves the validation-frozen v4 model}
+    - {reference: state_sm, hypothesis: STRING plus GO improves the bounded State baseline}
+    - {reference: causalcelljepa, hypothesis: STRING plus GO improves the primary model}
+    - {reference: no_change, hypothesis: STRING plus GO improves no-change prediction}
+    - {reference: mean_effect, hypothesis: STRING plus GO improves mean-effect prediction}
+    - {reference: linear_esm, hypothesis: STRING plus GO improves the frozen linear ESM baseline}
+  output_directory: artifacts/string_kernel_gene_evaluation
