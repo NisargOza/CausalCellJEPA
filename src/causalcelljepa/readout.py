@@ -2261,33 +2261,34 @@ def run_state_baseline_evaluation(config, base):
 def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory=None):
     """Report a selection-frozen kernel student against immutable references."""
     kernel, evaluation, base = config["kernel_gene"], config["evaluation"], config["transcriptomics"]
-    if "reference_config_path" in evaluation:
-        assert file_sha256(evaluation["reference_config_path"]) == evaluation[
+    references, reference_evaluation = [], evaluation
+    while "reference_config_path" in reference_evaluation:
+        assert file_sha256(reference_evaluation["reference_config_path"]) == reference_evaluation[
             "reference_config_sha256"
         ]
-        reference_evaluation = yaml.safe_load(Path(evaluation["reference_config_path"]).read_text())[
+        parent = yaml.safe_load(Path(reference_evaluation["reference_config_path"]).read_text())[
             "evaluation"
         ]
-        reference_manifest = json.loads(Path(evaluation["reference_manifest_path"]).read_text())
-        reference_declared = reference_manifest.pop("manifest_sha256")
-        assert reference_declared == evaluation["reference_manifest_sha256"] == sha256(
-            json.dumps(reference_manifest, sort_keys=True, separators=(",", ":")).encode()
+        manifest = json.loads(Path(reference_evaluation["reference_manifest_path"]).read_text())
+        declared_reference = manifest.pop("manifest_sha256")
+        assert declared_reference == reference_evaluation["reference_manifest_sha256"] == sha256(
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
-        references = reference_evaluation["references"] + [
+        references.append(
             {
-                "models": [reference_evaluation["model_name"]],
+                "models": [parent["model_name"]],
                 **{
-                    f"{name}_{field}": reference_manifest["artifacts"][name][field]
+                    f"{name}_{field}": manifest["artifacts"][name][field]
                     for name in ("condition_metrics", "pathway_metrics")
                     for field in ("path", "bytes", "records", "sha256")
                 },
             }
-        ]
-        comparisons = [
-            {**pair, "candidate": evaluation["model_name"]} for pair in evaluation["comparisons"]
-        ]
-    else:
-        references, comparisons = evaluation["references"], evaluation["comparisons"]
+        )
+        reference_evaluation = parent
+    references = reference_evaluation["references"] + references
+    comparisons = [
+        {**pair, "candidate": evaluation["model_name"]} for pair in evaluation["comparisons"]
+    ]
     selection = json.loads(Path(kernel["selection_manifest_path"]).read_text())
     declared = selection.pop("manifest_sha256")
     assert declared == kernel["selection_manifest_sha256"] == sha256(
@@ -2307,19 +2308,39 @@ def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     selected = checkpoint["report"]["selected"]
     frozen = selection["selection"]["selected"]
-    assert (
-        selected["feature_block"],
-        selected["kernel"],
-        selected["bandwidth_multiplier"],
-        selected["ridge"],
-        selected["selection_mse"],
-    ) == (
-        frozen["feature_block"],
-        frozen["kernel"],
-        frozen["bandwidth_multiplier"],
-        frozen["ridge"],
-        frozen["mse"],
-    )
+    if checkpoint["architecture"] == "external_response_multiview_kernel_gene_student":
+        assert {
+            "external_view_weights": selected["external_view_weights"],
+            "rank": selected["rank"],
+            "bandwidth_multiplier": selected["bandwidth_multiplier"],
+            "ridge": selected["ridge"],
+            "output_scale": selected["output_scale"],
+            "mse": selected["selection_mse"],
+        } == {
+            key: frozen[key]
+            for key in (
+                "external_view_weights",
+                "rank",
+                "bandwidth_multiplier",
+                "ridge",
+                "output_scale",
+                "mse",
+            )
+        }
+    else:
+        assert (
+            selected["feature_block"],
+            selected["kernel"],
+            selected["bandwidth_multiplier"],
+            selected["ridge"],
+            selected["selection_mse"],
+        ) == (
+            frozen["feature_block"],
+            frozen["kernel"],
+            frozen["bandwidth_multiplier"],
+            frozen["ridge"],
+            frozen["mse"],
+        )
     predicted = kernel_gene_predictions(checkpoint, action_path)
     with h5py.File(base["inputs"]["latent_cache_path"], "r") as latent:
         roles, targets = latent["role"].asstr()[:], latent["target"].asstr()[:]
