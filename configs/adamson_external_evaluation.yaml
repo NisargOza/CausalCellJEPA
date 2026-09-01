@@ -1,0 +1,55 @@
+# Execute the one-shot Adamson confirmation without changing its preregistered protocol.
+# Controls may be encoded before scoring; perturbation outcomes are opened exactly once.
+inputs:
+  preregistered_config_path: configs/adamson_external_confirmation.yaml
+  preregistered_config_sha256: c2e55373e787c0ede71c845ce0d654907db734a5c6b722ef9f98b6682f58b65f
+  preparation_manifest_path: manifests/adamson_external_preparation_v2.json
+  preparation_manifest_sha256: 0564f07569a899fe933fcc50780743403f30744af7474d4f4058bc85e57ddf51
+  transcriptomics_config_path: configs/transcriptomics.yaml
+  transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+  teacher_path: artifacts/stage1_thunder_f1e5dce/stage1/canonical_ema_teacher.pt
+  teacher_bytes: 9825133
+  teacher_sha256: 03924557312b4829716fe643fd6d6f9f0704acec470773094326ac1fb47c074f
+  dynamics_manifest_path: manifests/dynamics_v1.json
+  dynamics_manifest_sha256: 15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743
+  gate_manifest_path: manifests/control_ood_residual_gate_v1.json
+  gate_manifest_sha256: 46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c
+  external_selection_manifest_path: manifests/external_response_selection_v1.json
+  external_selection_manifest_sha256: e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2
+  string_selection_manifest_path: manifests/string_kernel_selection_v1.json
+  string_selection_manifest_sha256: 1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf
+  direct_manifest_path: manifests/direct_gene_v1.json
+  direct_manifest_sha256: b7259f4aa177cc5910cff212313b9570ee1e7606cdf900669b754f4987d0cf29
+  direct_checkpoint_path: artifacts/direct_gene_esm_v1.pt
+  direct_checkpoint_bytes: 868595
+  direct_checkpoint_sha256: 85ca626235562eb36a53604df45ce06bf4c6e1ce5ea26c4e0e1fb048bf5722a3
+  direct_action_path: artifacts/replogle_actions_esm2_t6_2026_02.pt
+  direct_action_sha256: b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d
+
+prediction:
+  batch_size: 32
+  max_tokens: 512
+  device: cpu
+  models: [control_gated_external_response, external_response_multiview_rbf, string_kernel_gene_go_rbf, direct_gene_esm, mean_effect, no_change]
+
+metrics:
+  bootstrap_resamples: 10000
+  deg_batch_fdr: 0.05
+  deg_min_abs_effect: 0.10
+  retrospective_top_genes: [20, 50, 100]
+  pathway_top_k: [10, 25, 50]
+
+comparisons:
+  - {candidate: control_gated_external_response, reference: perturbed_mean, hypothesis: frozen candidate improves beyond systematic perturbed variation}
+  - {candidate: control_gated_external_response, reference: external_response_multiview_rbf, hypothesis: control gate retains external response transfer}
+  - {candidate: control_gated_external_response, reference: string_kernel_gene_go_rbf, hypothesis: control gate retains STRING and GO transfer}
+  - {candidate: control_gated_external_response, reference: direct_gene_esm, hypothesis: frozen candidate improves direct ESM ridge}
+  - {candidate: control_gated_external_response, reference: mean_effect, hypothesis: frozen candidate improves mean training effect}
+  - {candidate: control_gated_external_response, reference: no_change, hypothesis: frozen candidate improves no-change prediction}
+
+outputs:
+  prediction_path: artifacts/adamson_external_confirmation/predictions.pt
+  prediction_manifest_path: manifests/adamson_external_prediction_v1.json
+  evaluation_directory: artifacts/adamson_external_confirmation/evaluation
+  evaluation_manifest_path: manifests/adamson_external_confirmation_v1.json
+  smoke_prediction_path: artifacts/adamson_external_confirmation_cpu_smoke/predictions.pt
