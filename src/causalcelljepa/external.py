@@ -1,5 +1,7 @@
 # Frozen adapters for test-only cross-dataset validation on normalized Perturb-seq files.
 # Preparation reads metadata only; expression values enter solely during frozen inference.
+import csv
+import gzip
 import json
 from collections import Counter
 from hashlib import file_digest, sha256
@@ -124,6 +126,121 @@ def prepare_nadig_external(config_path="configs/nadig_external_validation.yaml")
     Path(config["source"]["manifest_path"]).write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n"
     )
+    return report
+
+
+def prepare_adamson_external(config_path="configs/adamson_external_confirmation.yaml"):
+    """Freeze the final external-study cohort without decompressing its expression matrix."""
+    config_path = Path(config_path)
+    config = yaml.safe_load(config_path.read_text())
+    root, files = Path(config["source"]["raw_directory"]), config["source"]["files"]
+    source_hashes = {}
+    for name, specification in files.items():
+        path = root / specification["filename"]
+        assert path.stat().st_size == specification["bytes"]
+        source_hashes[name] = file_sha256(path)
+        assert source_hashes[name] == specification["sha256"]
+
+    frozen = config["frozen_candidate"]
+    action_path = Path(frozen["action_path"])
+    assert (action_path.stat().st_size, file_sha256(action_path)) == (
+        frozen["action_bytes"],
+        frozen["action_sha256"],
+    )
+    action = torch.load(action_path, map_location="cpu", weights_only=True)
+    known = {target for target, value in zip(action["targets"], action["known"]) if bool(value)}
+    replogle = json.loads(Path(frozen["replogle_manifest"]).read_text())
+    declared = replogle.pop("manifest_sha256")
+    assert declared == frozen["replogle_manifest_sha256"] == sha256(
+        json.dumps(replogle, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+    with gzip.open(root / files["barcodes"]["filename"], "rt") as handle:
+        barcodes = [line.rstrip("\n") for line in handle]
+    with gzip.open(root / files["genes"]["filename"], "rt") as handle:
+        gene_rows = list(csv.reader(handle, delimiter="\t"))
+        gene_symbols = {row[1] for row in gene_rows}
+    with gzip.open(root / files["identities"]["filename"], "rt") as handle:
+        identities = list(csv.DictReader(handle))
+    audit, filtering = config["metadata_audit"], config["filtering"]
+    assert (len(barcodes), len(gene_rows), len(gene_symbols), len(identities)) == (
+        audit["barcodes"],
+        audit["genes"],
+        audit["unique_gene_symbols"],
+        audit["identity_rows"],
+    )
+    assert {row["cell BC"] for row in identities} <= set(barcodes)
+    admitted = [
+        row
+        for row in identities
+        if row["good coverage"] == str(filtering["good_coverage"]).upper()
+        and int(row["number of cells"]) == filtering["number_of_cells"]
+    ]
+    controls, unknown = set(filtering["controls"]), filtering["unknown_identity"]
+    counts = Counter(
+        row["guide identity"].rsplit("_", 1)[0]
+        for row in admitted
+        if row["guide identity"] not in controls | {unknown}
+    )
+    minimum = filtering["minimum_cells_per_target"]
+    scored = sorted(target for target, count in counts.items() if count >= minimum and target in known)
+    reference = sorted(target for target, count in counts.items() if count >= minimum and target not in known)
+    assert scored == config["targets"]["scored"]
+    assert reference == config["targets"]["systematic_reference_only"]
+    assert len(admitted) == audit["valid_cells"]
+    assert sum(row["guide identity"] in controls for row in admitted) == audit["control_cells"]
+    assert sum(row["guide identity"] == unknown for row in admitted) == audit[
+        "unknown_identity_cells_excluded"
+    ]
+    assert sum(counts[target] for target in scored) == audit["scored_target_cells"]
+    assert sum(counts[target] for target in reference) == audit["reference_only_target_cells"]
+    control_batches = Counter(
+        row["cell BC"].rsplit("-", 1)[1]
+        for row in admitted
+        if row["guide identity"] in controls
+    )
+    assert min(control_batches.values()) == audit["minimum_batch_matched_controls"]
+    hvg = replogle["genes"]["hvg_gene_names"]
+    overlap = [gene for gene in hvg if gene in gene_symbols]
+    report = {
+        "format_version": 1,
+        "dataset": {key: value for key, value in config["source"].items() if key != "files"},
+        "source_files": {
+            name: {**specification, "sha256": source_hashes[name]}
+            for name, specification in files.items()
+        },
+        "cohort": {
+            "valid_cells": len(admitted),
+            "controls": audit["control_cells"],
+            "scored_targets": scored,
+            "scored_target_sha256": sha256("\n".join(scored).encode()).hexdigest(),
+            "reference_only_targets": reference,
+            "reference_only_target_sha256": sha256("\n".join(reference).encode()).hexdigest(),
+            "frozen_hvg_overlap": len(overlap),
+            "frozen_hvg_overlap_sha256": sha256("\n".join(overlap).encode()).hexdigest(),
+        },
+        "leakage": {
+            "expression_matrix_decompressed_during_preparation": False,
+            "adamson_outcomes_used_for_fit_selection_or_gate": False,
+            "target_admission_uses_metadata_and_frozen_action_availability_only": True,
+        },
+        "source": {
+            "config_sha256": file_sha256(config_path),
+            "action_cache_sha256": frozen["action_sha256"],
+            "replogle_manifest_sha256": declared,
+        },
+        "provenance": {
+            "runtime_source_sha256": _runtime_source_hash(),
+            "runtime_environment": _runtime_environment(),
+            "git": _git_state(),
+        },
+    }
+    report["manifest_sha256"] = sha256(
+        json.dumps(report, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    destination = Path(config["outputs"]["preparation_manifest"])
+    assert not destination.exists()
+    destination.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     return report
 
 
