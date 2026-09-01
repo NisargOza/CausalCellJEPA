@@ -1,0 +1,294 @@
+{
+  "adamson_effect_heatmap": {
+    "genes": [
+      "HIST1H1C",
+      "HSP90B1",
+      "MT-ATP6",
+      "MT-CYB",
+      "SDF2L1",
+      "PHGDH",
+      "MT-ND2",
+      "MT-ND4",
+      "MYC",
+      "S100A11",
+      "MT-CO3",
+      "MANF",
+      "SLC3A2",
+      "HSPA5",
+      "TRIB3",
+      "PDIA6",
+      "DDIT3",
+      "MAP1B",
+      "PHB",
+      "PTMA",
+      "CALR",
+      "PDIA3",
+      "EIF4EBP1",
+      "SNHG32",
+      "MAT2A",
+      "HIST1H2AC",
+      "EDF1",
+      "PPIB",
+      "MDK",
+      "XBP1"
+    ],
+    "seen_targets": 19,
+    "selection": "highest observed between-target variance; reporting only",
+    "unseen_targets": 8
+  },
+  "adamson_gene_effect_density": {
+    "control_gated_external_response": {
+      "target_gene_pairs": 80001,
+      "target_mean_pearson": 0.40674057570791183,
+      "target_median_pearson": 0.45129444946963265,
+      "targets": 27
+    },
+    "external_response_multiview_rbf": {
+      "target_gene_pairs": 80001,
+      "target_mean_pearson": 0.40672059377606246,
+      "target_median_pearson": 0.45127647356897277,
+      "targets": 27
+    },
+    "string_kernel_gene_go_rbf": {
+      "target_gene_pairs": 80001,
+      "target_mean_pearson": 0.4305342552055088,
+      "target_median_pearson": 0.48739118310464247,
+      "targets": 27
+    }
+  },
+  "adamson_systema_paired_scatter": {
+    "systema_all_gene_pearson_delta_vs_perturbed_mean": {
+      "candidate_better": 21,
+      "mean_improvement": 0.2605999326799545,
+      "mean_improvement_bootstrap_95ci": [
+        0.15628805514644284,
+        0.3699705932197714
+      ],
+      "targets": 27
+    },
+    "systema_all_gene_pearson_delta_vs_string_kernel_gene_go_rbf": {
+      "candidate_better": 12,
+      "mean_improvement": -0.02006469308387693,
+      "mean_improvement_bootstrap_95ci": [
+        -0.042228282813486416,
+        -0.00023956439939565161
+      ],
+      "targets": 27
+    },
+    "systema_target_excluded_pearson_delta_vs_perturbed_mean": {
+      "candidate_better": 20,
+      "mean_improvement": 0.2574076980301556,
+      "mean_improvement_bootstrap_95ci": [
+        0.15290476246167817,
+        0.36496882634076816
+      ],
+      "targets": 27
+    },
+    "systema_target_excluded_pearson_delta_vs_string_kernel_gene_go_rbf": {
+      "candidate_better": 12,
+      "mean_improvement": -0.020671055855528662,
+      "mean_improvement_bootstrap_95ci": [
+        -0.04302109974676122,
+        -0.0005658078750452457
+      ],
+      "targets": 27
+    }
+  },
+  "fit_selection_or_tuning_performed": false,
+  "format_version": 1,
+  "output_hashes": {
+    "figures/empirical/empirical_1_replogle_population_umap.pdf": "04ee925bfddd2c3e2c510049fe41fa2d658a6ca5cb03836cf9f5754b5114fb3e",
+    "figures/empirical/empirical_1_replogle_population_umap.png": "f370a1ef18c813e3538099acc519a1e77a6552cc30f2a5011beee7dfe26c3172",
+    "figures/empirical/empirical_1_replogle_population_umap.svg": "87976883dd8fcbfa26887e323e2616482dfc40f46a093be8182eca5fc89b5e53",
+    "figures/empirical/empirical_2_replogle_target_paired_scatter.pdf": "d562b9435051683e7b363c11e6b4f74eb6088901ba7167e57ed44f540a50a108",
+    "figures/empirical/empirical_2_replogle_target_paired_scatter.png": "d0c633c5dab0514f19253053a1d92201214b268c74a9a2d01d5980861e42d5fd",
+    "figures/empirical/empirical_2_replogle_target_paired_scatter.svg": "96e12d81a79d9dde82221aa4382074d39ee05286448131378ec7aa62ef655262",
+    "figures/empirical/empirical_3_adamson_systema_paired_scatter.pdf": "779a79aed72b66ce5e5af0d9a628f2ff92a9c099f5fbb6f52c365d2f51581671",
+    "figures/empirical/empirical_3_adamson_systema_paired_scatter.png": "c8ef8e5d86232c4dfdacb4fe5a5a6903ede1f9c4bfa9b6d39599f13555043784",
+    "figures/empirical/empirical_3_adamson_systema_paired_scatter.svg": "b4fb538071deb32cc342c45416acf0cb422492d009f2ca5a7253981dea3dd0d9",
+    "figures/empirical/empirical_4_adamson_gene_effect_heatmap.pdf": "9c590d695dbfbd72f59becbea975b37db0d3cdbd7d38a51187caaa630e5ee2f3",
+    "figures/empirical/empirical_4_adamson_gene_effect_heatmap.png": "49104e806923fa816dcd5ba8f5b0973cdd44d9af0a4ed1786dd621ad1f6cc23e",
+    "figures/empirical/empirical_4_adamson_gene_effect_heatmap.svg": "3a1ffaa10d2ff74c741f434fea9aa21648929774fab24f070a5a9dca6761d2ba",
+    "figures/empirical/empirical_5_adamson_gene_effect_density.pdf": "2055325aa37a19dab20798c6853f8da11d95427d0462ee5127479f945bd4a73d",
+    "figures/empirical/empirical_5_adamson_gene_effect_density.png": "006ab4b7f2c796f602094318b7b5040f4998fcf344e32c51d187578983d75700",
+    "figures/empirical/empirical_5_adamson_gene_effect_density.svg": "35e2cc1447451883c563d6488a58f37a0ef377715f8cde0b2f64977957924403"
+  },
+  "replogle_double_ood_paired_scatter": {
+    "effect_pearson": {
+      "candidate_better": 66,
+      "candidate_mean": 0.07146519826062502,
+      "mean_benefit_bootstrap_95ci": [
+        -0.11580991966630293,
+        -0.1522208416783663,
+        -0.0798378928709565
+      ],
+      "reference_mean": 0.18727511792692794,
+      "targets": 199
+    },
+    "magnitude_absolute_error": {
+      "candidate_better": 188,
+      "candidate_mean": 0.05911462317833949,
+      "mean_benefit_bootstrap_95ci": [
+        0.16825855913660934,
+        0.1568959042824215,
+        0.17885580949307459
+      ],
+      "reference_mean": 0.22737318231494882,
+      "targets": 199
+    },
+    "mmd": {
+      "candidate_better": 198,
+      "candidate_mean": 0.029435505220039408,
+      "mean_benefit_bootstrap_95ci": [
+        0.06769640593972039,
+        0.06527096647675613,
+        0.07000056454846307
+      ],
+      "reference_mean": 0.09713191115975979,
+      "targets": 199
+    },
+    "sinkhorn": {
+      "candidate_better": 199,
+      "candidate_mean": 0.13710351411870975,
+      "mean_benefit_bootstrap_95ci": [
+        0.13642579672773877,
+        0.1327506297114118,
+        0.14012346358153147
+      ],
+      "reference_mean": 0.27352931084644855,
+      "targets": 199
+    }
+  },
+  "replogle_umap": {
+    "population_repeat": 0,
+    "selection": "seeded SHA-256 target-identity priority; no outcomes or metrics read",
+    "targets": {
+      "context_ood": [
+        "ANKRD49",
+        "BCR",
+        "BUB1",
+        "CDIPT",
+        "CDK1",
+        "CTNNBL1",
+        "CWC15",
+        "DDX55",
+        "ELAC2",
+        "GON4L",
+        "GTF3C1",
+        "GTF3C2",
+        "ING3",
+        "KIF14",
+        "LRPPRC",
+        "MIOS",
+        "MVD",
+        "NCKAP1",
+        "NDUFS3",
+        "NUDCD3",
+        "TSFM",
+        "WBP11",
+        "WBP1L",
+        "ZNHIT2"
+      ],
+      "double_ood": [
+        "ATP6V1H",
+        "BAP1",
+        "CENPA",
+        "CENPN",
+        "CNIH4",
+        "DNLZ",
+        "HAUS4",
+        "HIRA",
+        "HMGCS1",
+        "MCM6",
+        "MRPL1",
+        "MRPL27",
+        "MTG2",
+        "NDUFAB1",
+        "NFRKB",
+        "PCID2",
+        "POLG2",
+        "PRPF3",
+        "PSMC1",
+        "PTPMT1",
+        "QARS",
+        "RPUSD3",
+        "SKA3",
+        "UBE2Z"
+      ],
+      "iid": [
+        "BCS1L",
+        "CLK2",
+        "DICER1",
+        "HIST1H2BN",
+        "HIST2H2BF",
+        "IGBP1",
+        "ING3",
+        "KATNB1",
+        "MRPL16",
+        "MTBP",
+        "OR4N2",
+        "OSGEP",
+        "OTX1",
+        "PFN1",
+        "PHB",
+        "PMPCA",
+        "PSMG3",
+        "RPA2",
+        "SEPSECS",
+        "SRSF6",
+        "TACC3",
+        "TARS2",
+        "TOMM22",
+        "WBP11"
+      ],
+      "perturbation_ood": [
+        "ALG1",
+        "AP2S1",
+        "COQ5",
+        "ERAL1",
+        "HIRA",
+        "KRT10",
+        "KRTAP4-2",
+        "MAD2L2",
+        "METTL17",
+        "MOCS3",
+        "MRPL1",
+        "MRPL32",
+        "MRPL9",
+        "NDUFAB1",
+        "NELFB",
+        "PCBP1",
+        "PRMT5",
+        "RPUSD3",
+        "SMC1A",
+        "TRA2B",
+        "TRAPPC1",
+        "TUBB",
+        "UBE2I",
+        "ZNF574"
+      ]
+    }
+  },
+  "reporting_only": true,
+  "software": {
+    "matplotlib": "3.11.1",
+    "numpy": "2.5.2",
+    "torch": "2.13.0",
+    "umap_learn": "0.5.12"
+  },
+  "source_hashes": {
+    "artifacts/adamson_external_confirmation/evaluation/condition_metrics.jsonl": "911079cfbf4f63b306e072f48ddc4a9c59b39440a6e15e5901b5fddee861bc61",
+    "artifacts/adamson_external_confirmation/evaluation/paired_comparisons.json": "4b857cc231a90709c6170c718a09777587c9cc9dc372731007fbaf1850eba57d",
+    "artifacts/adamson_external_confirmation/predictions.pt": "6aa75109e0b96e4d19536e396289a7b352eb23c8e5f6bde909489995cfda622d",
+    "artifacts/dynamics_selected_0810656.pt": "d0d4eed4dfbc6e63843c0fb3294c79c115832b75eaf6712617d31f6c1ce160b4",
+    "artifacts/evaluation_with_pseudo/condition_metrics.jsonl": "d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50",
+    "artifacts/pseudo_paired_selected_4efbe79.pt": "4a3fce2d0698092ca2c12238ae9b6bd716d7de02dfca593790c5ee6814f5318b",
+    "artifacts/replogle_actions_esm2_t6_2026_02.pt": "b1a615f02a69629342f178ed9c5ce81fa1165528c225da8eefc9e59de98d514d",
+    "artifacts/replogle_latents_f1e5dce.h5": "af96f823f409c2cff0f2d6291f602e71bfcd986a425020a316e2895279f2a5d6",
+    "data/external/adamson16/GSM2406681_10X010_barcodes.tsv.gz": "1e0d820343d0c6e17bdab4fef96f4446e223b94861942ccf3d7225818e009836",
+    "data/external/adamson16/GSM2406681_10X010_cell_identities.csv.gz": "8b40be7a2280c1713bf5a1eb828aad46e70ad3a7000b5f5a1322e51e06c4cf7f",
+    "data/external/adamson16/GSM2406681_10X010_genes.tsv.gz": "e9c8a7eab0c23d98d1affa18f8ba8ffd2c63d43070a4a712546e72152c6d6bce",
+    "data/external/adamson16/GSM2406681_10X010_matrix.mtx.txt.gz": "fd4f860d5d494454bb17997163bd3db0d3b5797c8ffc426fa4a499143c772fdd"
+  },
+  "statistical_unit": "perturbation condition"
+}
