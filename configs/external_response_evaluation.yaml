@@ -1,0 +1,27 @@
+# Reporting-only evaluation of the validation-frozen external-response student.
+transcriptomics_config_path: configs/transcriptomics.yaml
+transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+kernel_gene:
+  experimental_status: exploratory_post_test_not_confirmatory
+  action_path: artifacts/replogle_actions_esm2_go_string_v1.pt
+  action_bytes: 1816445
+  action_sha256: bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0
+  selection_manifest_path: manifests/external_response_selection_v1.json
+  selection_manifest_sha256: e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2
+evaluation:
+  model_name: external_response_multiview_rbf
+  reference_config_path: configs/string_kernel_gene.yaml
+  reference_config_sha256: 060ba854918fa6f958c3fcb78b2b4ef151827ac12ac7b5c90b4e7555e4d3818d
+  reference_manifest_path: manifests/string_kernel_evaluation_v1.json
+  reference_manifest_sha256: e4d423644eb594adef25de109a6b61efcd248c3c9f5985561fd341679a722af6
+  comparisons:
+    - {reference: string_kernel_gene_go_rbf, hypothesis: external response pretraining improves STRING plus GO}
+    - {reference: kernel_gene_go_rbf, hypothesis: external response pretraining improves the GO kernel student}
+    - {reference: direct_gene_esm, hypothesis: external response pretraining improves direct ESM ridge}
+    - {reference: contextual_multiteacher_selected, hypothesis: external response pretraining improves the v4 model}
+    - {reference: state_sm, hypothesis: external response pretraining improves the bounded State baseline}
+    - {reference: causalcelljepa, hypothesis: external response pretraining improves the primary model}
+    - {reference: no_change, hypothesis: external response pretraining improves no-change prediction}
+    - {reference: mean_effect, hypothesis: external response pretraining improves mean-effect prediction}
+    - {reference: linear_esm, hypothesis: external response pretraining improves the frozen linear ESM baseline}
+  output_directory: artifacts/external_response_evaluation
