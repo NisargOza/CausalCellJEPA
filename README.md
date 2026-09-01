@@ -27,6 +27,20 @@ The leakage-resistant data/split foundation includes:
 - cell roles for IID, perturbation-OOD, context-OOD, and double-OOD evaluation;
 - explicit exclusion of RPE1 perturbed outcomes and held-out targets from fit data.
 
+## Publication package
+
+The evidence-calibrated manuscript title is **CausalCellJEPA: A Multimodal Joint-Embedding
+Predictive Architecture for Cellular Perturbation Response Modeling with Biology-Aware
+Multi-Teacher Fusion**. The literature position, supported claims, and figure rationale are
+recorded in
+[`docs/publication_positioning_and_figure_design.md`](docs/publication_positioning_and_figure_design.md).
+
+Run `uv run python scripts/generate_publication_figures.py` to verify the frozen artifact hashes
+and regenerate six publication figures as editable SVG, font-embedded PDF, and 300-dpi PNG. The
+tracked outputs and their reproducibility manifest are under
+[`figures/publication/`](figures/publication/). All displayed intervals resample perturbation
+conditions after repeat averaging; no figure generation path fits or selects a model.
+
 The official Replogle Figshare article `20029387`, version 1, is downloaded under
 git-ignored `data/raw/` and pinned by byte size plus local SHA-256. The published K562
 MD5 also matches exactly. Full backed-matrix validation produced

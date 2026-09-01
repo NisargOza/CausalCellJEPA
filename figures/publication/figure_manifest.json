@@ -1,0 +1,328 @@
+{
+  "adamson": {
+    "candidate_minus_perturbed_mean": [
+      0.2605999326799545,
+      0.15628805514644284,
+      0.3699705932197714
+    ],
+    "candidate_minus_string_go": [
+      -0.02006469308387693,
+      -0.042228282813486416,
+      -0.00023956439939565161
+    ],
+    "criteria_passed": 5,
+    "systema_all_gene_pearson_delta": {
+      "control_gated_external_response": [
+        0.2056231133196931,
+        0.05889339947014609,
+        0.34645482983663367
+      ],
+      "direct_gene_esm": [
+        0.00672902370585136,
+        -0.16550533911457943,
+        0.18002182264058467
+      ],
+      "external_response_multiview_rbf": [
+        0.20560989555147044,
+        0.06476263260181699,
+        0.34596800965528435
+      ],
+      "mean_effect": [
+        -0.02757516526763012,
+        -0.21394585205155647,
+        0.15912177553481363
+      ],
+      "no_change": [
+        -0.05637242410881348,
+        -0.27616146933089947,
+        0.16640095726433302
+      ],
+      "perturbed_mean": [
+        -0.05497681936026143,
+        -0.2093954212740625,
+        0.10144003593103984
+      ],
+      "string_kernel_gene_go_rbf": [
+        0.22568780640357,
+        0.08303057413501173,
+        0.3628524364327374
+      ]
+    },
+    "systema_target_excluded_pearson_delta": {
+      "control_gated_external_response": [
+        0.20806794296637468,
+        0.065254786943287,
+        0.34677461403145876
+      ],
+      "direct_gene_esm": [
+        0.007480869046586035,
+        -0.16638873809887794,
+        0.19164467923066106
+      ],
+      "external_response_multiview_rbf": [
+        0.20805443148584538,
+        0.06317958813877021,
+        0.34777433071442004
+      ],
+      "mean_effect": [
+        -0.027047728730569924,
+        -0.21451424630403348,
+        0.16558437682705424
+      ],
+      "no_change": [
+        -0.05458129511777671,
+        -0.2831074056850705,
+        0.1783420942242092
+      ],
+      "perturbed_mean": [
+        -0.049339755063780945,
+        -0.20294078777741323,
+        0.11039193398254059
+      ],
+      "string_kernel_gene_go_rbf": [
+        0.22873899882190335,
+        0.08519323114888804,
+        0.36686496532664126
+      ]
+    }
+  },
+  "bootstrap": {
+    "resamples": 10000,
+    "seed": 20260901,
+    "unit": "perturbation_condition_after_repeat_averaging"
+  },
+  "claim_boundary": "derived reporting only; no model selection, fitting, or post-outcome tuning",
+  "config_sha256": "46a75471be9150f272a5c144f1d34650714cf9e2d60ffa096f73b42313fd5890",
+  "format_version": 1,
+  "output_sha256": {
+    "figures/publication/figure_1_architecture.pdf": "f4b369ad19551f70644b3b51f40d0950aecbbf1c22294e5a02b57e7fef747d7e",
+    "figures/publication/figure_1_architecture.png": "e5cfc984223c8d256a0946ee67786c247e55aea8ef344c35fddf325f25c264e4",
+    "figures/publication/figure_1_architecture.svg": "fcb3043b8ba95627c7e40128c97200880948a5f3b15e68200669f40fac747e36",
+    "figures/publication/figure_2_evaluation_design.pdf": "0dd371802d139b043542dc6070af3258aefa067d3c9a524c7d498c70ddc7b24d",
+    "figures/publication/figure_2_evaluation_design.png": "f01f16eb674d1beca4ab647c17997eb7aacd0bc81e0c4a8eabfd51afebbd7c79",
+    "figures/publication/figure_2_evaluation_design.svg": "ec7fd803d5536ea979dd76e7098b747fc142a5244938d755d36f8cd514f84ece",
+    "figures/publication/figure_3_replogle_distributional_tradeoff.pdf": "063cd0c032da7ebf75e4556a94a8263effd7063810199c0e65eee10b28727f2f",
+    "figures/publication/figure_3_replogle_distributional_tradeoff.png": "c431b9d3179a56cc47186d267fef17a38340ab3e613795e6af503d1b61040a6e",
+    "figures/publication/figure_3_replogle_distributional_tradeoff.svg": "c67c6d02f12abab0999e4620c76f24279d8ba2d924037c7fe7fab5a3eb16395b",
+    "figures/publication/figure_4_seed_and_readout_transfer.pdf": "e7e279123e20a462263bafda69d4c763075f606e87a6a1429aaccca321a749be",
+    "figures/publication/figure_4_seed_and_readout_transfer.png": "77e2d1c422e40410bb4d89985ce1d4b7cf724fbfdb1a96d2f5c2ebf9025d4ac6",
+    "figures/publication/figure_4_seed_and_readout_transfer.svg": "d0c56cce12a0d66f3806c1bdcb90b3dd40ec66a98bea7f8c581248f977ac84ff",
+    "figures/publication/figure_5_adamson_external_confirmation.pdf": "89a9d477533e83d74d0309969447bca149ae15c1ae4be7dc92db623e33ed5758",
+    "figures/publication/figure_5_adamson_external_confirmation.png": "a53ad874ecdfb59206d3d638d7f0aa7d2e273dae5357afab227322f50a926a87",
+    "figures/publication/figure_5_adamson_external_confirmation.svg": "92ef377b4b9e2f085a574291ad4622b05de1489fe99417e502c20186425f70eb",
+    "figures/publication/figure_6_generalization_and_claim_audit.pdf": "a7041b821ba19aa6a76042d4088119eb9cd2b0c02d48f638bfe775a5f9dec801",
+    "figures/publication/figure_6_generalization_and_claim_audit.png": "9fa6b90d04b8137df77d89a76cc5862286085aa052c0afb4ce1486f38be623f2",
+    "figures/publication/figure_6_generalization_and_claim_audit.svg": "fdaf704323fa8d1db222dbf1e2d04a069bea2b1f92246c2cd9f43cf5754dbfde"
+  },
+  "replogle_double_ood": {
+    "effect_pearson": {
+      "causalcelljepa": [
+        0.07146519826062502,
+        0.046210889684333546,
+        0.09577491836611278
+      ],
+      "mean_context": [
+        0.06655008243024671,
+        0.03770293164851402,
+        0.09566061388927322
+      ],
+      "no_direction_loss": [
+        0.16301211392397708,
+        0.13269563931274447,
+        0.19332462127106156
+      ],
+      "no_global_context": [
+        0.27647202018958145,
+        0.25867607637494494,
+        0.29470954005925737
+      ],
+      "pseudo_paired": [
+        0.18727511792692794,
+        0.16246682755214586,
+        0.21199858053936343
+      ]
+    },
+    "magnitude_absolute_error": {
+      "causalcelljepa": [
+        0.05911462317833949,
+        0.05484679746008642,
+        0.06381498866716877
+      ],
+      "mean_context": [
+        0.06749394108265189,
+        0.06425693997277891,
+        0.0709190536213187
+      ],
+      "no_direction_loss": [
+        0.2851182413310861,
+        0.27719323684545655,
+        0.2925377506786143
+      ],
+      "no_global_context": [
+        0.23026337570056843,
+        0.22192873511739525,
+        0.23843624432566551
+      ],
+      "pseudo_paired": [
+        0.22737318231494882,
+        0.22005825421805655,
+        0.23445942039325382
+      ]
+    },
+    "mmd": {
+      "causalcelljepa": [
+        0.029435505220039408,
+        0.02759119064626682,
+        0.03143074710914238
+      ],
+      "mean_context": [
+        0.03281741630491899,
+        0.03136077164555315,
+        0.03439307266556138
+      ],
+      "no_direction_loss": [
+        0.1056744865137129,
+        0.10353023608463194,
+        0.10782934710308534
+      ],
+      "no_global_context": [
+        0.07052952859868955,
+        0.06915661439149823,
+        0.07190594312608542
+      ],
+      "pseudo_paired": [
+        0.09713191115975979,
+        0.09564658889181948,
+        0.09863984653323739
+      ]
+    },
+    "sinkhorn": {
+      "causalcelljepa": [
+        0.13710351411870975,
+        0.13287794150841473,
+        0.14158315602959082
+      ],
+      "mean_context": [
+        0.1420182912849152,
+        0.1383913086521341,
+        0.1458498849060817
+      ],
+      "no_direction_loss": [
+        0.22226155787032453,
+        0.22027052159786187,
+        0.22432075768414342
+      ],
+      "no_global_context": [
+        0.179749510391386,
+        0.1773445484783014,
+        0.18230513194353604
+      ],
+      "pseudo_paired": [
+        0.27352931084644855,
+        0.27081056064270886,
+        0.27635319714677803
+      ]
+    }
+  },
+  "seed_transfer": {
+    "Decoded genes \u00b7 context OOD": {
+      "causalcelljepa": [
+        -0.1299114756100081,
+        -0.14239495937445862,
+        -0.11756170290820098
+      ],
+      "linear_esm": [
+        0.23649656040641764,
+        0.2194685290005233,
+        0.25339524016691634
+      ],
+      "seed_20260824": [
+        -0.10438905777099611,
+        -0.11595847543559802,
+        -0.09321544859927056
+      ],
+      "seed_20260825": [
+        -0.04360650876652824,
+        -0.053036065542242744,
+        -0.03381832583366292
+      ]
+    },
+    "Decoded genes \u00b7 double OOD": {
+      "causalcelljepa": [
+        -0.13376090512249003,
+        -0.15642720389945927,
+        -0.11095466089977457
+      ],
+      "linear_esm": [
+        0.22435171404489593,
+        0.19349590701987207,
+        0.25559453859222314
+      ],
+      "seed_20260824": [
+        -0.10908812754957613,
+        -0.13018377076357435,
+        -0.08844156587089232
+      ],
+      "seed_20260825": [
+        -0.04885114769553384,
+        -0.06524671563209475,
+        -0.03236180694774219
+      ]
+    },
+    "Latent \u00b7 context OOD": {
+      "causalcelljepa": [
+        0.05864105209748137,
+        0.04522441625873191,
+        0.0715654869034129
+      ],
+      "linear_esm": [
+        0.1361658607448944,
+        0.1221196645696562,
+        0.15026358152787953
+      ],
+      "seed_20260824": [
+        0.24673197522754342,
+        0.23749498406793357,
+        0.2558581239306008
+      ],
+      "seed_20260825": [
+        0.2591527103694166,
+        0.2517473447671896,
+        0.266594807874739
+      ]
+    },
+    "Latent \u00b7 double OOD": {
+      "causalcelljepa": [
+        0.07146519826062502,
+        0.04682940739275566,
+        0.09622152824607398
+      ],
+      "linear_esm": [
+        0.1267549666027941,
+        0.10302820939466562,
+        0.15154391090103553
+      ],
+      "seed_20260824": [
+        0.2523372527473327,
+        0.23384565089584625,
+        0.2699528293484978
+      ],
+      "seed_20260825": [
+        0.2577469861455438,
+        0.24425604249793756,
+        0.27123628925441123
+      ]
+    }
+  },
+  "source_sha256": {
+    "artifacts/adamson_external_confirmation/evaluation/condition_metrics.jsonl": "911079cfbf4f63b306e072f48ddc4a9c59b39440a6e15e5901b5fddee861bc61",
+    "artifacts/adamson_external_confirmation/evaluation/decision.json": "88580360d0a009fa01bd28fef37244dee4d0345b01c169bef44756f651704466",
+    "artifacts/adamson_external_confirmation/evaluation/paired_comparisons.json": "4b857cc231a90709c6170c718a09777587c9cc9dc372731007fbaf1850eba57d",
+    "artifacts/adamson_external_confirmation/evaluation/summary.json": "3337913ffb910ca5d2073dd0d4887663586d843ae5453c734e08ffa2bb844a56",
+    "artifacts/evaluation_ablations/condition_metrics.jsonl": "5c835da0750cd330242841e132c0b3ffcee7a6da558b09e4c476e868ed2e18e5",
+    "artifacts/evaluation_stage2_replication/condition_metrics.jsonl": "9c4975c2691fcb12a39dbca8eeeee6bfcc48fb65888670fe6385b1542d348534",
+    "artifacts/evaluation_stage2_replication_transcriptomics/condition_metrics.jsonl": "7d723778546f16a751deb03a30b1f1542b29550c3cfbf86cc6e78c7999773c76",
+    "artifacts/evaluation_with_pseudo/condition_metrics.jsonl": "d64bfbd9ed5c54817af32574f2416e58bc5d90a4942c2fa7b6fb430df5348b50",
+    "artifacts/transcriptomic_evaluation/condition_metrics.jsonl": "213273c82df60180ba3efeae5251a45f8baf9ea3d339803d2567ebbb61c82c7f"
+  }
+}

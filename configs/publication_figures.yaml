@@ -1,0 +1,46 @@
+# Reproducible rendering of the proposal figures from immutable condition-level artifacts.
+# All intervals resample perturbation identities after averaging population repeats.
+format_version: 1
+seed: 20260901
+bootstrap_resamples: 10000
+dpi: 300
+formats: [pdf, png, svg]
+output_directory: figures/publication
+
+sources:
+  replogle_latent:
+    path: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+    manifest: manifests/evaluation_pseudo_v1.json
+    sha256_keys: [artifacts, condition_metrics, sha256]
+  replogle_ablations:
+    path: artifacts/evaluation_ablations/condition_metrics.jsonl
+    manifest: manifests/evaluation_ablations_v1.json
+    sha256_keys: [artifacts, condition_metrics, sha256]
+  replogle_replication:
+    path: artifacts/evaluation_stage2_replication/condition_metrics.jsonl
+    manifest: manifests/evaluation_stage2_replication_v1.json
+    sha256_keys: [artifacts, condition_metrics, sha256]
+  replogle_transcriptomics:
+    path: artifacts/transcriptomic_evaluation/condition_metrics.jsonl
+    manifest: manifests/transcriptomics_v1.json
+    sha256_keys: [artifacts, predictive_evaluation, condition_metrics, sha256]
+  replogle_replication_transcriptomics:
+    path: artifacts/evaluation_stage2_replication_transcriptomics/condition_metrics.jsonl
+    manifest: manifests/evaluation_stage2_replication_transcriptomics_v1.json
+    sha256_keys: [artifacts, condition_metrics, sha256]
+  adamson_conditions:
+    path: artifacts/adamson_external_confirmation/evaluation/condition_metrics.jsonl
+    manifest: manifests/adamson_external_confirmation_v1.json
+    sha256_keys: [outputs, condition_metrics.jsonl, sha256]
+  adamson_summary:
+    path: artifacts/adamson_external_confirmation/evaluation/summary.json
+    manifest: manifests/adamson_external_confirmation_v1.json
+    sha256_keys: [outputs, summary.json, sha256]
+  adamson_comparisons:
+    path: artifacts/adamson_external_confirmation/evaluation/paired_comparisons.json
+    manifest: manifests/adamson_external_confirmation_v1.json
+    sha256_keys: [outputs, paired_comparisons.json, sha256]
+  adamson_decision:
+    path: artifacts/adamson_external_confirmation/evaluation/decision.json
+    manifest: manifests/adamson_external_confirmation_v1.json
+    sha256_keys: [outputs, decision.json, sha256]
