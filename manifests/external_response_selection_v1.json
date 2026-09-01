@@ -1,0 +1,101 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 1094965,
+      "path": "artifacts/external_response_student_v1.pt",
+      "sha256": "b458f31547b1fc056f1e9b00757b45f87217e955a61e2f75695748f2514c1e14"
+    },
+    "selection_report": {
+      "bytes": 2846,
+      "candidates": 6750,
+      "path": "artifacts/external_response_selection/selection.json",
+      "sha256": "be5b94f7277dff3a9457c95fe36d76216749306cefe7aeeb15d9480bc76ab9fe"
+    }
+  },
+  "experimental_status": "exploratory_post_test_not_confirmatory",
+  "fit": {
+    "external_contexts": {
+      "HepG2": {
+        "cells": 52480,
+        "fit_targets": 585,
+        "genes": 2957
+      },
+      "Jurkat": {
+        "cells": 104668,
+        "fit_targets": 663,
+        "genes": 2929
+      }
+    },
+    "fit_outcome_role": "dynamics_train",
+    "fit_targets_with_known_action": 697,
+    "selection_outcome_role": "perturbation_ood_validation",
+    "selection_targets": 100
+  },
+  "format_version": 1,
+  "leakage": {
+    "excluded_replogle_target_count": 299,
+    "external_outcomes_for_validation_or_sealed_targets_used": false,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false,
+    "selection_checkpoint_frozen_before_new_test_evaluation": true
+  },
+  "manifest_sha256": "e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2",
+  "protocol": {
+    "action_features": "validation-frozen ESM-2 plus GO plus STRING slice",
+    "context_views": ["K562", "HepG2", "Jurkat"],
+    "external_data_role_change": "Nadig outcomes were previously evaluated test-only; their reuse for fit relinquishes confirmatory status.",
+    "selection_rule": "minimum K562 validation MSE among candidates passing preregistered MSE, Pearson, and magnitude gates",
+    "statistical_unit": "perturbation-condition"
+  },
+  "selection": {
+    "improvement_over_frozen_string_go": {
+      "mean_effect_pearson_absolute": 0.003331716614864866,
+      "mean_magnitude_absolute_error_reduction": 0.01691985492638537,
+      "relative_mse_reduction": 0.017460359053267458
+    },
+    "internal_no_external_control": {
+      "mean_effect_pearson": 0.27744435593161704,
+      "mean_magnitude_absolute_error": 1.7894879576846976,
+      "mse": 0.003410870523286531
+    },
+    "reference_frozen_string_go": {
+      "mean_effect_pearson": 0.27619782071773347,
+      "mean_magnitude_absolute_error": 1.7646125555038452,
+      "mse": 0.0034154027234762907
+    },
+    "selected": {
+      "bandwidth_multiplier": 0.5,
+      "external_view_weights": {
+        "HepG2": 8.0,
+        "Jurkat": 4.0
+      },
+      "mean_effect_pearson": 0.27952953733259833,
+      "mean_magnitude_absolute_error": 1.7476927005774598,
+      "mse": 0.003355768565612887,
+      "output_scale": 1.05,
+      "passes_validation_gate": true,
+      "rank": 48,
+      "ridge": 1.0
+    },
+    "serialized_checkpoint_replay": {
+      "finite": true,
+      "mean_effect_pearson": 0.27952948135607947,
+      "mean_magnitude_absolute_error": 1.747692584991455,
+      "mse": 0.0033557689748704433,
+      "targets": 100
+    }
+  },
+  "source": {
+    "action_sha256": "bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0",
+    "config_sha256": "a530337b51e7f3f7a21a3eaf19d28e274133668ecd517f516d967d8c25b73cd3",
+    "external_config_sha256": "9d85c3d11ea3bb7818d4d90f54c8a90c3e0811496cc82064d18e6024829efbe5",
+    "external_manifest_sha256": "fdd9a8a32ebea4c3e1f65a780423e12c532d1bd3a4c4dfa911e875d74cf927b3",
+    "git_commit": "8db750acfa0a475b25fd8c625a9954512f4b7618",
+    "git_dirty": false,
+    "reference_checkpoint_sha256": "87d6bad11f947d98ee57ff30124f93de8fe983a0c0bd02ae737fbf77940b43cd"
+  },
+  "test_evaluation": {
+    "performed": false,
+    "reason": "Selection artifact frozen before any new evaluation of this model on sealed or RPE1 perturbed outcomes."
+  }
+}
