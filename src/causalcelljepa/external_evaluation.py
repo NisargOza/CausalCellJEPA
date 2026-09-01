@@ -1042,10 +1042,15 @@ def predict_adamson_external(
             name: torch.from_numpy(value.astype(np.float32)) for name, value in models.items()
         },
         "control_gate": {"score": score, "reference_confidence": confidence},
-        "controls": {"cells": expression.shape[0], "batches": sorted(set(metadata["batch"]))},
+        "controls": {
+            "cells": expression.shape[0],
+            "batches": [str(batch) for batch in sorted(set(metadata["batch"]))],
+        },
         "leakage": {"roles_read": ["control"], "perturbed_outcomes_used": False},
     }
     torch.save(payload, output)
+    replay = torch.load(output, map_location="cpu", weights_only=True)
+    assert replay["controls"] == payload["controls"] and replay["targets"] == payload["targets"]
     manifest = {
         "format_version": 1,
         "artifact": {
