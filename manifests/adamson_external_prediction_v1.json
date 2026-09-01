@@ -1,0 +1,101 @@
+{
+  "artifact": {
+    "bytes": 2092037,
+    "path": "artifacts/adamson_external_confirmation/predictions.pt",
+    "sha256": "6aa75109e0b96e4d19536e396289a7b352eb23c8e5f6bde909489995cfda622d"
+  },
+  "format_version": 1,
+  "leakage": {
+    "perturbed_outcomes_used": false,
+    "roles_read": [
+      "control"
+    ]
+  },
+  "manifest_sha256": "584a30cb059f15d44e0000d6c78b0bdf396bff4c0811ed64a86fe8d46480696b",
+  "prediction": {
+    "control_gate": {
+      "reference_confidence": 0.00034600990192478,
+      "score": 5.4397300902863455
+    },
+    "genes": 3000,
+    "models": [
+      "control_gated_external_response",
+      "direct_gene_esm",
+      "external_response_multiview_rbf",
+      "mean_effect",
+      "no_change",
+      "string_kernel_gene_go_rbf"
+    ],
+    "targets": 27
+  },
+  "provenance": {
+    "git": {
+      "commit": "08cabee716a80c5ceebd63776a50aa562776da90",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "f915042f96b4a20668120e53f8fa617dfdaaef8849ff016a39ed128a03d78362",
+    "teacher": {
+      "config_sha256": {
+        "replogle": "b2e1f485221acbb0ee327f2b0f0157492f23b423016398864115c92993e5e1f6",
+        "stage1": "c7edf9639eda681878a02a9299b9bc6b2a635268ca91f2db3bfde9e2f237d36f"
+      },
+      "git": {
+        "commit": "f1e5dce6984ba61d5d6dcdbdf7b890c55186cbb4",
+        "dirty": false
+      },
+      "go_bp_gmt_sha256": "82a6dfb6948e0849d4fff0d82af4e9bc1d60ac0dee7a0d18e7a2c9897b7c6dce",
+      "hvg_sha256": "e808fc0975b133aee150f008596c5bdb7adcae3859b0921a97f8588e2b0aa9e8",
+      "manifest_sha256": {
+        "go_bp": "25319d60dd68ef94222bbe297f502527d8c83f617c8fee5e68c88cd929aec3ed",
+        "replogle": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
+        "stage1_split": "e57247d910bdf5d120b09f423ec0f35f5c5f6b81ca797ed2223e01ce3fc8b733"
+      },
+      "runtime_environment": {
+        "cuda_device": {
+          "capability": [
+            8,
+            6
+          ],
+          "name": "NVIDIA RTX A6000",
+          "total_memory_bytes": 50896568320
+        },
+        "packages": {
+          "PyYAML": "6.0.3",
+          "anndata": "0.13.2",
+          "h5py": "3.16.0",
+          "numpy": "2.5.0",
+          "scipy": "1.18.0",
+          "torch": "2.12.1"
+        },
+        "platform": "Linux-6.17.0-35-generic-x86_64-with-glibc2.35",
+        "python": "3.12.13",
+        "torch_cuda": "13.0"
+      },
+      "runtime_source_sha256": "827c5ff6a726ffe3bdf167c8db94f68b777f5c88e5bb7d0d14a833ba66f4ba83"
+    }
+  },
+  "source": {
+    "config_sha256": "33e025c2f7efce7969b33e43750b5f66a0e5c565cc280a9cac6fd5dce4c8f7ce",
+    "dynamics_manifest_sha256": "15b54cf33b5aa7ccbb18d7b3a86f6718053e0de00b441570d3e0775bcbd4b743",
+    "external_selection_manifest_sha256": "e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2",
+    "gate_manifest_sha256": "46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c",
+    "preparation_manifest_sha256": "0564f07569a899fe933fcc50780743403f30744af7474d4f4058bc85e57ddf51",
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488",
+    "string_selection_manifest_sha256": "1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf",
+    "teacher_sha256": "03924557312b4829716fe643fd6d6f9f0704acec470773094326ac1fb47c074f"
+  }
+}
