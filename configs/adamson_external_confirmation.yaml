@@ -18,6 +18,7 @@ source:
       filename: GSM2406681_10X010_matrix.mtx.txt.gz
       url: https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_matrix.mtx.txt.gz
       bytes: 739291919
+      sha256: fd4f860d5d494454bb17997163bd3db0d3b5797c8ffc426fa4a499143c772fdd
       sha256_recorded_before_first_matrix_read: true
     barcodes:
       filename: GSM2406681_10X010_barcodes.tsv.gz
@@ -39,6 +40,7 @@ metadata_audit:
   matrix_outcomes_opened_before_protocol_commit: false
   barcodes: 65337
   genes: 32738
+  unique_gene_symbols: 32643
   identity_rows: 65257
   valid_cells: 50467
   control_cells: 5241
@@ -77,6 +79,8 @@ frozen_candidate:
   action_path: artifacts/replogle_actions_esm2_go_string_v1.pt
   action_bytes: 1816445
   action_sha256: bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0
+  replogle_manifest: manifests/replogle_v1.json
+  replogle_manifest_sha256: 6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488
   external_selection_manifest: manifests/external_response_selection_v1.json
   external_selection_manifest_sha256: e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2
   external_checkpoint_sha256: b458f31547b1fc056f1e9b00757b45f87217e955a61e2f75695748f2514c1e14

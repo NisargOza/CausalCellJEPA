@@ -1,14 +1,96 @@
+import gzip
 import json
+from hashlib import sha256
 
 import h5py
 import numpy as np
 import torch
+import yaml
 from scipy import sparse
 
+from causalcelljepa.external import prepare_adamson_external
 from causalcelljepa.external_evaluation import (
     NadigLatentPopulationDataset,
     grouped_expression_moments,
 )
+
+
+def test_adamson_preparation_freezes_metadata_without_opening_matrix(tmp_path):
+    root = tmp_path / "adamson"
+    root.mkdir()
+    files = {
+        "matrix": ("matrix.mtx.gz", b"sealed-expression-outcomes"),
+        "barcodes": ("barcodes.tsv.gz", b"c1-1\nc2-1\nc3-1\nc4-1\n"),
+        "genes": ("genes.tsv.gz", b"ENSG1\tG1\nENSG2\tG2\n"),
+        "identities": (
+            "identities.csv.gz",
+            (
+                b"cell BC,guide identity,good coverage,number of cells\n"
+                b"c1-1,ctrl1,TRUE,1\nc2-1,ctrl2,TRUE,1\n"
+                b"c3-1,A_g1,TRUE,1\nc4-1,B_g1,TRUE,1\n"
+            ),
+        ),
+    }
+    source = {}
+    for name, (filename, content) in files.items():
+        path = root / filename
+        if name == "matrix":
+            path.write_bytes(content)
+        else:
+            with gzip.open(path, "wb") as handle:
+                handle.write(content)
+        source[name] = {
+            "filename": filename,
+            "bytes": path.stat().st_size,
+            "sha256": sha256(path.read_bytes()).hexdigest(),
+        }
+    action_path = tmp_path / "action.pt"
+    torch.save({"targets": ["A"], "known": torch.tensor([True])}, action_path)
+    replogle = {"genes": {"hvg_gene_names": ["G1", "G2"]}}
+    replogle["manifest_sha256"] = sha256(
+        json.dumps(replogle, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    replogle_path = tmp_path / "replogle.json"
+    replogle_path.write_text(json.dumps(replogle))
+    output = tmp_path / "manifest.json"
+    config = {
+        "source": {"raw_directory": str(root), "files": source},
+        "metadata_audit": {
+            "barcodes": 4,
+            "genes": 2,
+            "unique_gene_symbols": 2,
+            "identity_rows": 4,
+            "valid_cells": 4,
+            "control_cells": 2,
+            "scored_target_cells": 1,
+            "reference_only_target_cells": 1,
+            "unknown_identity_cells_excluded": 0,
+            "minimum_batch_matched_controls": 2,
+        },
+        "filtering": {
+            "good_coverage": True,
+            "number_of_cells": 1,
+            "unknown_identity": "*",
+            "controls": ["ctrl1", "ctrl2"],
+            "minimum_cells_per_target": 1,
+        },
+        "targets": {"scored": ["A"], "systematic_reference_only": ["B"]},
+        "frozen_candidate": {
+            "action_path": str(action_path),
+            "action_bytes": action_path.stat().st_size,
+            "action_sha256": sha256(action_path.read_bytes()).hexdigest(),
+            "replogle_manifest": str(replogle_path),
+            "replogle_manifest_sha256": replogle["manifest_sha256"],
+        },
+        "outputs": {"preparation_manifest": str(output)},
+    }
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump(config))
+    report = prepare_adamson_external(config_path)
+    assert report["cohort"]["scored_targets"] == ["A"]
+    assert report["cohort"]["reference_only_targets"] == ["B"]
+    assert report["cohort"]["frozen_hvg_overlap"] == 2
+    assert report["leakage"]["expression_matrix_decompressed_during_preparation"] is False
 
 
 def test_external_population_sampling_is_deterministic_and_unpaired(tmp_path):
