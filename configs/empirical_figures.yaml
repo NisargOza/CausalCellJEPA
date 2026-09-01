@@ -1,0 +1,29 @@
+# Reproducible empirical plots from frozen cell-, target-, and gene-level artifacts.
+# UMAP target subsets are selected by a seeded hash of target identity, never by outcome.
+format_version: 1
+seed: 20260902
+dpi: 300
+formats: [pdf, png, svg]
+output_directory: figures/empirical
+
+replogle:
+  evaluation_config: configs/evaluation.yaml
+  evaluation_manifest: manifests/evaluation_pseudo_v1.json
+  condition_metrics: artifacts/evaluation_with_pseudo/condition_metrics.jsonl
+  target_scatter_regime: double_ood
+  umap:
+    targets_per_regime: 24
+    sampling_repeat: 0
+    n_neighbors: 30
+    min_dist: 0.20
+    metric: euclidean
+    model_batch_size: 8
+
+adamson:
+  preregistered_config: configs/adamson_external_confirmation.yaml
+  evaluation_manifest: manifests/adamson_external_confirmation_v1.json
+  prediction_manifest: manifests/adamson_external_prediction_v1.json
+  predictions: artifacts/adamson_external_confirmation/predictions.pt
+  condition_metrics: artifacts/adamson_external_confirmation/evaluation/condition_metrics.jsonl
+  paired_comparisons: artifacts/adamson_external_confirmation/evaluation/paired_comparisons.json
+  heatmap_genes: 30

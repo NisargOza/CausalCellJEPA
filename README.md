@@ -35,11 +35,17 @@ Multi-Teacher Fusion**. The literature position, supported claims, and figure ra
 recorded in
 [`docs/publication_positioning_and_figure_design.md`](docs/publication_positioning_and_figure_design.md).
 
-Run `uv run python scripts/generate_publication_figures.py` to verify the frozen artifact hashes
-and regenerate six publication figures as editable SVG, font-embedded PDF, and 300-dpi PNG. The
-tracked outputs and their reproducibility manifest are under
-[`figures/publication/`](figures/publication/). All displayed intervals resample perturbation
-conditions after repeat averaging; no figure generation path fits or selects a model.
+Run `uv run python scripts/generate_empirical_figures.py` for the data-backed result suite:
+joint observed/predicted population UMAPs, target-paired Replogle metric scatterplots,
+target-paired Adamson Systema scatterplots, a gene-effect heatmap, and an observed-versus-predicted
+effect-density plot. Tracked outputs and a source/output hash manifest are under
+[`figures/empirical/`](figures/empirical/). UMAP targets are selected by a seeded hash of target
+identity without reading outcomes or metrics; all inferential intervals resample perturbation
+conditions after repeat averaging.
+
+`uv run python scripts/generate_publication_figures.py` retains the architecture/evaluation
+schematics and compact summary panels under [`figures/publication/`](figures/publication/).
+Neither figure-generation path fits, selects, or tunes a model.
 
 The official Replogle Figshare article `20029387`, version 1, is downloaded under
 git-ignored `data/raw/` and pinned by byte size plus local SHA-256. The published K562
