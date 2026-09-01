@@ -1,0 +1,35 @@
+# Post-test exploratory mixture selected only by a source-control OOD gate, never outcomes.
+transcriptomics_config_path: configs/transcriptomics.yaml
+transcriptomics_config_sha256: db059e44abd9b4a0c6005ecf53c18b92e1c7373fad6beb075ad348eb98a15971
+kernel_gene:
+  experimental_status: exploratory_post_test_not_confirmatory
+  action_path: artifacts/replogle_actions_esm2_go_string_v1.pt
+  action_bytes: 1816445
+  action_sha256: bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0
+  selection_manifest_path: manifests/external_response_selection_v1.json
+  selection_manifest_sha256: e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2
+  control_gate:
+    reference_manifest_path: manifests/string_kernel_selection_v1.json
+    reference_manifest_sha256: 1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf
+    gate_manifest_path: manifests/control_ood_residual_gate_v1.json
+    gate_manifest_sha256: 46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c
+    minimum_in_domain_confidence: 0.99
+    maximum_shifted_context_confidence: 1.0e-15
+evaluation:
+  model_name: control_gated_external_response
+  reference_config_path: configs/external_response_evaluation.yaml
+  reference_config_sha256: 29de9285b3fefd9b869851ea81a6971c359e5bd95a85365aa1c3a3f87e0b691e
+  reference_manifest_path: manifests/external_response_evaluation_v1.json
+  reference_manifest_sha256: e46d78da46b497997fb1629228d447511ee91e1d68ca76b376218743c9095c0c
+  comparisons:
+    - {reference: external_response_multiview_rbf, hypothesis: a control-only gate prevents in-domain negative transfer}
+    - {reference: string_kernel_gene_go_rbf, hypothesis: a control-only gate adds cross-context response priors safely}
+    - {reference: kernel_gene_go_rbf, hypothesis: the gated mixture improves the GO kernel student}
+    - {reference: direct_gene_esm, hypothesis: the gated mixture improves direct ESM ridge}
+    - {reference: contextual_multiteacher_selected, hypothesis: the gated mixture improves the v4 model}
+    - {reference: state_sm, hypothesis: the gated mixture improves the bounded State baseline}
+    - {reference: causalcelljepa, hypothesis: the gated mixture improves the primary model}
+    - {reference: no_change, hypothesis: the gated mixture improves no-change prediction}
+    - {reference: mean_effect, hypothesis: the gated mixture improves mean-effect prediction}
+    - {reference: linear_esm, hypothesis: the gated mixture improves the frozen linear ESM baseline}
+  output_directory: artifacts/control_gated_response_evaluation
