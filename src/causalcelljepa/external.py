@@ -160,6 +160,7 @@ def prepare_adamson_external(config_path="configs/adamson_external_confirmation.
     with gzip.open(root / files["genes"]["filename"], "rt") as handle:
         gene_rows = list(csv.reader(handle, delimiter="\t"))
         gene_symbols = {row[1] for row in gene_rows}
+        gene_ids = {row[0] for row in gene_rows}
     with gzip.open(root / files["identities"]["filename"], "rt") as handle:
         identities = list(csv.DictReader(handle))
     audit, filtering = config["metadata_audit"], config["filtering"]
@@ -200,8 +201,8 @@ def prepare_adamson_external(config_path="configs/adamson_external_confirmation.
         if row["guide identity"] in controls
     )
     assert min(control_batches.values()) == audit["minimum_batch_matched_controls"]
-    hvg = replogle["genes"]["hvg_gene_names"]
-    overlap = [gene for gene in hvg if gene in gene_symbols]
+    hvg = replogle["genes"]["hvg_gene_ids"]
+    overlap = [gene for gene in hvg if gene in gene_ids]
     report = {
         "format_version": 1,
         "dataset": {key: value for key, value in config["source"].items() if key != "files"},

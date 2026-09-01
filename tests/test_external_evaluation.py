@@ -46,7 +46,7 @@ def test_adamson_preparation_freezes_metadata_without_opening_matrix(tmp_path):
         }
     action_path = tmp_path / "action.pt"
     torch.save({"targets": ["A"], "known": torch.tensor([True])}, action_path)
-    replogle = {"genes": {"hvg_gene_names": ["G1", "G2"]}}
+    replogle = {"genes": {"hvg_gene_ids": ["ENSG1", "ENSG2"]}}
     replogle["manifest_sha256"] = sha256(
         json.dumps(replogle, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
