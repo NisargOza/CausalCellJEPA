@@ -1,0 +1,166 @@
+{
+  "cohort": {
+    "controls": 5241,
+    "frozen_hvg_overlap": 2963,
+    "frozen_hvg_overlap_sha256": "fc28cf1d7f994cbf7f639978a0c2326d466848893b6c8d0b5f9d457585f30965",
+    "reference_only_target_sha256": "6c35223c7ce9616c62377d062d2e3cefc8e14965bb64acef4d1e8cf381ac3bd6",
+    "reference_only_targets": [
+      "AARS",
+      "AMIGO3",
+      "ARHGAP22",
+      "ASCC3",
+      "ATP5B",
+      "CAD",
+      "CARS",
+      "CCND3",
+      "COPB1",
+      "DAD1",
+      "DARS",
+      "DDOST",
+      "DDRGK1",
+      "DHDDS",
+      "FARSB",
+      "FECH",
+      "HYOU1",
+      "IDH3A",
+      "IER3IP1",
+      "KCTD16",
+      "MARS",
+      "MRGBP",
+      "MTHFD1",
+      "NEDD8",
+      "OST4",
+      "P4HB",
+      "PDIA6",
+      "PPWD1",
+      "PSMD4",
+      "PTDSS1",
+      "SAMM50",
+      "SARS",
+      "SCYL1",
+      "SEC61B",
+      "SEC61G",
+      "SEL1L",
+      "SLC35B1",
+      "SLC39A7",
+      "SLMO2",
+      "SOCS1",
+      "SPCS2",
+      "SRP68",
+      "SRPR",
+      "STT3A",
+      "SYVN1",
+      "TARS",
+      "TELO2",
+      "TIMM23",
+      "TIMM44",
+      "TMED10",
+      "TMEM167A",
+      "TTI2",
+      "UFM1",
+      "XRN1",
+      "YIPF5"
+    ],
+    "scored_target_sha256": "97269b59c5f0bcb851f8d4f520752fc25250c928baa7b2da66d026bfde1ac98e",
+    "scored_targets": [
+      "CHERP",
+      "COPZ1",
+      "DERL2",
+      "DNAJC19",
+      "EIF2B2",
+      "EIF2B3",
+      "EIF2B4",
+      "EIF2S1",
+      "GBF1",
+      "GMPPB",
+      "GNPNAT1",
+      "HARS",
+      "HSD17B12",
+      "HSPA5",
+      "HSPA9",
+      "IARS2",
+      "MANF",
+      "MRPL39",
+      "QARS",
+      "SEC61A1",
+      "SEC63",
+      "SPCS3",
+      "SRP72",
+      "SRPRB",
+      "TMED2",
+      "TTI1",
+      "UFL1"
+    ],
+    "valid_cells": 50467
+  },
+  "dataset": {
+    "cell_context": "K562",
+    "doi": "10.1016/j.cell.2016.11.048",
+    "geo_accession": "GSE90546",
+    "perturbation": "CRISPRi",
+    "raw_directory": "data/external/adamson16",
+    "sample_accession": "GSM2406681",
+    "sample_title": "UPR Perturb-seq experiment cells",
+    "study": "Adamson et al. 2016"
+  },
+  "format_version": 1,
+  "leakage": {
+    "adamson_outcomes_used_for_fit_selection_or_gate": false,
+    "expression_matrix_decompressed_during_preparation": false,
+    "target_admission_uses_metadata_and_frozen_action_availability_only": true
+  },
+  "manifest_sha256": "0564f07569a899fe933fcc50780743403f30744af7474d4f4058bc85e57ddf51",
+  "provenance": {
+    "git": {
+      "commit": "24ae682524147b4200467cc155bebde83cd0bd01",
+      "dirty": false
+    },
+    "runtime_environment": {
+      "cuda_device": null,
+      "packages": {
+        "PyYAML": "6.0.3",
+        "anndata": "0.13.2",
+        "h5py": "3.16.0",
+        "numpy": "2.5.2",
+        "scipy": "1.18.1",
+        "torch": "2.13.0"
+      },
+      "platform": "macOS-26.2-arm64-arm-64bit",
+      "python": "3.12.13",
+      "torch_cuda": null
+    },
+    "runtime_source_sha256": "53c0a1304ab07bed2c267b6ee6b6a74e36804a39788cae9d6136d43c94c10af6"
+  },
+  "source": {
+    "action_cache_sha256": "bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0",
+    "config_sha256": "c2e55373e787c0ede71c845ce0d654907db734a5c6b722ef9f98b6682f58b65f",
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488"
+  },
+  "source_files": {
+    "barcodes": {
+      "bytes": 249427,
+      "filename": "GSM2406681_10X010_barcodes.tsv.gz",
+      "sha256": "1e0d820343d0c6e17bdab4fef96f4446e223b94861942ccf3d7225818e009836",
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_barcodes.tsv.gz"
+    },
+    "genes": {
+      "bytes": 257091,
+      "filename": "GSM2406681_10X010_genes.tsv.gz",
+      "sha256": "e9c8a7eab0c23d98d1affa18f8ba8ffd2c63d43070a4a712546e72152c6d6bce",
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_genes.tsv.gz"
+    },
+    "identities": {
+      "bytes": 808896,
+      "filename": "GSM2406681_10X010_cell_identities.csv.gz",
+      "sha256": "8b40be7a2280c1713bf5a1eb828aad46e70ad3a7000b5f5a1322e51e06c4cf7f",
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_cell_identities.csv.gz"
+    },
+    "matrix": {
+      "bytes": 739291919,
+      "filename": "GSM2406681_10X010_matrix.mtx.txt.gz",
+      "sha256": "fd4f860d5d494454bb17997163bd3db0d3b5797c8ffc426fa4a499143c772fdd",
+      "sha256_recorded_before_first_matrix_read": true,
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_matrix.mtx.txt.gz"
+    }
+  }
+}
