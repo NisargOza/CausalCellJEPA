@@ -2342,13 +2342,79 @@ def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory
             frozen["mse"],
         )
     predicted = kernel_gene_predictions(checkpoint, action_path)
+    gate_report = None
+    if "control_gate" in kernel:
+        gate_config = kernel["control_gate"]
+        reference_selection = json.loads(Path(gate_config["reference_manifest_path"]).read_text())
+        reference_declared = reference_selection.pop("manifest_sha256")
+        assert reference_declared == gate_config["reference_manifest_sha256"] == sha256(
+            json.dumps(reference_selection, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        reference_artifact = reference_selection["artifacts"]["checkpoint"]
+        reference_path = Path(reference_artifact["path"])
+        assert (reference_path.stat().st_size, file_sha256(reference_path)) == (
+            reference_artifact["bytes"], reference_artifact["sha256"]
+        )
+        reference_checkpoint = torch.load(reference_path, map_location="cpu", weights_only=True)
+        reference_prediction = kernel_gene_predictions(reference_checkpoint, action_path)
+        gate_manifest = json.loads(Path(gate_config["gate_manifest_path"]).read_text())
+        gate_declared = gate_manifest.pop("manifest_sha256")
+        assert gate_declared == gate_config["gate_manifest_sha256"] == sha256(
+            json.dumps(gate_manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        gate_artifact = gate_manifest["artifact"]
+        gate_path = Path(gate_artifact["path"])
+        assert (gate_path.stat().st_size, file_sha256(gate_path)) == (
+            gate_artifact["bytes"], gate_artifact["sha256"]
+        )
+        gate = torch.load(gate_path, map_location="cpu", weights_only=True)
+        dynamics_manifest = json.loads(Path(base["inputs"]["dynamics_manifest_path"]).read_text())
+        normalization = dynamics_manifest["normalization"]
+        latent_mean = np.asarray(normalization["latent_mean"])
+        latent_scale = np.asarray(normalization["latent_std"]) * normalization["dimension_scale"]
     with h5py.File(base["inputs"]["latent_cache_path"], "r") as latent:
         roles, targets = latent["role"].asstr()[:], latent["target"].asstr()[:]
+        if "control_gate" in kernel:
+            confidences = {}
+            for role in sorted({value["control_role"] for value in base["regimes"].values()}):
+                control = ((latent["latent"][roles == role] - latent_mean) / latent_scale).mean(0)
+                score = float(np.square((control - gate["center"].numpy()) / gate["scale"].numpy()).mean())
+                confidence = float(
+                    np.exp(-max(0, score - gate["threshold"]) / gate["temperature"])
+                )
+                confidences[role] = {"score": score, "reference_confidence": confidence}
+            assert confidences["control_train"]["reference_confidence"] >= gate_config[
+                "minimum_in_domain_confidence"
+            ]
+            assert confidences["control_inference"]["reference_confidence"] <= gate_config[
+                "maximum_shifted_context_confidence"
+            ]
+            gate_report = {
+                "formula": "reference_confidence * STRING_GO + (1-reference_confidence) * external_response",
+                "controls": confidences,
+                "reference_manifest_sha256": reference_declared,
+                "gate_manifest_sha256": gate_declared,
+            }
     rows = []
     for regime, specification in base["regimes"].items():
         regime_targets = sorted(set(targets[roles == specification["outcome_role"]]))
         regime_targets = regime_targets[: maximum_conditions or len(regime_targets)]
-        rows.extend((regime, target, 0, predicted[target]) for target in regime_targets)
+        confidence = (
+            gate_report["controls"][specification["control_role"]]["reference_confidence"]
+            if gate_report
+            else 0.0
+        )
+        rows.extend(
+            (
+                regime,
+                target,
+                0,
+                confidence * reference_prediction[target] + (1 - confidence) * predicted[target]
+                if gate_report
+                else predicted[target],
+            )
+            for target in regime_targets
+        )
     records, pathways, retrieval, truth_report = score_effect_predictions(
         base, evaluation["model_name"], rows, maximum_conditions
     )
@@ -2388,9 +2454,11 @@ def run_kernel_gene_evaluation(config, maximum_conditions=None, output_directory
         "reporting_only": True,
         "selection_manifest_sha256": declared,
         "selection_checkpoint_frozen_before_test_evaluation": True,
+        "mixture_defined_after_component_test_evaluation": gate_report is not None,
         "rpe1_perturbed_outcomes_used_for_fit_or_selection": False,
         "sealed_test_outcomes_used_for_fit_or_selection": False,
         "checkpoint_provenance": checkpoint["provenance"],
+        "control_gate": gate_report,
         "maximum_conditions_per_regime": maximum_conditions,
         "runtime_source_sha256": _runtime_source_hash(),
         "runtime_environment": _runtime_environment(),
