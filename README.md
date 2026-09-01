@@ -5,11 +5,21 @@ embedding, baseline-population context, and an explicitly unpaired distributiona
 transition model improve perturbation-by-context OOD prediction. The fixed scientific
 specification is [`RESEARCH_PROPOSAL.md`](RESEARCH_PROPOSAL.md).
 
-## Current milestone
+## Project status: completed
 
-The minimum latent-space Replogle experiment, common transcriptomic comparisons,
-three-seed Stage 2 robustness evaluation, and validation-preregistered anchored revision
-are complete. The leakage-resistant data/split foundation includes:
+The proposal-locked Replogle study, required internal comparisons, exploratory architecture
+revisions, bounded modern baseline, initial test-only Nadig evaluation with explicitly post-test
+response reuse, and final preregistered Adamson confirmation are complete. The terminal rule has
+stopped architecture search: the Adamson candidate passed five of six confirmation criteria but
+exceeded the allowed Systema Pearson loss versus its best frozen component. No further Adamson
+tuning or frontier comparison is authorized, and the evidence does not support a global
+state-of-the-art claim. The final result is a meaningful mixed finding: strong overall
+perturbation-specific transfer beyond systematic
+variation, but weak generalization in the eight outcome-fit-unseen targets and no validated
+advantage for the control gate over STRING+GO. Details are in
+[`docs/adamson_external_confirmation_v1.md`](docs/adamson_external_confirmation_v1.md).
+
+The leakage-resistant data/split foundation includes:
 
 - 10,000-count normalization followed by `log1p`;
 - HVG fitting on an explicit training-visible mask;
@@ -308,10 +318,9 @@ supports Replogle plus explicit few-shot/zero-shot split files but requires its 
 and GPU training pipeline. The locked minimum experiment fails to clearly beat simple,
 direct-gene, PCA, and autoencoder baselines, which activates the proposal's rule that broad
 external-model scaling is not justified. Those baseline runs remain deferred rather than being
-used to search for a more favorable result. A separately labeled, small architecture revision is
-now authorized and uses K562 validation only. If external review requires a modern neural
-baseline, State is the first
-recommended extension, followed by a K562-only GEARS comparison. The auditable decision record is
+used to search for a more favorable result. A separately labeled architecture revision and
+bounded State-small run were subsequently completed, but the final Adamson stop decision now
+forbids further benchmark scaling for model selection. The auditable feasibility record is
 [`manifests/modern_baseline_feasibility_v1.json`](manifests/modern_baseline_feasibility_v1.json).
 
 The user subsequently authorized the State extension. [`configs/state_baseline.yaml`](configs/state_baseline.yaml)
@@ -343,6 +352,35 @@ bootstrap-95% rule. This bounded run used 32-cell sets, batch size 4, and 10,000
 State-small's much larger official defaults, so it establishes a feasible modern baseline—not a
 definitive ceiling on State. Exact hashes, ranks, and leakage provenance are frozen in
 [`manifests/state_baseline_v1.json`](manifests/state_baseline_v1.json).
+
+## Final Adamson external confirmation
+
+The final candidate was preregistered before the Adamson GSE90546 expression matrix was opened.
+Its control-only prediction was then frozen from all 5,241 valid controls across ten lanes before
+any scored or reference-only perturbation outcome was used. The control OOD score assigned
+`0.000346` confidence to STRING+GO and `0.999654` to the external-response component. The sole
+full outcome evaluation covered 27 scored targets, 55 disjoint reference-only targets, and
+2,963 exact Ensembl-matched frozen HVGs. Batch-matched effects and DEG calls use lane-level
+replicates; perturbation-condition remains the statistical unit.
+
+Against Systema's reference-only perturbed centroid, the frozen candidate reached all-gene
+Pearson delta `0.2056`, target-excluded Pearson delta `0.2081`, and centroid accuracy `0.5256`.
+The cell-weighted perturbed-mean baseline scored `-0.0550`, `-0.0493`, and `0.5000`, respectively.
+The candidate's paired gains were `0.2606` (95% bootstrap CI `[0.1563, 0.3700]`) and `0.2574`
+(`[0.1529, 0.3650]`) for the two Pearson metrics. This is evidence of perturbation-specific
+signal beyond systematic variation.
+
+The locked candidate nevertheless failed external confirmation. STRING+GO reached mean Systema
+Pearson `0.2272`, versus `0.2068` for the candidate: a loss of `0.02037`, exceeding the
+preregistered `0.01` tolerance. The candidate was strong on 19 outcome-fit-seen targets (mean
+Systema Pearson about `0.334`) but remained negative on eight outcome-fit-unseen targets (about
+`-0.0955`). Five other criteria passed, including both paired Systema intervals, centroid point
+improvement, and frozen-component centroid/magnitude tolerances. The terminal decision is
+therefore to finalize the mixed result, with no post-outcome gate change, repeat Adamson run,
+frontier comparison, or SOTA claim. Preparation, prediction, and evaluation are frozen in
+[`manifests/adamson_external_preparation_v2.json`](manifests/adamson_external_preparation_v2.json),
+[`manifests/adamson_external_prediction_v1.json`](manifests/adamson_external_prediction_v1.json),
+and [`manifests/adamson_external_confirmation_v1.json`](manifests/adamson_external_confirmation_v1.json).
 
 ## Development
 
@@ -408,6 +446,10 @@ uv run python scripts/prepare_state_prediction_metadata.py
 # The next command runs inside the pinned official State CUDA environment.
 PYTHONPATH=src work/state/.venv/bin/python scripts/predict_state_baseline.py
 uv run python scripts/evaluate_state_baseline.py
+uv run python scripts/prepare_adamson_external.py
+uv run python scripts/smoke_adamson_external_prediction.py
+uv run python scripts/predict_adamson_external.py
+uv run python scripts/evaluate_adamson_external.py
 uv run ruff check .
 uv run pytest
 ```
