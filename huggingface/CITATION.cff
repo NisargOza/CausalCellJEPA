@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this research artifact, cite the repository and exact model revision."
+title: "CausalCellJEPA: A Multimodal Joint-Embedding Predictive Architecture for Cellular Perturbation Response Modeling with Biology-Aware Multi-Teacher Fusion"
+type: software
+authors:
+  - family-names: Oza
+    given-names: Nisarg
+repository-code: "https://github.com/NisargOza/CausalCellJEPA"

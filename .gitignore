@@ -5,6 +5,7 @@ __pycache__/
 data/
 artifacts/
 work/
+.hf_upload/
 RESEARCH_PROPOSAL.md
 REVIEW_LOG.md
 REVIEW.md
