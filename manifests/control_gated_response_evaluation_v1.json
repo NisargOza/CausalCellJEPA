@@ -1,0 +1,142 @@
+{
+  "artifacts": {
+    "condition_metrics": {
+      "bytes": 2357248,
+      "path": "artifacts/control_gated_response_evaluation/condition_metrics.jsonl",
+      "records": 1794,
+      "sha256": "9692c4c42a993c3f954dbd8888e2a0f8ae3a31fddd73e47e3c707bd4ac9a0a18"
+    },
+    "paired_comparisons": {
+      "bytes": 740788,
+      "path": "artifacts/control_gated_response_evaluation/paired_comparisons.json",
+      "sha256": "9f5272233987ba68a913830be0fbbbbc0071c1d2fe053b7eb644a51d5de7f7b5"
+    },
+    "pathway_metrics": {
+      "bytes": 873050,
+      "path": "artifacts/control_gated_response_evaluation/pathway_metrics.jsonl",
+      "records": 1794,
+      "sha256": "627a0b5b1f9c2f471f70d692ff4de440c20f303c1b07bf774b77ccf1afdfb9aa"
+    },
+    "provenance": {
+      "bytes": 9107,
+      "path": "artifacts/control_gated_response_evaluation/provenance.json",
+      "sha256": "31a93edeb18d084fc0a3d2d2ce60161c66d2f4084b1ce4e3a6532b9b5b889cdd"
+    },
+    "summary": {
+      "bytes": 37429,
+      "path": "artifacts/control_gated_response_evaluation/summary.json",
+      "sha256": "7ea41d45b1862c4416fb735873fc7cd3df35ec05e9ec5bf8be65f76276ac992b"
+    },
+    "truth_report": {
+      "bytes": 560,
+      "path": "artifacts/control_gated_response_evaluation/truth_report.json",
+      "sha256": "099a11408d7b6ae1309ef32ddb391029eb5b0e96a144e156bca5781082c63e9a"
+    }
+  },
+  "component_routing": {
+    "controls": {
+      "control_inference": {
+        "reference_confidence": 3.3804705351263265e-27,
+        "score": 27.445414048576914
+      },
+      "control_train": {
+        "reference_confidence": 1.0,
+        "score": 0.00028426761333668547
+      }
+    },
+    "formula": "reference_confidence * STRING_GO + (1-reference_confidence) * external_response",
+    "record_level_identity_verified": {
+      "condition_metrics": true,
+      "context_ood_and_double_ood_equal_external_response": true,
+      "iid_and_perturbation_ood_equal_string_go": true,
+      "pathway_metrics": true
+    }
+  },
+  "experimental_status": "exploratory_post_test_not_confirmatory",
+  "format_version": 1,
+  "headline_means": {
+    "context_ood": {
+      "all_effect_pearson": {"control_gated": 0.235700, "string_go": 0.226999},
+      "all_magnitude_absolute_error": {"control_gated": 3.826699, "string_go": 3.798777},
+      "deg_auprc": {"control_gated": 0.210249, "string_go": 0.214224},
+      "pathway_nes_pearson": {"control_gated": 0.273486, "string_go": 0.254575}
+    },
+    "double_ood": {
+      "all_effect_pearson": {"control_gated": 0.215796, "string_go": 0.203150},
+      "all_magnitude_absolute_error": {"control_gated": 3.495806, "string_go": 3.461794},
+      "deg_auprc": {"control_gated": 0.181731, "string_go": 0.182443},
+      "pathway_nes_pearson": {"control_gated": 0.259627, "string_go": 0.242481}
+    },
+    "iid": {
+      "all_effect_pearson": {"control_gated": 0.259827, "string_go": 0.259827},
+      "all_magnitude_absolute_error": {"control_gated": 3.352719, "string_go": 3.352719},
+      "deg_auprc": {"control_gated": 0.127581, "string_go": 0.127581},
+      "pathway_nes_pearson": {"control_gated": 0.283188, "string_go": 0.283188}
+    },
+    "perturbation_ood": {
+      "all_effect_pearson": {"control_gated": 0.274644, "string_go": 0.274644},
+      "all_magnitude_absolute_error": {"control_gated": 1.782034, "string_go": 1.782034},
+      "deg_auprc": {"control_gated": 0.189594, "string_go": 0.189594},
+      "pathway_nes_pearson": {"control_gated": 0.312288, "string_go": 0.312288}
+    }
+  },
+  "interpretation": {
+    "decision": "control_gated_cross_context_specialist_not_confirmatory_global_replacement",
+    "negative_results_preserved": true,
+    "result": "preserved_in_domain_reference_with_cross_context_direction_and_pathway_gains_but_calibration_tradeoffs",
+    "state_of_the_art_claim_supported": false
+  },
+  "leakage": {
+    "evaluation_changed_checkpoint_gate_or_selection": false,
+    "mixture_defined_after_component_test_evaluation": true,
+    "rpe1_perturbed_outcomes_used_for_fit_or_selection": false,
+    "sealed_test_outcomes_used_for_fit_or_selection": false
+  },
+  "manifest_sha256": "ead658ba975212a6935cf77c80885f520aae2ae2749d0177601275ca6d82f26c",
+  "paired_bootstrap_95ci_counts": {
+    "vs_external_response": {
+      "condition": {
+        "context_ood": {"inconclusive": 22, "losses": 0, "wins": 0},
+        "double_ood": {"inconclusive": 22, "losses": 0, "wins": 0},
+        "iid": {"inconclusive": 0, "losses": 0, "wins": 22},
+        "perturbation_ood": {"inconclusive": 18, "losses": 0, "wins": 4}
+      },
+      "pathway": {
+        "context_ood": {"inconclusive": 6, "losses": 0, "wins": 0},
+        "double_ood": {"inconclusive": 6, "losses": 0, "wins": 0},
+        "iid": {"inconclusive": 0, "losses": 0, "wins": 6},
+        "perturbation_ood": {"inconclusive": 5, "losses": 0, "wins": 1}
+      }
+    },
+    "vs_string_go": {
+      "condition": {
+        "context_ood": {"inconclusive": 4, "losses": 6, "wins": 12},
+        "double_ood": {"inconclusive": 6, "losses": 4, "wins": 12},
+        "iid": {"inconclusive": 22, "losses": 0, "wins": 0},
+        "perturbation_ood": {"inconclusive": 22, "losses": 0, "wins": 0}
+      },
+      "pathway": {
+        "context_ood": {"inconclusive": 3, "losses": 1, "wins": 2},
+        "double_ood": {"inconclusive": 4, "losses": 0, "wins": 2},
+        "iid": {"inconclusive": 6, "losses": 0, "wins": 0},
+        "perturbation_ood": {"inconclusive": 6, "losses": 0, "wins": 0}
+      }
+    }
+  },
+  "retrieval_mrr": {
+    "context_ood": 0.062706,
+    "double_ood": 0.084431,
+    "iid": 0.078348,
+    "perturbation_ood": 0.104869
+  },
+  "source": {
+    "config_sha256": "f4108726937f716fcbecbfda485e97c133534bcdc75dc1841d475ee362b20295",
+    "external_evaluation_manifest_sha256": "e46d78da46b497997fb1629228d447511ee91e1d68ca76b376218743c9095c0c",
+    "external_selection_manifest_sha256": "e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2",
+    "gate_manifest_sha256": "46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c",
+    "git_commit": "a5a26e88a864daefb474c8b4bd5c96292f6ec3b9",
+    "git_dirty": false,
+    "string_evaluation_manifest_sha256": "e4d423644eb594adef25de109a6b61efcd248c3c9f5985561fd341679a722af6",
+    "string_selection_manifest_sha256": "1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf"
+  }
+}
