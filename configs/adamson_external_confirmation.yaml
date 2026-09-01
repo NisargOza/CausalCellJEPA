@@ -137,5 +137,6 @@ terminal_stop_rule:
 outputs:
   prediction_path: artifacts/adamson_external_confirmation/predictions.pt
   output_directory: artifacts/adamson_external_confirmation
-  preparation_manifest: manifests/adamson_external_preparation_v1.json
+  preparation_manifest: manifests/adamson_external_preparation_v2.json
+  superseded_preparation_manifest: manifests/adamson_external_preparation_v1.json
   evaluation_manifest: manifests/adamson_external_confirmation_v1.json
