@@ -1,0 +1,137 @@
+# Final one-shot external confirmation on the proposal-locked Adamson 2016 study.
+# The protocol is committed before the expression matrix is downloaded or opened.
+format_version: 1
+status: preregistered_external_confirmation
+seed: 20260831
+
+source:
+  study: Adamson et al. 2016
+  doi: 10.1016/j.cell.2016.11.048
+  geo_accession: GSE90546
+  sample_accession: GSM2406681
+  sample_title: UPR Perturb-seq experiment cells
+  cell_context: K562
+  perturbation: CRISPRi
+  raw_directory: data/external/adamson16
+  files:
+    matrix:
+      filename: GSM2406681_10X010_matrix.mtx.txt.gz
+      url: https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_matrix.mtx.txt.gz
+      bytes: 739291919
+      sha256_recorded_before_first_matrix_read: true
+    barcodes:
+      filename: GSM2406681_10X010_barcodes.tsv.gz
+      url: https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_barcodes.tsv.gz
+      bytes: 249427
+      sha256: 1e0d820343d0c6e17bdab4fef96f4446e223b94861942ccf3d7225818e009836
+    identities:
+      filename: GSM2406681_10X010_cell_identities.csv.gz
+      url: https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_cell_identities.csv.gz
+      bytes: 808896
+      sha256: 8b40be7a2280c1713bf5a1eb828aad46e70ad3a7000b5f5a1322e51e06c4cf7f
+    genes:
+      filename: GSM2406681_10X010_genes.tsv.gz
+      url: https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2406nnn/GSM2406681/suppl/GSM2406681_10X010_genes.tsv.gz
+      bytes: 257091
+      sha256: e9c8a7eab0c23d98d1affa18f8ba8ffd2c63d43070a4a712546e72152c6d6bce
+
+metadata_audit:
+  matrix_outcomes_opened_before_protocol_commit: false
+  barcodes: 65337
+  genes: 32738
+  identity_rows: 65257
+  valid_cells: 50467
+  control_cells: 5241
+  scored_target_cells: 15021
+  reference_only_target_cells: 30178
+  unknown_identity_cells_excluded: 27
+  valid_identity_count_including_unknown: 95
+  action_eligible_targets: 27
+  reference_only_targets: 55
+  minimum_batch_matched_controls: 368
+
+filtering:
+  good_coverage: true
+  number_of_cells: 1
+  unknown_identity: "*"
+  controls: [63(mod)_pBA580, Gal4-4(mod)_pBA582]
+  batch_from_barcode_suffix: true
+  target_from_guide_identity: remove_final_underscore_component
+  minimum_cells_per_target: 32
+  action_eligibility: exact_membership_with_known_flag_in_frozen_action_cache
+  gene_vocabulary: frozen_replogle_3000_hvg_intersection
+  library_size: 10000
+  transformation: log1p_library_size_normalization
+  aggregation: batch_matched_unpaired_condition_centroid
+  statistical_unit: perturbation_condition
+
+targets:
+  scored: [CHERP, COPZ1, DERL2, DNAJC19, EIF2B2, EIF2B3, EIF2B4, EIF2S1, GBF1, GMPPB, GNPNAT1, HARS, HSD17B12, HSPA5, HSPA9, IARS2, MANF, MRPL39, QARS, SEC61A1, SEC63, SPCS3, SRP72, SRPRB, TMED2, TTI1, UFL1]
+  outcome_fit_seen: [CHERP, DERL2, DNAJC19, EIF2B3, GBF1, GMPPB, GNPNAT1, HARS, HSD17B12, HSPA5, IARS2, MANF, MRPL39, SEC63, SPCS3, SRP72, SRPRB, TMED2, TTI1]
+  outcome_fit_unseen: [COPZ1, EIF2B2, EIF2B4, EIF2S1, HSPA9, QARS, SEC61A1, UFL1]
+  systematic_reference_only: [AARS, AMIGO3, ARHGAP22, ASCC3, ATP5B, CAD, CARS, CCND3, COPB1, DAD1, DARS, DDOST, DDRGK1, DHDDS, FARSB, FECH, HYOU1, IDH3A, IER3IP1, KCTD16, MARS, MRGBP, MTHFD1, NEDD8, OST4, P4HB, PDIA6, PPWD1, PSMD4, PTDSS1, SAMM50, SARS, SCYL1, SEC61B, SEC61G, SEL1L, SLC35B1, SLC39A7, SLMO2, SOCS1, SPCS2, SRP68, SRPR, STT3A, SYVN1, TARS, TELO2, TIMM23, TIMM44, TMED10, TMEM167A, TTI2, UFM1, XRN1, YIPF5]
+
+frozen_candidate:
+  name: control_gated_external_response
+  formula: reference_confidence * STRING_GO + (1-reference_confidence) * external_response
+  action_path: artifacts/replogle_actions_esm2_go_string_v1.pt
+  action_bytes: 1816445
+  action_sha256: bf30fe2bcb1cd3c79612cc6ce570f82002b96de92b8b8dd24ed3ee142b9ddee0
+  external_selection_manifest: manifests/external_response_selection_v1.json
+  external_selection_manifest_sha256: e5815c5fee2f1c34f53fbf0e98537f745a4e6aa68604fe2d6d669df1eea55be2
+  external_checkpoint_sha256: b458f31547b1fc056f1e9b00757b45f87217e955a61e2f75695748f2514c1e14
+  string_selection_manifest: manifests/string_kernel_selection_v1.json
+  string_selection_manifest_sha256: 1aff6d47694ef53c8c986a1bc47f63599fe62ba11104f2b0f68021b1c0713fdf
+  string_checkpoint_sha256: 87d6bad11f947d98ee57ff30124f93de8fe983a0c0bd02ae737fbf77940b43cd
+  gate_manifest: manifests/control_ood_residual_gate_v1.json
+  gate_manifest_sha256: 46388fbb68550397533e9732c5625ce23240d8cfa2e23aefdb8e08f3a656428c
+  gate_checkpoint_sha256: 3c238a040ab881aedff6815bd093808d01e5bc2c731db5ebf47828763a1329f9
+  predictions_frozen_before_perturbed_truth_scoring: true
+  adamson_outcomes_used_for_fit_selection_or_gate: false
+
+comparators:
+  predictive: [external_response_multiview_rbf, string_kernel_gene_go_rbf, direct_gene_esm, mean_effect, no_change]
+  systematic_baseline: perturbed_mean
+  perturbed_mean_definition: cell_weighted_mean_of_reference_only_target_cells
+  matching_mean_omitted_reason: identical_to_perturbed_mean_for_unseen_single_gene_perturbations
+  direct_gene_manifest: manifests/direct_gene_v1.json
+  direct_gene_manifest_sha256: b7259f4aa177cc5910cff212313b9570ee1e7606cdf900669b754f4987d0cf29
+
+benchmark:
+  framework: Systema
+  article: https://www.nature.com/articles/s41587-025-02777-8
+  repository: https://github.com/mlbio-epfl/systema
+  repository_commit: aaf5b5353993b48b78543f2f93b3e18ca65df515
+  equal_condition_perturbed_reference: systematic_reference_only
+  bootstrap_resamples: 10000
+  primary_metrics: [systema_all_gene_pearson_delta, systema_target_excluded_pearson_delta, centroid_accuracy]
+  secondary_metrics: [control_reference_effect_pearson, magnitude_absolute_error, deg_auprc, pathway_nes_pearson]
+  report_strata: [all_scored, outcome_fit_seen, outcome_fit_unseen]
+
+decision_rule:
+  external_confirmation_requires:
+    - paired_bootstrap_95ci_lower_above_zero_vs_perturbed_mean_for_systema_all_gene_pearson_delta
+    - paired_bootstrap_95ci_lower_above_zero_vs_perturbed_mean_for_systema_target_excluded_pearson_delta
+    - centroid_accuracy_point_estimate_above_perturbed_mean
+    - no_more_than_0.01_mean_systema_pearson_loss_vs_best_frozen_component
+    - no_more_than_0.02_centroid_accuracy_loss_vs_best_frozen_component
+    - no_more_than_2_percent_magnitude_error_degradation_vs_best_frozen_component
+  global_state_of_the_art_claim_requires:
+    - external_confirmation_passes
+    - later_same_split_comparison_beats_perturbed_mean_GEARS_CPA_and_scGPT
+    - improvement_is_supported_on_perturbation_specific_and_centroid_metrics
+  adamson_alone_supports_global_state_of_the_art_claim: false
+
+terminal_stop_rule:
+  architecture_or_threshold_changes_after_adamson_outcomes: forbidden
+  full_adamson_evaluations: 1
+  if_external_confirmation_fails: stop_architecture_search_and_finalize_mixed_or_negative_result
+  if_external_confirmation_passes: run_one_locked_Systema_frontier_comparison_then_finalize
+  additional_benchmark_or_tuning_cycles_after_that: forbidden
+  project_must_end_with_claim_calibrated_to_evidence: true
+
+outputs:
+  prediction_path: artifacts/adamson_external_confirmation/predictions.pt
+  output_directory: artifacts/adamson_external_confirmation
+  preparation_manifest: manifests/adamson_external_preparation_v1.json
+  evaluation_manifest: manifests/adamson_external_confirmation_v1.json
