@@ -1,0 +1,65 @@
+{
+  "decision": {
+    "architecture_or_threshold_changes_after_outcomes": "forbidden",
+    "criteria": {
+      "centroid_accuracy_above_perturbed_mean": true,
+      "centroid_accuracy_loss_vs_best_component_at_most_0.02": true,
+      "magnitude_error_degradation_vs_best_component_at_most_2_percent": true,
+      "systema_all_gene_ci_lower_above_zero_vs_perturbed_mean": true,
+      "systema_loss_vs_best_component_at_most_0.01": false,
+      "systema_target_excluded_ci_lower_above_zero_vs_perturbed_mean": true
+    },
+    "external_confirmation_passes": false,
+    "global_state_of_the_art_supported_by_adamson_alone": false,
+    "terminal_next_step": "stop_architecture_search_and_finalize_mixed_or_negative_result"
+  },
+  "format_version": 1,
+  "leakage": {
+    "adamson_outcomes_used_for_fit_selection_or_gate": false,
+    "architecture_or_threshold_changes_after_outcomes": false
+  },
+  "manifest_sha256": "aacf3efae7d7dffe41baf01c466f6cda2fd2a7b89b6ca467727a331fc97ebbd0",
+  "outputs": {
+    "condition_metrics.jsonl": {
+      "bytes": 584292,
+      "sha256": "911079cfbf4f63b306e072f48ddc4a9c59b39440a6e15e5901b5fddee861bc61"
+    },
+    "decision.json": {
+      "bytes": 681,
+      "sha256": "88580360d0a009fa01bd28fef37244dee4d0345b01c169bef44756f651704466"
+    },
+    "paired_comparisons.json": {
+      "bytes": 383526,
+      "sha256": "4b857cc231a90709c6170c718a09777587c9cc9dc372731007fbaf1850eba57d"
+    },
+    "pathway_metrics.jsonl": {
+      "bytes": 184500,
+      "sha256": "7973744025a65ec7341c308e80014ffcba29609f67ac5299294041e030d9e615"
+    },
+    "provenance.json": {
+      "bytes": 5351,
+      "sha256": "1e8fc2450ba4e889c4548db07b5c6434d0a29c06fd8754a6de2a54f13a252700"
+    },
+    "summary.json": {
+      "bytes": 200650,
+      "sha256": "3337913ffb910ca5d2073dd0d4887663586d843ae5453c734e08ffa2bb844a56"
+    },
+    "truth_report.json": {
+      "bytes": 398,
+      "sha256": "76c341acea76a87cc53c3e27606da83d5f5e0d61ccd66d89d386662b9659d773"
+    }
+  },
+  "provenance": {
+    "git": {
+      "commit": "5471a95b133613e3e17b2796890d24abd52486cc",
+      "dirty": false
+    },
+    "runtime_source_sha256": "f915042f96b4a20668120e53f8fa617dfdaaef8849ff016a39ed128a03d78362"
+  },
+  "source": {
+    "config_sha256": "33e025c2f7efce7969b33e43750b5f66a0e5c565cc280a9cac6fd5dce4c8f7ce",
+    "prediction_manifest_sha256": "584a30cb059f15d44e0000d6c78b0bdf396bff4c0811ed64a86fe8d46480696b",
+    "preparation_manifest_sha256": "0564f07569a899fe933fcc50780743403f30744af7474d4f4058bc85e57ddf51",
+    "replogle_manifest_sha256": "6869eb77452f331706804c2e2dd3530c2c7d27bdc20db050c9f2f1e051833488"
+  }
+}
